@@ -12,7 +12,7 @@ async function startPlazaGame(page, count, viewport = { width: 844, height: 390 
     await page.goto('/');
     await page.evaluate(count => {
         startGameNow(count, Array.from({ length: count }, (_, index) => ({
-            type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+            type: 'human', name: `街${index + 1}`,
         })));
         GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: count }, () => null));
         cancelCpuSchedule('plaza-landscape-hud');
@@ -23,6 +23,8 @@ async function startPlazaGame(page, count, viewport = { width: 844, height: 390 
             player.coins = 30;
             player.cards = Array.from({ length: 4 }, () => createCardByName(index ? 'カフェ' : '麦畑'));
         });
+        game.log = [];
+        game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
         setTutorialEnabled(false);
         render();
         acceptHotseatHandoff();
@@ -43,6 +45,17 @@ test('横持ちの4人戦は全席を読みやすく並べ、広場と操作域�
             return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height,
                 fontSize: parseFloat(getComputedStyle(button).fontSize), nameSize: parseFloat(getComputedStyle(button.querySelector('.plaza-player-name')).fontSize) };
         });
+        const wallets = [...document.querySelectorAll('#plazaPlayerHud .plaza-player-coins')].map(wallet => {
+            const bounds = wallet.getBoundingClientRect();
+            const seat = wallet.closest('button').getBoundingClientRect();
+            const wrapper = wallet.closest('.plaza-hud-self, .plaza-hud-opponents').getBoundingClientRect();
+            const self = wallet.querySelector('.plaza-wallet-self')?.getBoundingClientRect();
+            return { inside:bounds.left >= seat.left && bounds.right <= seat.right &&
+                bounds.top >= seat.top && bounds.bottom <= seat.bottom &&
+                    bounds.left >= wrapper.left && bounds.right <= wrapper.right,
+                selfInside:!self || self.left >= seat.left && self.right <= seat.right,
+                width:bounds.width, seatWidth:seat.width };
+        });
         const townArt = [...document.querySelectorAll('#plazaWorld #players .sunset-facility-art')]
             .map(art => art.getBoundingClientRect().height).filter(height => height > 0);
         return {
@@ -51,11 +64,15 @@ test('横持ちの4人戦は全席を読みやすく並べ、広場と操作域�
             tools: rect('#plazaCameraTools'), hud: rect('#plazaPlayerHud'), field: rect('#plazaViewport'),
             events: rect('#plazaEvents'), actions: rect('.game-action-panel'), buttons,
             toolbar: rect('.game-action-toolbar'), toolbarLabels: [...document.querySelectorAll('.game-action-toolbar summary')].map(summary => ({
+                className: summary.parentElement.className,
+                text: summary.textContent, fontSize: getComputedStyle(summary).fontSize,
+                clientWidth: summary.clientWidth, scrollWidth: summary.scrollWidth,
+                afterFont: getComputedStyle(summary, '::after').fontSize,
                 visibleLabel: getComputedStyle(summary, '::after').content,
                 textFits: summary.scrollWidth <= summary.clientWidth,
                 targetHeight: summary.getBoundingClientRect().height,
             })),
-            townArtHeights: townArt,
+            townArtHeights: townArt, wallets,
             allButtonsHit: [...document.querySelectorAll('#plazaPlayerHud button')].every(button => {
                 const r = button.getBoundingClientRect();
                 const target = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
@@ -76,9 +93,10 @@ test('横持ちの4人戦は全席を読みやすく並べ、広場と操作域�
     expect(layout.actions.width).toBe(layout.viewportWidth);
     expect(layout.actions.height).toBeLessThanOrEqual(64);
     expect(layout.toolbarLabels).toHaveLength(3);
-    expect(layout.toolbarLabels.every(label => label.visibleLabel !== 'none' && label.textFits && label.targetHeight >= 44)).toBe(true);
+    expect(layout.toolbarLabels.every(label => label.visibleLabel !== 'none' && label.textFits && label.targetHeight >= 44), JSON.stringify(layout.toolbarLabels)).toBe(true);
     expect(layout.buttons).toHaveLength(4);
-    expect(layout.buttons.every(button => button.width >= 180 && button.height >= 52 && button.fontSize >= 12 && button.nameSize >= 12)).toBe(true);
+    expect(layout.buttons.every(button => button.width >= 180 && button.height >= 52 && button.fontSize >= 12 && button.nameSize >= 12), JSON.stringify(layout.buttons)).toBe(true);
+    expect(layout.wallets.every(wallet => wallet.inside && wallet.selfInside), JSON.stringify(layout.wallets)).toBe(true);
     expect(layout.allButtonsHit).toBe(true);
     expect(layout.townArtHeights.length).toBeGreaterThan(0);
     expect(Math.min(...layout.townArtHeights)).toBeGreaterThanOrEqual(50);

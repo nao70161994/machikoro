@@ -92,6 +92,8 @@ declare var renderOnlinePlayerSettings: (() => void) | undefined;
 declare var resetAccessibleModalRuntimeState: (() => void) | undefined;
 declare var resumeGame: (() => void) | undefined;
 declare function cancelPendingLocalResume(): void;
+// ui.js precedes main.js in index.html.
+declare function dismissTurnGreeting(): void;
 declare var updateResumeButton: (() => void) | undefined;
 declare var activeModalId: string | null | undefined;
 declare var lastModalFocus: HTMLElement | null | undefined;

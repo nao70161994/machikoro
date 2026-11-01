@@ -1,0 +1,60 @@
+{
+  "commit": "668ed718857e00f34c93f0159c3dab7b596cae68",
+  "run": 41189002920,
+  "scope": "320 case passed;844 failed original live-frame check before saving caption records",
+  "cases": [
+    {
+      "file": "artifacts/activation-owner-native/construction-diagnostic/cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-320px-mobile-webkit/activation-presentation.json",
+      "records": [
+        {
+          "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        }
+      ]
+    }
+  ]
+}

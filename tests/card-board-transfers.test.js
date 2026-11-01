@@ -303,6 +303,9 @@ runTest('施設の初出順とowner fallbackを字幕と同じ700ms刻みで送�
     controller.play({ container, events: ordered, delayMs: 500 });
     assert.deepStrictEqual(animated.map(item => item.options.delay), [500, 1200, 1900, 2600]);
     assert.ok(animated.every(item => item.options.duration === 600));
+    assert.ok(animated.every(item => item.options.easing === 'linear'), 'fade区間を全体easeで前倒ししない');
+    assert.deepStrictEqual(animated[0].frames.slice(1, 3).map(frame => [frame.offset, frame.opacity]), [[0.15, 1], [0.85, 1]]);
+    assert.strictEqual(animated[0].frames[1].easing, 'ease-in-out', '移動区間の加減速は維持する');
     const flights = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
     assert.deepStrictEqual(flights.map(coin => [coin.dataset.facility, coin.dataset.owner, coin.dataset.step]), [
         ['麦畑', '0', '0'], ['森林', '0', '1'], ['カフェ', '1', '2'], ['パン屋', '0', '3'],

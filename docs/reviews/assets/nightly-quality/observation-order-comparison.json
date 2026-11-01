@@ -1,0 +1,3340 @@
+{
+  "forwardRun": 41305776379,
+  "reverseRun": 41308878997,
+  "product": "ad5f90f2",
+  "warning": "Exploratory sequential profiles, not original regression cases. Order/warmup and runner differences remain confounded; a green workflow means the diagnostic completed, not every originalFrameCondition passed.",
+  "orders": {
+    "forward": {
+      "scope": "Exploratory controlled forest roll, not a replacement for release/nightly or complete UI games. Sequential profiles have order/warmup bias; frame failures are data, not suppressed regression assertions.",
+      "browser": "26.5",
+      "results": [
+        {
+          "profile": {
+            "name": "mobile3-driver",
+            "dpr": 3,
+            "driverQueries": true
+          },
+          "metadata": {
+            "at": 1793535504168,
+            "timeOrigin": 1793535495372,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 3,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 12802,
+            "at": 12807,
+            "elapsedMs": 360,
+            "opacity": 1,
+            "currentTime": 2960,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 11271,
+                "at": 11273,
+                "elapsedMs": -1171,
+                "opacity": 0,
+                "currentTime": 1429,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 11971,
+                "at": 11972,
+                "elapsedMs": -471,
+                "opacity": 0,
+                "currentTime": 2129,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 12205,
+                "at": 12207,
+                "elapsedMs": -237,
+                "opacity": 0,
+                "currentTime": 2363,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 12802,
+                "at": 12807,
+                "elapsedMs": 360,
+                "opacity": 1,
+                "currentTime": 2960,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 10373,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              },
+              {
+                "at": 11066,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 11766,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              },
+              {
+                "at": 12469,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街3",
+                "coins": 31
+              },
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        },
+        {
+          "profile": {
+            "name": "mobile3-quiet",
+            "dpr": 3,
+            "driverQueries": false
+          },
+          "metadata": {
+            "at": 1793535512542,
+            "timeOrigin": 1793535508596,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 3,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 7870,
+            "at": 7872,
+            "elapsedMs": 305,
+            "opacity": 1,
+            "currentTime": 2905,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 5242,
+                "at": 5243,
+                "elapsedMs": -2323,
+                "opacity": 0,
+                "currentTime": 277,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5662,
+                "at": 5664,
+                "elapsedMs": -1903,
+                "opacity": 0,
+                "currentTime": 697,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5859,
+                "at": 5862,
+                "elapsedMs": -1706,
+                "opacity": 0,
+                "currentTime": 894,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5914,
+                "at": 5917,
+                "elapsedMs": -1651,
+                "opacity": 0,
+                "currentTime": 949,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5936,
+                "at": 5938,
+                "elapsedMs": -1629,
+                "opacity": 0,
+                "currentTime": 971,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5957,
+                "at": 5957,
+                "elapsedMs": -1608,
+                "opacity": 0,
+                "currentTime": 992,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5965,
+                "at": 5965,
+                "elapsedMs": -1600,
+                "opacity": 0,
+                "currentTime": 1000,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5983,
+                "at": 5983,
+                "elapsedMs": -1582,
+                "opacity": 0,
+                "currentTime": 1018,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5998,
+                "at": 5998,
+                "elapsedMs": -1567,
+                "opacity": 0,
+                "currentTime": 1033,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6014,
+                "at": 6014,
+                "elapsedMs": -1551,
+                "opacity": 0,
+                "currentTime": 1049,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6030,
+                "at": 6031,
+                "elapsedMs": -1535,
+                "opacity": 0,
+                "currentTime": 1065,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6047,
+                "at": 6047,
+                "elapsedMs": -1518,
+                "opacity": 0,
+                "currentTime": 1082,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6064,
+                "at": 6065,
+                "elapsedMs": -1501,
+                "opacity": 0,
+                "currentTime": 1099,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6109,
+                "at": 6111,
+                "elapsedMs": -1456,
+                "opacity": 0,
+                "currentTime": 1144,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6488,
+                "at": 6490,
+                "elapsedMs": -1077,
+                "opacity": 0,
+                "currentTime": 1523,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6718,
+                "at": 6720,
+                "elapsedMs": -847,
+                "opacity": 0,
+                "currentTime": 1753,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7109,
+                "at": 7113,
+                "elapsedMs": -456,
+                "opacity": 0,
+                "currentTime": 2144,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7331,
+                "at": 7334,
+                "elapsedMs": -234,
+                "opacity": 0,
+                "currentTime": 2366,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7480,
+                "at": 7481,
+                "elapsedMs": -85,
+                "opacity": 0,
+                "currentTime": 2515,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7511,
+                "at": 7513,
+                "elapsedMs": -54,
+                "opacity": 0,
+                "currentTime": 2546,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7870,
+                "at": 7872,
+                "elapsedMs": 305,
+                "opacity": 1,
+                "currentTime": 2905,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 5485,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 6185,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 6884,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              },
+              {
+                "at": 7583,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街3",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        },
+        {
+          "profile": {
+            "name": "mobile1-quiet",
+            "dpr": 1,
+            "driverQueries": false
+          },
+          "metadata": {
+            "at": 1793535521162,
+            "timeOrigin": 1793535516919,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 1,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 7927,
+            "at": 7928,
+            "elapsedMs": 182,
+            "opacity": 1,
+            "currentTime": 2782,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 6063,
+                "at": 6064,
+                "elapsedMs": -1682,
+                "opacity": 0,
+                "currentTime": 918,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6208,
+                "at": 6210,
+                "elapsedMs": -1537,
+                "opacity": 0,
+                "currentTime": 1063,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6563,
+                "at": 6566,
+                "elapsedMs": -1182,
+                "opacity": 0,
+                "currentTime": 1418,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6614,
+                "at": 6616,
+                "elapsedMs": -1131,
+                "opacity": 0,
+                "currentTime": 1469,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6635,
+                "at": 6635,
+                "elapsedMs": -1110,
+                "opacity": 0,
+                "currentTime": 1490,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6638,
+                "at": 6638,
+                "elapsedMs": -1107,
+                "opacity": 0,
+                "currentTime": 1493,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6655,
+                "at": 6655,
+                "elapsedMs": -1090,
+                "opacity": 0,
+                "currentTime": 1510,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6670,
+                "at": 6670,
+                "elapsedMs": -1075,
+                "opacity": 0,
+                "currentTime": 1525,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6686,
+                "at": 6687,
+                "elapsedMs": -1059,
+                "opacity": 0,
+                "currentTime": 1541,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6702,
+                "at": 6703,
+                "elapsedMs": -1043,
+                "opacity": 0,
+                "currentTime": 1557,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6719,
+                "at": 6721,
+                "elapsedMs": -1026,
+                "opacity": 0,
+                "currentTime": 1574,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6741,
+                "at": 6743,
+                "elapsedMs": -1004,
+                "opacity": 0,
+                "currentTime": 1596,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6937,
+                "at": 6939,
+                "elapsedMs": -808,
+                "opacity": 0,
+                "currentTime": 1792,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7224,
+                "at": 7227,
+                "elapsedMs": -521,
+                "opacity": 0,
+                "currentTime": 2079,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7282,
+                "at": 7284,
+                "elapsedMs": -463,
+                "opacity": 0,
+                "currentTime": 2137,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7304,
+                "at": 7304,
+                "elapsedMs": -441,
+                "opacity": 0,
+                "currentTime": 2159,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7305,
+                "at": 7305,
+                "elapsedMs": -440,
+                "opacity": 0,
+                "currentTime": 2160,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7321,
+                "at": 7321,
+                "elapsedMs": -424,
+                "opacity": 0,
+                "currentTime": 2176,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7337,
+                "at": 7337,
+                "elapsedMs": -408,
+                "opacity": 0,
+                "currentTime": 2192,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7353,
+                "at": 7353,
+                "elapsedMs": -392,
+                "opacity": 0,
+                "currentTime": 2208,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7369,
+                "at": 7370,
+                "elapsedMs": -376,
+                "opacity": 0,
+                "currentTime": 2224,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7385,
+                "at": 7386,
+                "elapsedMs": -360,
+                "opacity": 0,
+                "currentTime": 2240,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7401,
+                "at": 7402,
+                "elapsedMs": -344,
+                "opacity": 0,
+                "currentTime": 2256,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7418,
+                "at": 7419,
+                "elapsedMs": -327,
+                "opacity": 0,
+                "currentTime": 2273,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7434,
+                "at": 7435,
+                "elapsedMs": -311,
+                "opacity": 0,
+                "currentTime": 2289,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7656,
+                "at": 7657,
+                "elapsedMs": -89,
+                "opacity": 0,
+                "currentTime": 2511,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7747,
+                "at": 7748,
+                "elapsedMs": 2,
+                "opacity": 0.037187,
+                "currentTime": 2602,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7788,
+                "at": 7790,
+                "elapsedMs": 43,
+                "opacity": 0.684643,
+                "currentTime": 2643,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7838,
+                "at": 7839,
+                "elapsedMs": 93,
+                "opacity": 1,
+                "currentTime": 2693,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7868,
+                "at": 7869,
+                "elapsedMs": 123,
+                "opacity": 1,
+                "currentTime": 2723,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7888,
+                "at": 7889,
+                "elapsedMs": 143,
+                "opacity": 1,
+                "currentTime": 2743,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7905,
+                "at": 7906,
+                "elapsedMs": 160,
+                "opacity": 1,
+                "currentTime": 2760,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7927,
+                "at": 7928,
+                "elapsedMs": 182,
+                "opacity": 1,
+                "currentTime": 2782,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 5669,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              },
+              {
+                "at": 6366,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 7066,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 7764,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街3",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        },
+        {
+          "profile": {
+            "name": "desktop1-quiet",
+            "desktop": true,
+            "dpr": 1,
+            "driverQueries": false
+          },
+          "metadata": {
+            "at": 1793535529499,
+            "timeOrigin": 1793535525108,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 1,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 8140,
+            "at": 8142,
+            "elapsedMs": 184,
+            "opacity": 1,
+            "currentTime": 2784,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 5528,
+                "at": 5529,
+                "elapsedMs": -2428,
+                "opacity": 0,
+                "currentTime": 172,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5589,
+                "at": 5590,
+                "elapsedMs": -2367,
+                "opacity": 0,
+                "currentTime": 233,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5609,
+                "at": 5610,
+                "elapsedMs": -2347,
+                "opacity": 0,
+                "currentTime": 253,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5629,
+                "at": 5629,
+                "elapsedMs": -2327,
+                "opacity": 0,
+                "currentTime": 273,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5635,
+                "at": 5635,
+                "elapsedMs": -2321,
+                "opacity": 0,
+                "currentTime": 279,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5651,
+                "at": 5651,
+                "elapsedMs": -2305,
+                "opacity": 0,
+                "currentTime": 295,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5669,
+                "at": 5669,
+                "elapsedMs": -2287,
+                "opacity": 0,
+                "currentTime": 313,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5683,
+                "at": 5683,
+                "elapsedMs": -2273,
+                "opacity": 0,
+                "currentTime": 327,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5699,
+                "at": 5699,
+                "elapsedMs": -2257,
+                "opacity": 0,
+                "currentTime": 343,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5715,
+                "at": 5715,
+                "elapsedMs": -2241,
+                "opacity": 0,
+                "currentTime": 359,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5732,
+                "at": 5732,
+                "elapsedMs": -2224,
+                "opacity": 0,
+                "currentTime": 376,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5748,
+                "at": 5748,
+                "elapsedMs": -2208,
+                "opacity": 0,
+                "currentTime": 392,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5766,
+                "at": 5766,
+                "elapsedMs": -2190,
+                "opacity": 0,
+                "currentTime": 410,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5793,
+                "at": 5794,
+                "elapsedMs": -2163,
+                "opacity": 0,
+                "currentTime": 437,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5813,
+                "at": 5814,
+                "elapsedMs": -2143,
+                "opacity": 0,
+                "currentTime": 457,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5834,
+                "at": 5834,
+                "elapsedMs": -2122,
+                "opacity": 0,
+                "currentTime": 478,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5853,
+                "at": 5854,
+                "elapsedMs": -2103,
+                "opacity": 0,
+                "currentTime": 497,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5876,
+                "at": 5877,
+                "elapsedMs": -2080,
+                "opacity": 0,
+                "currentTime": 520,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6047,
+                "at": 6049,
+                "elapsedMs": -1909,
+                "opacity": 0,
+                "currentTime": 691,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6069,
+                "at": 6071,
+                "elapsedMs": -1887,
+                "opacity": 0,
+                "currentTime": 713,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6090,
+                "at": 6090,
+                "elapsedMs": -1866,
+                "opacity": 0,
+                "currentTime": 734,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6106,
+                "at": 6107,
+                "elapsedMs": -1850,
+                "opacity": 0,
+                "currentTime": 750,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6122,
+                "at": 6123,
+                "elapsedMs": -1834,
+                "opacity": 0,
+                "currentTime": 766,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6139,
+                "at": 6139,
+                "elapsedMs": -1817,
+                "opacity": 0,
+                "currentTime": 783,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6156,
+                "at": 6156,
+                "elapsedMs": -1800,
+                "opacity": 0,
+                "currentTime": 800,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6171,
+                "at": 6172,
+                "elapsedMs": -1785,
+                "opacity": 0,
+                "currentTime": 815,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6188,
+                "at": 6188,
+                "elapsedMs": -1768,
+                "opacity": 0,
+                "currentTime": 832,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6204,
+                "at": 6204,
+                "elapsedMs": -1752,
+                "opacity": 0,
+                "currentTime": 848,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6220,
+                "at": 6221,
+                "elapsedMs": -1736,
+                "opacity": 0,
+                "currentTime": 864,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6236,
+                "at": 6236,
+                "elapsedMs": -1720,
+                "opacity": 0,
+                "currentTime": 880,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6252,
+                "at": 6252,
+                "elapsedMs": -1704,
+                "opacity": 0,
+                "currentTime": 896,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6268,
+                "at": 6269,
+                "elapsedMs": -1688,
+                "opacity": 0,
+                "currentTime": 912,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6284,
+                "at": 6284,
+                "elapsedMs": -1672,
+                "opacity": 0,
+                "currentTime": 928,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6300,
+                "at": 6301,
+                "elapsedMs": -1656,
+                "opacity": 0,
+                "currentTime": 944,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6316,
+                "at": 6317,
+                "elapsedMs": -1640,
+                "opacity": 0,
+                "currentTime": 960,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6333,
+                "at": 6333,
+                "elapsedMs": -1623,
+                "opacity": 0,
+                "currentTime": 977,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6349,
+                "at": 6349,
+                "elapsedMs": -1607,
+                "opacity": 0,
+                "currentTime": 993,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6365,
+                "at": 6365,
+                "elapsedMs": -1591,
+                "opacity": 0,
+                "currentTime": 1009,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6383,
+                "at": 6383,
+                "elapsedMs": -1573,
+                "opacity": 0,
+                "currentTime": 1027,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6398,
+                "at": 6399,
+                "elapsedMs": -1558,
+                "opacity": 0,
+                "currentTime": 1042,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6414,
+                "at": 6415,
+                "elapsedMs": -1542,
+                "opacity": 0,
+                "currentTime": 1058,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6430,
+                "at": 6431,
+                "elapsedMs": -1526,
+                "opacity": 0,
+                "currentTime": 1074,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6446,
+                "at": 6448,
+                "elapsedMs": -1510,
+                "opacity": 0,
+                "currentTime": 1090,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6465,
+                "at": 6466,
+                "elapsedMs": -1491,
+                "opacity": 0,
+                "currentTime": 1109,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6485,
+                "at": 6487,
+                "elapsedMs": -1471,
+                "opacity": 0,
+                "currentTime": 1129,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6544,
+                "at": 6545,
+                "elapsedMs": -1412,
+                "opacity": 0,
+                "currentTime": 1188,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6614,
+                "at": 6615,
+                "elapsedMs": -1342,
+                "opacity": 0,
+                "currentTime": 1258,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6761,
+                "at": 6763,
+                "elapsedMs": -1195,
+                "opacity": 0,
+                "currentTime": 1405,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6784,
+                "at": 6786,
+                "elapsedMs": -1172,
+                "opacity": 0,
+                "currentTime": 1428,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6796,
+                "at": 6796,
+                "elapsedMs": -1160,
+                "opacity": 0,
+                "currentTime": 1440,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6808,
+                "at": 6808,
+                "elapsedMs": -1148,
+                "opacity": 0,
+                "currentTime": 1452,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6823,
+                "at": 6824,
+                "elapsedMs": -1133,
+                "opacity": 0,
+                "currentTime": 1467,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6840,
+                "at": 6840,
+                "elapsedMs": -1116,
+                "opacity": 0,
+                "currentTime": 1484,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6856,
+                "at": 6856,
+                "elapsedMs": -1100,
+                "opacity": 0,
+                "currentTime": 1500,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6873,
+                "at": 6873,
+                "elapsedMs": -1083,
+                "opacity": 0,
+                "currentTime": 1517,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6889,
+                "at": 6889,
+                "elapsedMs": -1067,
+                "opacity": 0,
+                "currentTime": 1533,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6905,
+                "at": 6905,
+                "elapsedMs": -1051,
+                "opacity": 0,
+                "currentTime": 1549,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6921,
+                "at": 6921,
+                "elapsedMs": -1035,
+                "opacity": 0,
+                "currentTime": 1565,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6938,
+                "at": 6939,
+                "elapsedMs": -1018,
+                "opacity": 0,
+                "currentTime": 1582,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6954,
+                "at": 6954,
+                "elapsedMs": -1002,
+                "opacity": 0,
+                "currentTime": 1598,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6970,
+                "at": 6970,
+                "elapsedMs": -986,
+                "opacity": 0,
+                "currentTime": 1614,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6987,
+                "at": 6987,
+                "elapsedMs": -969,
+                "opacity": 0,
+                "currentTime": 1631,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7003,
+                "at": 7003,
+                "elapsedMs": -953,
+                "opacity": 0,
+                "currentTime": 1647,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7019,
+                "at": 7019,
+                "elapsedMs": -937,
+                "opacity": 0,
+                "currentTime": 1663,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7036,
+                "at": 7036,
+                "elapsedMs": -920,
+                "opacity": 0,
+                "currentTime": 1680,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7051,
+                "at": 7052,
+                "elapsedMs": -905,
+                "opacity": 0,
+                "currentTime": 1695,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7068,
+                "at": 7068,
+                "elapsedMs": -888,
+                "opacity": 0,
+                "currentTime": 1712,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7084,
+                "at": 7084,
+                "elapsedMs": -872,
+                "opacity": 0,
+                "currentTime": 1728,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7100,
+                "at": 7101,
+                "elapsedMs": -856,
+                "opacity": 0,
+                "currentTime": 1744,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7116,
+                "at": 7116,
+                "elapsedMs": -840,
+                "opacity": 0,
+                "currentTime": 1760,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7132,
+                "at": 7133,
+                "elapsedMs": -824,
+                "opacity": 0,
+                "currentTime": 1776,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7149,
+                "at": 7150,
+                "elapsedMs": -807,
+                "opacity": 0,
+                "currentTime": 1793,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7168,
+                "at": 7169,
+                "elapsedMs": -788,
+                "opacity": 0,
+                "currentTime": 1812,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7187,
+                "at": 7190,
+                "elapsedMs": -769,
+                "opacity": 0,
+                "currentTime": 1831,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7234,
+                "at": 7236,
+                "elapsedMs": -722,
+                "opacity": 0,
+                "currentTime": 1878,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7336,
+                "at": 7338,
+                "elapsedMs": -620,
+                "opacity": 0,
+                "currentTime": 1980,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7465,
+                "at": 7467,
+                "elapsedMs": -491,
+                "opacity": 0,
+                "currentTime": 2109,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7487,
+                "at": 7489,
+                "elapsedMs": -469,
+                "opacity": 0,
+                "currentTime": 2131,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7494,
+                "at": 7495,
+                "elapsedMs": -462,
+                "opacity": 0,
+                "currentTime": 2138,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7507,
+                "at": 7507,
+                "elapsedMs": -449,
+                "opacity": 0,
+                "currentTime": 2151,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7523,
+                "at": 7523,
+                "elapsedMs": -433,
+                "opacity": 0,
+                "currentTime": 2167,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7539,
+                "at": 7540,
+                "elapsedMs": -417,
+                "opacity": 0,
+                "currentTime": 2183,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7556,
+                "at": 7557,
+                "elapsedMs": -400,
+                "opacity": 0,
+                "currentTime": 2200,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7573,
+                "at": 7574,
+                "elapsedMs": -383,
+                "opacity": 0,
+                "currentTime": 2217,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7589,
+                "at": 7589,
+                "elapsedMs": -367,
+                "opacity": 0,
+                "currentTime": 2233,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7605,
+                "at": 7605,
+                "elapsedMs": -351,
+                "opacity": 0,
+                "currentTime": 2249,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7622,
+                "at": 7622,
+                "elapsedMs": -334,
+                "opacity": 0,
+                "currentTime": 2266,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7638,
+                "at": 7638,
+                "elapsedMs": -318,
+                "opacity": 0,
+                "currentTime": 2282,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7654,
+                "at": 7654,
+                "elapsedMs": -302,
+                "opacity": 0,
+                "currentTime": 2298,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7670,
+                "at": 7670,
+                "elapsedMs": -286,
+                "opacity": 0,
+                "currentTime": 2314,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7687,
+                "at": 7688,
+                "elapsedMs": -269,
+                "opacity": 0,
+                "currentTime": 2331,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7703,
+                "at": 7703,
+                "elapsedMs": -253,
+                "opacity": 0,
+                "currentTime": 2347,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7720,
+                "at": 7721,
+                "elapsedMs": -236,
+                "opacity": 0,
+                "currentTime": 2364,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7737,
+                "at": 7737,
+                "elapsedMs": -219,
+                "opacity": 0,
+                "currentTime": 2381,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7752,
+                "at": 7753,
+                "elapsedMs": -204,
+                "opacity": 0,
+                "currentTime": 2396,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7770,
+                "at": 7770,
+                "elapsedMs": -186,
+                "opacity": 0,
+                "currentTime": 2414,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7786,
+                "at": 7786,
+                "elapsedMs": -170,
+                "opacity": 0,
+                "currentTime": 2430,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7802,
+                "at": 7802,
+                "elapsedMs": -154,
+                "opacity": 0,
+                "currentTime": 2446,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7818,
+                "at": 7819,
+                "elapsedMs": -138,
+                "opacity": 0,
+                "currentTime": 2462,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7834,
+                "at": 7834,
+                "elapsedMs": -122,
+                "opacity": 0,
+                "currentTime": 2478,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7850,
+                "at": 7851,
+                "elapsedMs": -106,
+                "opacity": 0,
+                "currentTime": 2494,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7866,
+                "at": 7868,
+                "elapsedMs": -90,
+                "opacity": 0,
+                "currentTime": 2510,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7889,
+                "at": 7894,
+                "elapsedMs": -67,
+                "opacity": 0,
+                "currentTime": 2533,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7938,
+                "at": 7941,
+                "elapsedMs": -18,
+                "opacity": 0,
+                "currentTime": 2582,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 8010,
+                "at": 8011,
+                "elapsedMs": 54,
+                "opacity": 0.785139,
+                "currentTime": 2654,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 8140,
+                "at": 8142,
+                "elapsedMs": 184,
+                "opacity": 1,
+                "currentTime": 2784,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 5875,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              },
+              {
+                "at": 6575,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              },
+              {
+                "at": 7275,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 7974,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街3",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街4",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        }
+      ]
+    },
+    "reverse": {
+      "scope": "Exploratory controlled forest roll, not a replacement for release/nightly or complete UI games. Sequential profiles have order/warmup bias; frame failures are data, not suppressed regression assertions.",
+      "browser": "26.5",
+      "order": "reverse",
+      "results": [
+        {
+          "profile": {
+            "name": "desktop1-quiet",
+            "desktop": true,
+            "dpr": 1,
+            "driverQueries": false
+          },
+          "metadata": {
+            "at": 1793537873078,
+            "timeOrigin": 1793537864479,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 1,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 12627,
+            "at": 12629,
+            "elapsedMs": 546,
+            "opacity": 0.764042,
+            "currentTime": 3146,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 11305,
+                "at": 11306,
+                "elapsedMs": -776,
+                "opacity": 0,
+                "currentTime": 1824,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 11874,
+                "at": 11876,
+                "elapsedMs": -207,
+                "opacity": 0,
+                "currentTime": 2393,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 12627,
+                "at": 12629,
+                "elapsedMs": 546,
+                "opacity": 0.764042,
+                "currentTime": 3146,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 10006,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 10701,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 11400,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              },
+              {
+                "at": 12101,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街3",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": false
+        },
+        {
+          "profile": {
+            "name": "mobile1-quiet",
+            "dpr": 1,
+            "driverQueries": false
+          },
+          "metadata": {
+            "at": 1793537881307,
+            "timeOrigin": 1793537877481,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 1,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 7581,
+            "at": 7584,
+            "elapsedMs": 195,
+            "opacity": 1,
+            "currentTime": 2795,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 4906,
+                "at": 4908,
+                "elapsedMs": -2480,
+                "opacity": 0,
+                "currentTime": 120,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5137,
+                "at": 5138,
+                "elapsedMs": -2249,
+                "opacity": 0,
+                "currentTime": 351,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5156,
+                "at": 5157,
+                "elapsedMs": -2230,
+                "opacity": 0,
+                "currentTime": 370,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5175,
+                "at": 5176,
+                "elapsedMs": -2211,
+                "opacity": 0,
+                "currentTime": 389,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5194,
+                "at": 5194,
+                "elapsedMs": -2192,
+                "opacity": 0,
+                "currentTime": 408,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5308,
+                "at": 5309,
+                "elapsedMs": -2078,
+                "opacity": 0,
+                "currentTime": 522,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5549,
+                "at": 5552,
+                "elapsedMs": -1837,
+                "opacity": 0,
+                "currentTime": 763,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5572,
+                "at": 5575,
+                "elapsedMs": -1814,
+                "opacity": 0,
+                "currentTime": 786,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5592,
+                "at": 5592,
+                "elapsedMs": -1794,
+                "opacity": 0,
+                "currentTime": 806,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5594,
+                "at": 5595,
+                "elapsedMs": -1792,
+                "opacity": 0,
+                "currentTime": 808,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5611,
+                "at": 5611,
+                "elapsedMs": -1775,
+                "opacity": 0,
+                "currentTime": 825,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5627,
+                "at": 5627,
+                "elapsedMs": -1759,
+                "opacity": 0,
+                "currentTime": 841,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5643,
+                "at": 5643,
+                "elapsedMs": -1743,
+                "opacity": 0,
+                "currentTime": 857,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5659,
+                "at": 5659,
+                "elapsedMs": -1727,
+                "opacity": 0,
+                "currentTime": 873,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5675,
+                "at": 5675,
+                "elapsedMs": -1711,
+                "opacity": 0,
+                "currentTime": 889,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5691,
+                "at": 5692,
+                "elapsedMs": -1695,
+                "opacity": 0,
+                "currentTime": 905,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5707,
+                "at": 5708,
+                "elapsedMs": -1679,
+                "opacity": 0,
+                "currentTime": 921,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5723,
+                "at": 5724,
+                "elapsedMs": -1663,
+                "opacity": 0,
+                "currentTime": 937,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5740,
+                "at": 5740,
+                "elapsedMs": -1646,
+                "opacity": 0,
+                "currentTime": 954,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5756,
+                "at": 5756,
+                "elapsedMs": -1630,
+                "opacity": 0,
+                "currentTime": 970,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5772,
+                "at": 5772,
+                "elapsedMs": -1614,
+                "opacity": 0,
+                "currentTime": 986,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5788,
+                "at": 5788,
+                "elapsedMs": -1598,
+                "opacity": 0,
+                "currentTime": 1002,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5804,
+                "at": 5804,
+                "elapsedMs": -1582,
+                "opacity": 0,
+                "currentTime": 1018,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5820,
+                "at": 5821,
+                "elapsedMs": -1566,
+                "opacity": 0,
+                "currentTime": 1034,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5836,
+                "at": 5837,
+                "elapsedMs": -1550,
+                "opacity": 0,
+                "currentTime": 1050,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5855,
+                "at": 5855,
+                "elapsedMs": -1531,
+                "opacity": 0,
+                "currentTime": 1069,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5870,
+                "at": 5870,
+                "elapsedMs": -1516,
+                "opacity": 0,
+                "currentTime": 1084,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5886,
+                "at": 5888,
+                "elapsedMs": -1500,
+                "opacity": 0,
+                "currentTime": 1100,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5913,
+                "at": 5914,
+                "elapsedMs": -1473,
+                "opacity": 0,
+                "currentTime": 1127,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5962,
+                "at": 5963,
+                "elapsedMs": -1424,
+                "opacity": 0,
+                "currentTime": 1176,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6034,
+                "at": 6035,
+                "elapsedMs": -1352,
+                "opacity": 0,
+                "currentTime": 1248,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6158,
+                "at": 6160,
+                "elapsedMs": -1228,
+                "opacity": 0,
+                "currentTime": 1372,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6181,
+                "at": 6183,
+                "elapsedMs": -1205,
+                "opacity": 0,
+                "currentTime": 1395,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6214,
+                "at": 6214,
+                "elapsedMs": -1172,
+                "opacity": 0,
+                "currentTime": 1428,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6215,
+                "at": 6215,
+                "elapsedMs": -1171,
+                "opacity": 0,
+                "currentTime": 1429,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6230,
+                "at": 6230,
+                "elapsedMs": -1156,
+                "opacity": 0,
+                "currentTime": 1444,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6246,
+                "at": 6246,
+                "elapsedMs": -1140,
+                "opacity": 0,
+                "currentTime": 1460,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6262,
+                "at": 6263,
+                "elapsedMs": -1124,
+                "opacity": 0,
+                "currentTime": 1476,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6278,
+                "at": 6279,
+                "elapsedMs": -1108,
+                "opacity": 0,
+                "currentTime": 1492,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6295,
+                "at": 6295,
+                "elapsedMs": -1091,
+                "opacity": 0,
+                "currentTime": 1509,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6312,
+                "at": 6312,
+                "elapsedMs": -1074,
+                "opacity": 0,
+                "currentTime": 1526,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6327,
+                "at": 6327,
+                "elapsedMs": -1059,
+                "opacity": 0,
+                "currentTime": 1541,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6343,
+                "at": 6343,
+                "elapsedMs": -1043,
+                "opacity": 0,
+                "currentTime": 1557,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6359,
+                "at": 6360,
+                "elapsedMs": -1027,
+                "opacity": 0,
+                "currentTime": 1573,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6375,
+                "at": 6376,
+                "elapsedMs": -1011,
+                "opacity": 0,
+                "currentTime": 1589,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6391,
+                "at": 6392,
+                "elapsedMs": -995,
+                "opacity": 0,
+                "currentTime": 1605,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6407,
+                "at": 6408,
+                "elapsedMs": -979,
+                "opacity": 0,
+                "currentTime": 1621,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6425,
+                "at": 6425,
+                "elapsedMs": -961,
+                "opacity": 0,
+                "currentTime": 1639,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6441,
+                "at": 6441,
+                "elapsedMs": -945,
+                "opacity": 0,
+                "currentTime": 1655,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6457,
+                "at": 6457,
+                "elapsedMs": -929,
+                "opacity": 0,
+                "currentTime": 1671,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6473,
+                "at": 6473,
+                "elapsedMs": -913,
+                "opacity": 0,
+                "currentTime": 1687,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6489,
+                "at": 6490,
+                "elapsedMs": -897,
+                "opacity": 0,
+                "currentTime": 1703,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6506,
+                "at": 6506,
+                "elapsedMs": -880,
+                "opacity": 0,
+                "currentTime": 1720,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6522,
+                "at": 6522,
+                "elapsedMs": -864,
+                "opacity": 0,
+                "currentTime": 1736,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6539,
+                "at": 6539,
+                "elapsedMs": -847,
+                "opacity": 0,
+                "currentTime": 1753,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6555,
+                "at": 6556,
+                "elapsedMs": -831,
+                "opacity": 0,
+                "currentTime": 1769,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6571,
+                "at": 6573,
+                "elapsedMs": -815,
+                "opacity": 0,
+                "currentTime": 1785,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6603,
+                "at": 6605,
+                "elapsedMs": -783,
+                "opacity": 0,
+                "currentTime": 1817,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6623,
+                "at": 6625,
+                "elapsedMs": -763,
+                "opacity": 0,
+                "currentTime": 1837,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6661,
+                "at": 6663,
+                "elapsedMs": -725,
+                "opacity": 0,
+                "currentTime": 1875,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6724,
+                "at": 6725,
+                "elapsedMs": -662,
+                "opacity": 0,
+                "currentTime": 1938,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6847,
+                "at": 6851,
+                "elapsedMs": -539,
+                "opacity": 0,
+                "currentTime": 2061,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6876,
+                "at": 6879,
+                "elapsedMs": -510,
+                "opacity": 0,
+                "currentTime": 2090,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6893,
+                "at": 6893,
+                "elapsedMs": -493,
+                "opacity": 0,
+                "currentTime": 2107,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6898,
+                "at": 6898,
+                "elapsedMs": -488,
+                "opacity": 0,
+                "currentTime": 2112,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6915,
+                "at": 6915,
+                "elapsedMs": -471,
+                "opacity": 0,
+                "currentTime": 2129,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6931,
+                "at": 6931,
+                "elapsedMs": -455,
+                "opacity": 0,
+                "currentTime": 2145,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6947,
+                "at": 6947,
+                "elapsedMs": -439,
+                "opacity": 0,
+                "currentTime": 2161,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6964,
+                "at": 6964,
+                "elapsedMs": -422,
+                "opacity": 0,
+                "currentTime": 2178,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6980,
+                "at": 6980,
+                "elapsedMs": -406,
+                "opacity": 0,
+                "currentTime": 2194,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6996,
+                "at": 6996,
+                "elapsedMs": -390,
+                "opacity": 0,
+                "currentTime": 2210,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7012,
+                "at": 7012,
+                "elapsedMs": -374,
+                "opacity": 0,
+                "currentTime": 2226,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7028,
+                "at": 7028,
+                "elapsedMs": -358,
+                "opacity": 0,
+                "currentTime": 2242,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7044,
+                "at": 7045,
+                "elapsedMs": -342,
+                "opacity": 0,
+                "currentTime": 2258,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7060,
+                "at": 7061,
+                "elapsedMs": -326,
+                "opacity": 0,
+                "currentTime": 2274,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7076,
+                "at": 7077,
+                "elapsedMs": -310,
+                "opacity": 0,
+                "currentTime": 2290,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7093,
+                "at": 7094,
+                "elapsedMs": -293,
+                "opacity": 0,
+                "currentTime": 2307,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7110,
+                "at": 7110,
+                "elapsedMs": -276,
+                "opacity": 0,
+                "currentTime": 2324,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7126,
+                "at": 7126,
+                "elapsedMs": -260,
+                "opacity": 0,
+                "currentTime": 2340,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7143,
+                "at": 7143,
+                "elapsedMs": -243,
+                "opacity": 0,
+                "currentTime": 2357,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7159,
+                "at": 7160,
+                "elapsedMs": -227,
+                "opacity": 0,
+                "currentTime": 2373,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7175,
+                "at": 7176,
+                "elapsedMs": -211,
+                "opacity": 0,
+                "currentTime": 2389,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7191,
+                "at": 7192,
+                "elapsedMs": -195,
+                "opacity": 0,
+                "currentTime": 2405,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7208,
+                "at": 7208,
+                "elapsedMs": -178,
+                "opacity": 0,
+                "currentTime": 2422,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7224,
+                "at": 7224,
+                "elapsedMs": -162,
+                "opacity": 0,
+                "currentTime": 2438,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7240,
+                "at": 7240,
+                "elapsedMs": -146,
+                "opacity": 0,
+                "currentTime": 2454,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7257,
+                "at": 7257,
+                "elapsedMs": -129,
+                "opacity": 0,
+                "currentTime": 2471,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7274,
+                "at": 7276,
+                "elapsedMs": -112,
+                "opacity": 0,
+                "currentTime": 2488,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7297,
+                "at": 7299,
+                "elapsedMs": -89,
+                "opacity": 0,
+                "currentTime": 2511,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7317,
+                "at": 7321,
+                "elapsedMs": -69,
+                "opacity": 0,
+                "currentTime": 2531,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7366,
+                "at": 7369,
+                "elapsedMs": -20,
+                "opacity": 0,
+                "currentTime": 2580,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7441,
+                "at": 7443,
+                "elapsedMs": 55,
+                "opacity": 0.795409,
+                "currentTime": 2655,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7581,
+                "at": 7584,
+                "elapsedMs": 195,
+                "opacity": 1,
+                "currentTime": 2795,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 5308,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 6006,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              },
+              {
+                "at": 6703,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 7403,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街3",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        },
+        {
+          "profile": {
+            "name": "mobile3-quiet",
+            "dpr": 3,
+            "driverQueries": false
+          },
+          "metadata": {
+            "at": 1793537890072,
+            "timeOrigin": 1793537885405,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 3,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 8675,
+            "at": 8678,
+            "elapsedMs": 374,
+            "opacity": 1,
+            "currentTime": 2974,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 6097,
+                "at": 6098,
+                "elapsedMs": -2204,
+                "opacity": 0,
+                "currentTime": 396,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6562,
+                "at": 6564,
+                "elapsedMs": -1739,
+                "opacity": 0,
+                "currentTime": 861,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6816,
+                "at": 6818,
+                "elapsedMs": -1485,
+                "opacity": 0,
+                "currentTime": 1115,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6846,
+                "at": 6848,
+                "elapsedMs": -1455,
+                "opacity": 0,
+                "currentTime": 1145,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7228,
+                "at": 7230,
+                "elapsedMs": -1073,
+                "opacity": 0,
+                "currentTime": 1527,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7595,
+                "at": 7596,
+                "elapsedMs": -706,
+                "opacity": 0,
+                "currentTime": 1894,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7984,
+                "at": 7986,
+                "elapsedMs": -317,
+                "opacity": 0,
+                "currentTime": 2283,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 8675,
+                "at": 8678,
+                "elapsedMs": 374,
+                "opacity": 1,
+                "currentTime": 2974,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 6224,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 6924,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 7626,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              },
+              {
+                "at": 8321,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街2",
+                "coins": 31
+              },
+              {
+                "name": "街3",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        },
+        {
+          "profile": {
+            "name": "mobile3-driver",
+            "dpr": 3,
+            "driverQueries": true
+          },
+          "metadata": {
+            "at": 1793537898606,
+            "timeOrigin": 1793537894449,
+            "viewport": {
+              "width": 844,
+              "height": 390
+            },
+            "dpr": 3,
+            "preRollSettled": "fonts ready plus two RAFs",
+            "screen": {
+              "width": 844,
+              "height": 390
+            },
+            "reducedMotion": false,
+            "table": {
+              "x": 4,
+              "y": 68,
+              "width": 836,
+              "height": 262,
+              "top": 68,
+              "right": 840,
+              "bottom": 330,
+              "left": 4
+            }
+          },
+          "sample": {
+            "timestamp": 8129,
+            "at": 8130,
+            "elapsedMs": 400,
+            "opacity": 1,
+            "currentTime": 3000,
+            "duration": 600,
+            "delay": 2600,
+            "frames": [
+              {
+                "timestamp": 5504,
+                "at": 5506,
+                "elapsedMs": -2225,
+                "opacity": 0,
+                "currentTime": 375,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 5988,
+                "at": 5990,
+                "elapsedMs": -1741,
+                "opacity": 0,
+                "currentTime": 859,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6254,
+                "at": 6255,
+                "elapsedMs": -1475,
+                "opacity": 0,
+                "currentTime": 1125,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6651,
+                "at": 6652,
+                "elapsedMs": -1078,
+                "opacity": 0,
+                "currentTime": 1522,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6898,
+                "at": 6902,
+                "elapsedMs": -831,
+                "opacity": 0,
+                "currentTime": 1769,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 6990,
+                "at": 6991,
+                "elapsedMs": -739,
+                "opacity": 0,
+                "currentTime": 1861,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7162,
+                "at": 7164,
+                "elapsedMs": -567,
+                "opacity": 0,
+                "currentTime": 2033,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 7667,
+                "at": 7669,
+                "elapsedMs": -62,
+                "opacity": 0,
+                "currentTime": 2538,
+                "duration": 600,
+                "delay": 2600
+              },
+              {
+                "timestamp": 8129,
+                "at": 8130,
+                "elapsedMs": 400,
+                "opacity": 1,
+                "currentTime": 3000,
+                "duration": 600,
+                "delay": 2600
+              }
+            ]
+          },
+          "result": {
+            "tags": [
+              {
+                "at": 5658,
+                "text": "森林街2 · +1コイン銀行 → 街2施設発動 1 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街2"
+              },
+              {
+                "at": 6350,
+                "text": "森林街1 · +1コイン銀行 → 街1施設発動 2 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街1"
+              },
+              {
+                "at": 7052,
+                "text": "森林街4 · +1コイン銀行 → 街4施設発動 3 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街4"
+              },
+              {
+                "at": 7757,
+                "text": "森林街3 · +1コイン銀行 → 街3施設発動 4 / 4",
+                "width": 214.5,
+                "height": 79,
+                "visibility": "visible",
+                "route": "銀行 → 街3"
+              }
+            ],
+            "dice": 5,
+            "phase": "build",
+            "players": [
+              {
+                "name": "街2",
+                "coins": 31
+              },
+              {
+                "name": "街1",
+                "coins": 31
+              },
+              {
+                "name": "街4",
+                "coins": 31
+              },
+              {
+                "name": "街3",
+                "coins": 31
+              }
+            ]
+          },
+          "pageErrors": [],
+          "observationError": null,
+          "setupValid": true,
+          "originalFrameCondition": true
+        }
+      ]
+    }
+  }
+}

@@ -16,6 +16,7 @@ const PlazaField = (() => {
     let insightsFacts = null;
     let comparisonSignature = null;
     let cameraTransitionTimer = null;
+    let focusRevealGeneration = 0;
 
     function clearCameraTransition() {
         if (cameraTransitionTimer !== null) clearTimeout(cameraTransitionTimer);
@@ -200,6 +201,13 @@ const PlazaField = (() => {
         const plazaToggle = /** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'));
         const design = document.documentElement.dataset.design;
         const preferred = design === 'cardboard' ? cardboardToggle : design === 'plaza' ? plazaToggle : null;
+        // A pointer outside the menu closes its details before the overlay
+        // restores focus. Reopen the original control's disclosure first.
+        if (preferred) {
+            for (let parent = preferred.parentElement; parent; parent = parent.parentElement) {
+                if (parent.tagName === 'DETAILS') (/** @type {HTMLDetailsElement} */ (parent)).open = true;
+            }
+        }
         const target = preferred?.getClientRects().length
             ? preferred : /** @type {HTMLElement | null} */ (node('gameDesignThemeSelect')?.closest('details')?.querySelector('summary'));
         target?.focus({ preventScroll: true });
@@ -351,6 +359,10 @@ const PlazaField = (() => {
         const viewport = node('plazaViewport');
         if (!mounted || pointers.size || !target || !node('plazaWorld').contains(target) ||
                 !viewport.clientWidth || !viewport.clientHeight) return;
+        // Native focus may scroll this transformed viewport. Paint always
+        // resets that scroll, so measure in the same camera-only coordinates.
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
         let rect = target.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         const bounds = viewport.getBoundingClientRect();
@@ -389,6 +401,7 @@ const PlazaField = (() => {
         };
         viewport.addEventListener('pointerdown', event => {
             if (!mounted || event.button !== 0) return;
+            focusRevealGeneration++;
             clearCameraTransition();
             pointers.set(event.pointerId, point(event)); dragged = false; begin();
         });
@@ -437,7 +450,17 @@ const PlazaField = (() => {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) clearCameraTransition();
         });
-        viewport.addEventListener('focusin', event => revealFocus(/** @type {Element} */ (event.target)));
+        viewport.addEventListener('focusin', event => {
+            if (pointers.size) return;
+            const generation = ++focusRevealGeneration;
+            const target = /** @type {Element} */ (event.target);
+            revealFocus(target);
+            // Reconcile focus scrolling that the browser performs after the
+            // event, without restoring a target the user has already left.
+            requestAnimationFrame(() => {
+                if (generation === focusRevealGeneration && document.activeElement === target) revealFocus(target);
+            });
+        });
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
         viewport.addEventListener('wheel', event => {
             if ((/** @type {Element} */ (event.target)).closest('#buildMenu')) return;
@@ -678,7 +701,12 @@ const PlazaField = (() => {
         DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
     }
     function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase, cardDefinitions, renderFacilityArt, enabledCards) {
-        sync(); if (!mounted) return;
+        sync();
+        // The ownership comparison is shared with the card table, whose
+        // landscape renderer intentionally never mounts the plaza world.
+        const comparisonSelf = primaryIndex >= 0 ? primaryIndex : currentIndex;
+        renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, comparisonSelf);
+        if (!mounted) return;
         const choosing = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM,
             GAME_PHASES.HARBOR_CHOICE, GAME_PHASES.PENDING].includes(phase);
         if (phase !== marketPhase) node('buildMenu').classList.remove('plaza-market-exploring');
@@ -729,7 +757,7 @@ const PlazaField = (() => {
             const goalLandmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name));
             const built = goalLandmarks.filter(name => player.landmarks[name] === true).length;
             const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
-            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="席${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}${index === currentIndex ? '、手番' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">席${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span><span class="plaza-turn-mark">手番</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="席${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}${index === currentIndex ? '、手番' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">席${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span><span class="plaza-turn-mark">手番</span></strong><span class="plaza-player-coins">${player.coins}<span class="plaza-wallet-unit">コイン</span>${index === selfIndex ? '<span class="plaza-wallet-self">・自分</span>' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
         });
         node('plazaPlayerHud').innerHTML = `<div class="plaza-hud-self">${hudButtons[selfIndex]}</div><div class="plaza-hud-opponents" aria-label="相手の状況">${hudButtons.filter((button, index) => index !== selfIndex).join('')}</div>`;
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
@@ -746,7 +774,6 @@ const PlazaField = (() => {
             }
         }
         hudCurrentIndex = currentIndex;
-        renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selfIndex);
         renderPlayerInsights();
         layout();
     }

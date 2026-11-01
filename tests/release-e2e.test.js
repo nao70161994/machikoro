@@ -524,7 +524,8 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(nightlyWorkflow.includes('npm run test:sim'));
     assert.ok(nightlyWorkflow.includes('npm run test:cpu-regression'));
     assert.ok(nightlyWorkflow.includes('npm run test:soak'));
-    assert.ok(nightlyWorkflow.includes('npx playwright install --with-deps webkit'));
+    assert.ok(nightlyWorkflow.includes('node scripts/check-playwright-container.js'));
+    assert.ok(!nightlyWorkflow.includes('npx playwright install --with-deps'));
     assert.ok(nightlyWorkflow.includes('npm run test:browser-e2e'));
     const browserSpec = readRepoFile('tests/browser/mobile-webkit.spec.js');
     assert.ok(browserSpec.includes('mobile WebKitでapp shellとService Workerが実動作する'));

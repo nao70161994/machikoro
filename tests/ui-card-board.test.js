@@ -343,3 +343,25 @@ runTest('通常施設の建設イベントは所有者・アート・名前・�
     assert.strictEqual(UiCardBoard.buildFacilityConstructionNoticeHtml(fixture, { name: '未所有' }), '');
     assert.strictEqual(JSON.stringify(fixture), before);
 });
+
+runTest('勝利ランドマーク名は語を保ち全文とescapeを維持する', () => {
+    const mall = 'ショッピングモール';
+    const winner = { ...player, landmarks: { [mall]: true } };
+    const settings = { ...options, winnerCollection: true, landmarkNames: [mall], enabledLandmarks: new Set([mall]) };
+    const before = JSON.stringify(winner);
+    const html = UiCardBoard.buildPlayerHtml(winner, settings);
+    assert.ok(html.includes('class="cardboard-name-word">ショッピング</span><wbr><span class="cardboard-name-word">モール</span>'));
+    assert.ok(html.includes('data-landmark-name="ショッピングモール"'));
+    assert.ok(html.includes('aria-label="ショッピングモール、建設済。詳細を表示"'));
+    assert.strictEqual(JSON.stringify(winner), before);
+    const unsafeName = '<script>モール';
+    const escaped = UiCardBoard.buildPlayerHtml({ ...winner, landmarks: { [unsafeName]: true } },
+        { ...settings, landmarkNames: [unsafeName], enabledLandmarks: new Set([unsafeName]) });
+    assert.ok(!escaped.includes('<script>'));
+    assert.ok(escaped.includes('&lt;'));
+    const fallback = { module: { exports: {} }, Intl: {} };
+    require('vm').runInNewContext(require('fs').readFileSync(require('path').join(__dirname, '../js/uiCardBoard.js'), 'utf8'), fallback);
+    const fallbackHtml = fallback.module.exports.buildPlayerHtml(winner, settings);
+    assert.ok(fallbackHtml.includes('class="cardboard-name-word">ショッピングモール</span>'));
+    assert.ok(fallbackHtml.includes('aria-label="ショッピングモール、建設済。詳細を表示"'));
+});

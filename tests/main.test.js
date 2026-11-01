@@ -79,6 +79,7 @@ function loadMainRuntime(options = {}) {
         updateResumeButton: 0,
         loadSettings: 0,
         drawCitySkyline: 0,
+        dismissTurnGreeting: 0,
         resumeGame: 0,
         render: 0,
     };
@@ -162,6 +163,7 @@ function loadMainRuntime(options = {}) {
         onToggleTutorial(enabled) { localStorage.setItem('tutorialEnabled', enabled ? 'true' : 'false'); },
         onChangeTutorialLevel(level) { localStorage.setItem('tutorialLevel', level); },
         render() { counters.render++; },
+        dismissTurnGreeting() { counters.dismissTurnGreeting++; },
         switchTab(tab) { context.switchedTab = tab; },
         switchOnlineTab(tab) { context.switchedOnlineTab = tab; },
         scheduleCPU() {},
@@ -695,6 +697,10 @@ runTest('main storage helperは共通facadeでget/removeと例外fallbackを維�
 
 runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     const rt = loadMainRuntime();
+    let dismissCount = 0;
+    // ui.js is loaded before main.js in the product; supply its collaborator
+    // in this isolated main runtime and verify rolling uses the shared dismiss.
+    rt.dismissTurnGreeting = () => { dismissCount++; };
     rt.updateDiceDisplay([], false);
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '0.2');
     assert.strictEqual(
@@ -707,7 +713,9 @@ runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes(rt.renderDiceFace(2)));
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes(rt.renderDiceFace(6)));
 
+    assert.strictEqual(dismissCount, 0);
     rt.updateDiceDisplay(null, true);
+    assert.strictEqual(dismissCount, 1);
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes('dice-face rolling'));
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '1');
 });
@@ -727,15 +735,44 @@ runTest('main 稼働状況は通常の人間手番を省略してCPU処理中だ
     assert.strictEqual(activity.kind, 'ready');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'none');
     assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), false);
 
     game.currentPlayerIndex = 1;
     activity = rt.__test.updateGameActivityStatus(2000);
     assert.strictEqual(activity.kind, 'waiting');
     assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'CPU 1が処理中');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), true);
     activity = rt.__test.updateGameActivityStatus(13000);
     assert.strictEqual(activity.kind, 'checking');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.classList.contains('is-checking'), true);
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), false);
     assert.strictEqual(rt.__test.elements.gameActivityStatusElapsed.textContent, '・11秒');
+});
+
+runTest('main 稼働状況は通知DOM更新後にカード卓の寸法を同期する', () => {
+    const rt = loadMainRuntime();
+    const observed = [];
+    rt.CardBoardField = { syncViewport() {
+        observed.push({
+            display: rt.__test.elements.gameConnectivityPanel.style.display,
+            label: rt.__test.elements.gameActivityStatusLabel.textContent,
+        });
+    } };
+    const game = {
+        phase: 'roll', currentPlayerIndex: 0,
+        players: [{ name: 'Alice' }, { name: 'CPU 1' }],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+        checkWinner() { return null; },
+    };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, { difficulty: 'normal' }]);
+    rt.__test.updateGameActivityStatus(1000);
+    game.currentPlayerIndex = 1;
+    rt.__test.updateGameActivityStatus(2000);
+    assert.deepStrictEqual(observed, [
+        { display: 'none', label: '' },
+        { display: 'grid', label: 'CPU 1が処理中' },
+    ]);
 });
 
 runTest('main 稼働状況はオンライン対戦のオフラインと復帰案内をDOMへ反映する', () => {
@@ -753,6 +790,7 @@ runTest('main 稼働状況はオンライン対戦のオフラインと復帰案
     assert.strictEqual(activity.kind, 'offline');
     assert.strictEqual(rt.__test.elements.gameConnectivityPanel.style.display, 'grid');
     assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'オフライン中');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), false);
     assert.strictEqual(rt.__test.elements.gameConnectionQuality.textContent, '通信：オフライン');
     assert.strictEqual(rt.__test.elements.gameConnectionQuality.classList.contains('is-offline'), true);
 });
@@ -3746,7 +3784,8 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('name: Online sync and reconnect E2E gate'));
     assert.ok(workflow.includes('run: npm run test:online'));
     assert.ok(workflow.includes('mobile-webkit:'));
-    assert.ok(workflow.includes('npx playwright install --with-deps webkit chromium'));
+    assert.ok(workflow.includes('node scripts/check-playwright-container.js'));
+    assert.ok(!workflow.includes('npx playwright install --with-deps'));
     assert.ok(workflow.includes('run: ${{ matrix.command }}'));
     const matrixStart = workflow.indexOf('  mobile-webkit:');
     const matrixEnd = workflow.indexOf('    steps:', matrixStart);

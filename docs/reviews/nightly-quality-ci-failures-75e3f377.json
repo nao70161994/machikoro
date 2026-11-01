@@ -1,0 +1,174 @@
+[
+  {
+    "title": "1) [mobile-webkit] › tests/browser/cardboard-view.spec.js:485:1 › にぎわい広場の高コントラストは市場・所有カード・手番を識別できる ",
+    "errors": [
+      "2026-10-23T00:49:33.8183882Z     Error: expect(locator).toHaveAttribute(expected) failed",
+      "2026-10-23T00:49:33.8185772Z     Expected: \"off\"",
+      "2026-10-23T00:49:33.8186703Z     Error: element(s) not found"
+    ]
+  },
+  {
+    "title": "2) [mobile-webkit] › tests/browser/cardboard-view.spec.js:525:1 › 専用市場との高速往復は正本とランドマーク操作のフォーカスを維持する ",
+    "errors": [
+      "2026-10-23T00:50:14.4659338Z     Error: expect(received).toEqual(expected) // deep equality"
+    ]
+  },
+  {
+    "title": "3) [mobile-webkit] › tests/browser/cardboard-view.spec.js:975:1 › 同じ出目の内訳更新は開閉とフォーカスを保ち、次手番では閉じる ─",
+    "errors": [
+      "2026-10-23T00:53:17.7965599Z     Error: expect(locator).toBeFocused() failed",
+      "2026-10-23T00:53:17.7966950Z     Expected: focused",
+      "2026-10-23T00:53:17.7967717Z     Received: inactive"
+    ]
+  },
+  {
+    "title": "4) [mobile-webkit] › tests/browser/cardboard-view.spec.js:1137:1 › 完成したランドマークの絵と目標を狭幅でも一緒に確認できる ──",
+    "errors": [
+      "2026-10-23T00:55:30.9191391Z     Error: expect(locator).toBeVisible() failed",
+      "2026-10-23T00:55:30.9193458Z     Expected: visible",
+      "2026-10-23T00:55:30.9193795Z     Received: hidden"
+    ]
+  },
+  {
+    "title": "5) [mobile-webkit] › tests/browser/cardboard-view.spec.js:1346:1 › 新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない ",
+    "errors": [
+      "2026-10-23T00:57:30.1960781Z     Error: expect(received).toBeLessThan(expected)",
+      "2026-10-23T00:57:30.1961429Z     Expected: < 500",
+      "2026-10-23T00:57:30.1961920Z     Received:   504"
+    ]
+  },
+  {
+    "title": "6) [mobile-webkit] › tests/browser/cardboard-view.spec.js:1496:1 › 中央市場の長い施設名をカード枠内で省略せず読める ──────",
+    "errors": [
+      "2026-10-23T00:57:51.9441525Z     Error: 先頭2段のカード下端まで市場内に収まる",
+      "2026-10-23T00:57:51.9442734Z     Expected: true",
+      "2026-10-23T00:57:51.9443096Z     Received: false"
+    ]
+  },
+  {
+    "title": "7) [mobile-webkit] › tests/browser/cardboard-view.spec.js:1516:1 › 実ロール後の新規建設通知は4画面で読めて正本を変更しない ──",
+    "errors": [
+      "2026-10-23T01:02:24.9819281Z     Error: locator.waitFor: Test timeout of 120000ms exceeded."
+    ]
+  },
+  {
+    "title": "1) [mobile-webkit] › tests/browser/cardboard-overview.spec.js:675:1 › 正面の全38施設はカードと原画を縮めず経済効果を表示し戻ると俯瞰へ戻る ",
+    "errors": [
+      "2026-10-23T00:52:32.6942109Z     Error: expect(received).toEqual(expected) // deep equality"
+    ]
+  },
+  {
+    "title": "1) [mobile-webkit] › tests/browser/plaza-experience.spec.js:27:1 › 縦持ちのガイドは序盤の説明を保ち後から開閉できる ──────",
+    "errors": [
+      "2026-10-23T00:46:25.6301848Z     Error: expect(locator).toBeVisible() failed",
+      "2026-10-23T00:46:25.6302283Z     Expected: visible",
+      "2026-10-23T00:46:25.6302421Z     Received: hidden"
+    ]
+  },
+  {
+    "title": "2) [mobile-webkit] › tests/browser/plaza-landscape-hud.spec.js:34:1 › 横持ちの4人戦は全席を読みやすく並べ、広場と操作域を全幅に保つ ",
+    "errors": [
+      "2026-10-23T00:47:48.7065951Z     Error: expect(received).toBe(expected) // Object.is equality",
+      "2026-10-23T00:47:48.7066172Z     Expected: true",
+      "2026-10-23T00:47:48.7066308Z     Received: false"
+    ]
+  },
+  {
+    "title": "1) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › classic phone-320 ",
+    "errors": [
+      "2026-10-23T00:45:18.2761094Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "2) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › classic phone-390 ",
+    "errors": [
+      "2026-10-23T00:45:27.3750760Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "3) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › classic desktop-1440 ",
+    "errors": [
+      "2026-10-23T00:46:10.9085696Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "4) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › sunset phone-320 ",
+    "errors": [
+      "2026-10-23T00:46:20.9924262Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "5) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › sunset desktop-1440 ",
+    "errors": [
+      "2026-10-23T00:47:26.2802503Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "6) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › plaza phone-390 ",
+    "errors": [
+      "2026-10-23T00:47:41.5847203Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "7) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › plaza landscape-844 ",
+    "errors": [
+      "2026-10-23T00:47:52.8949914Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "8) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › cardboard phone-320 ",
+    "errors": [
+      "2026-10-23T00:49:03.4734019Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "9) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › cardboard phone-390 ",
+    "errors": [
+      "2026-10-23T00:50:07.3762976Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "10) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › cardboard landscape-844 ",
+    "errors": [
+      "2026-10-23T00:51:06.9503530Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "11) [mobile-webkit] › tests/browser/theme-visual-regression.spec.js:96:13 › 4テーマのゲーム画面ビジュアル回帰 › cardboard desktop-1440 ",
+    "errors": [
+      "2026-10-23T00:52:04.3155569Z     Error: expect(page).toHaveScreenshot(expected) failed"
+    ]
+  },
+  {
+    "title": "12) [mobile-webkit] › tests/browser/visual-art-review.spec.js:446:1 › 夕暮れの建設と建設後のターン終了は重複確認なしで続けて操作できる ",
+    "errors": [
+      "2026-10-23T00:53:59.4308556Z     Error: expect(locator).toHaveText(expected) failed",
+      "2026-10-23T00:53:59.4309307Z     Expected: \"あなたのターン\"",
+      "2026-10-23T00:53:59.4309601Z     Received: \"プレイヤー1のターン · 10コイン\""
+    ]
+  },
+  {
+    "title": "13) [mobile-webkit] › tests/browser/visual-art-review.spec.js:679:1 › CPUの手番でも自分の街を先頭に見せ、極小画面でも街の図版を読める大きさにする ",
+    "errors": [
+      "2026-10-23T00:54:48.5971524Z     Error: expect(received).toBeLessThan(expected)",
+      "2026-10-23T00:54:48.5971821Z     Expected: < 1",
+      "2026-10-23T00:54:48.5972056Z     Received:   39.286874999999995"
+    ]
+  },
+  {
+    "title": "14) [mobile-webkit] › tests/browser/visual-art-review.spec.js:1336:1 › デスクトップでは街の建物アートを広く見せる ─────",
+    "errors": [
+      "2026-10-23T00:57:04.1180787Z     Error: expect(received).toBeLessThan(expected)",
+      "2026-10-23T00:57:04.1181017Z     Expected: < 1",
+      "2026-10-23T00:57:04.1181235Z     Received:   45.200625"
+    ]
+  },
+  {
+    "title": "15) [mobile-webkit] › tests/browser/visual-art-review.spec.js:2502:1 › 広場は場外でマウスを離した後にパンを続けず、フォーカスしたカードを表示する ",
+    "errors": [
+      "2026-10-23T01:01:54.3944879Z     Error: expect(received).toBe(expected) // Object.is equality",
+      "2026-10-23T01:01:54.3945600Z     Expected: true",
+      "2026-10-23T01:01:54.3945749Z     Received: false"
+    ]
+  }
+]

@@ -1,0 +1,761 @@
+{
+  "scope": "Local Termux Chromium intermediate candidate, two-RAF staging plus camera-policy correction. Preserve these failures; they are not native WebKit evidence or a physical-device playtest.",
+  "records": [
+    {
+      "file": "artifacts/nightly-staged-flight-camera-final/cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-termux-chromium/facility-flight-diagnostic-320.json",
+      "diagnostic": {
+        "moving": {
+          "error": "fresh purchase flight was not observed while moving"
+        },
+        "flightDiagnostic": {
+          "frames": [
+            {
+              "afterClose": 1359.1000000238419,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1422.8999999761581,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1504.6000000238419,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 480
+                }
+              ]
+            }
+          ],
+          "mutations": [
+            {
+              "kind": "add",
+              "id": "cardboardBuildNotice",
+              "at": 3973.399999976158,
+              "sameScrollRetained": null,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 180
+                }
+              ]
+            },
+            {
+              "kind": "add",
+              "id": "cardboardBuildFlight",
+              "at": 3977.399999976158,
+              "sameScrollRetained": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            }
+          ],
+          "cancellations": [],
+          "tasks": [
+            {
+              "afterClose": 1358.6999999284744,
+              "duration": 1.600000023841858,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1360.5,
+              "duration": 0.5,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1361,
+              "duration": 2.1999999284744263,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at Object.refresh (http://127.0.0.1:3210/js/cardTableCamera.js:473:44)\n    at onLayout (http://127.0.0.1:3210/js/cardBoardField.js:358:48)\n    at layout (http://127.0.0.1:3210/js/cardTableLayout.js:417:13)\n    at Object.setReadingSeat (http://127.0.0.1:3210/js/cardTableLayout.js:425:13)\n    at onReadingChange (http://127.0.0.1:3210/js/cardBoardField.js:363:68)\n    at applyReading (http://127.0.0.1:3210/js/cardTableCamera.js:274:13)\n    at Object.focusCard (http://127.0.0.1:3210/js/cardTableCamera.js:378:13)\n    at presentPendingBuildCues (http://127.0.0.1:3210/js/cardBoardField.js:807:26)\n    at finishMarketClose (http://127.0.0.1:3210/js/cardBoardField.js:877:13)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1363.2999999523163,
+              "duration": 0.30000007152557373,
+              "callback": "",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at showBuildNotice (http://127.0.0.1:3210/js/cardBoardField.js:665:39)\n    at showBuildCue (http://127.0.0.1:3210/js/cardBoardField.js:711:13)\n    at presentPendingBuildCues (http://127.0.0.1:3210/js/cardBoardField.js:809:18)\n    at finishMarketClose (http://127.0.0.1:3210/js/cardBoardField.js:877:13)\n    at closeMarket (http://127.0.0.1:3210/js/cardBoardField.js:936:9)\n    at HTMLButtonElement.<anonymous> (http://127.0.0.1:3210/js/cardBoardField.js:1193:71)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1363.6999999284744,
+              "duration": 0.6000000238418579,
+              "callback": "",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at schedule (http://127.0.0.1:3210/js/cardBoardField.js:555:43)\n    at stageBuildFlight (http://127.0.0.1:3210/js/cardBoardField.js:570:9)\n    at startBuildFlight (http://127.0.0.1:3210/js/cardBoardField.js:617:9)\n    at showBuildCue (http://127.0.0.1:3210/js/cardBoardField.js:712:18)\n    at presentPendingBuildCues (http://127.0.0.1:3210/js/cardBoardField.js:809:18)\n    at finishMarketClose (http://127.0.0.1:3210/js/cardBoardField.js:877:13)\n    at closeMarket (http://127.0.0.1:3210/js/cardBoardField.js:936:9)\n    at HTMLButtonElement.<anonymous> (http://127.0.0.1:3210/js/cardBoardField.js:1193:71)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1422.6000000238419,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1423.7999999523163,
+              "duration": 0.6000000238418579,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1424.6000000238419,
+              "duration": 0.5999999046325684,
+              "callback": "",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at schedule (http://127.0.0.1:3210/js/cardBoardField.js:555:43)\n    at http://127.0.0.1:3210/js/cardBoardField.js:560:36\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1425.6000000238419,
+              "duration": 11.5,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at ResizeObserver.schedule (http://127.0.0.1:3210/js/cardTableLayout.js:53:52)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1504.2999999523163,
+              "duration": 0.6000000238418579,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1504.8999999761581,
+              "duration": 0.2999999523162842,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1505.1999999284744,
+              "duration": 2.200000047683716,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at Object.refresh (http://127.0.0.1:3210/js/cardTableCamera.js:473:44)\n    at onLayout (http://127.0.0.1:3210/js/cardBoardField.js:358:48)\n    at layout (http://127.0.0.1:3210/js/cardTableLayout.js:417:13)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1513,
+              "duration": 0.6999999284744263,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1513.6999999284744,
+              "duration": 2,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at refresh (http://127.0.0.1:3210/js/cardTableCamera.js:473:44)\n    at http://127.0.0.1:3210/js/cardTableCamera.js:649:63",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1522.1000000238419,
+              "duration": 0.8999999761581421,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1538.3999999761581,
+              "duration": 1.100000023841858,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",2,2,24,245,344,425,[[0,108,694,176,857,0,\"1\"],[1,24,24,344,197,180,\"2\"]]]"
+            }
+          ],
+          "beforeClose": {
+            "at": 2653.899999976158,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 116,
+              "width": 312,
+              "height": 668,
+              "top": 116,
+              "right": 316,
+              "bottom": 784,
+              "left": 4
+            },
+            "target": {
+              "x": -26,
+              "y": 516,
+              "width": 120,
+              "height": 93,
+              "top": 516,
+              "right": 94,
+              "bottom": 609,
+              "left": -26
+            },
+            "origin": {
+              "x": 24,
+              "y": 228.59375,
+              "width": 272,
+              "height": 236.375,
+              "top": 228.59375,
+              "right": 296,
+              "bottom": 464.96875,
+              "left": 24
+            },
+            "shelf": {
+              "x": 20,
+              "y": 224.59375,
+              "width": 280,
+              "height": 472.625,
+              "top": 224.59375,
+              "right": 300,
+              "bottom": 697.21875,
+              "left": 20
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 320,
+              "height": 844
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 320,
+              "height": 844
+            }
+          },
+          "current": {
+            "at": 4208.899999976158,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 116,
+              "width": 312,
+              "height": 668,
+              "top": 116,
+              "right": 316,
+              "bottom": 784,
+              "left": 4
+            },
+            "target": {
+              "x": 92,
+              "y": 397.2750244140625,
+              "width": 136,
+              "height": 105.4000244140625,
+              "top": 397.2750244140625,
+              "right": 228,
+              "bottom": 502.675048828125,
+              "left": 92
+            },
+            "origin": {
+              "x": 20.600006103515625,
+              "y": 76.65234375,
+              "width": 136,
+              "height": 112.20001220703125,
+              "top": 76.65234375,
+              "right": 156.60000610351562,
+              "bottom": 188.85235595703125,
+              "left": 20.600006103515625
+            },
+            "shelf": {
+              "x": 20.600006103515625,
+              "y": 74.95233154296875,
+              "width": 278.79998779296875,
+              "height": 234.60003662109375,
+              "top": 74.95233154296875,
+              "right": 299.3999938964844,
+              "bottom": 309.5523681640625,
+              "left": 20.600006103515625
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 320,
+              "height": 844
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 320,
+              "height": 844
+            }
+          }
+        }
+      }
+    },
+    {
+      "file": "artifacts/nightly-staged-flight-camera-final/cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-更新通知あり-termux-chromium/facility-flight-diagnostic-320.json",
+      "diagnostic": {
+        "moving": {
+          "error": "fresh purchase flight was not observed while moving"
+        },
+        "flightDiagnostic": {
+          "frames": [
+            {
+              "afterClose": 1287.1000000238419,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1370.5,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1445.8000000715256,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1456.9000000953674,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1470.8000000715256,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 16.63400003313953,
+                  "playState": "running",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1487.7000000476837,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 33.33400003313969,
+                  "playState": "running",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1505.2000000476837,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 49.93400003314008,
+                  "playState": "running",
+                  "duration": 480
+                }
+              ]
+            }
+          ],
+          "mutations": [
+            {
+              "kind": "add",
+              "id": "cardboardBuildNotice",
+              "at": 4620.399999976158,
+              "sameScrollRetained": null,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 180
+                }
+              ]
+            },
+            {
+              "kind": "add",
+              "id": "cardboardBuildFlight",
+              "at": 4624.5,
+              "sameScrollRetained": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            }
+          ],
+          "cancellations": [],
+          "tasks": [
+            {
+              "afterClose": 1286.9000000953674,
+              "duration": 1.5,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1288.5,
+              "duration": 0.5,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1289,
+              "duration": 2,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at Object.refresh (http://127.0.0.1:3210/js/cardTableCamera.js:473:44)\n    at onLayout (http://127.0.0.1:3210/js/cardBoardField.js:358:48)\n    at layout (http://127.0.0.1:3210/js/cardTableLayout.js:417:13)\n    at Object.setReadingSeat (http://127.0.0.1:3210/js/cardTableLayout.js:425:13)\n    at onReadingChange (http://127.0.0.1:3210/js/cardBoardField.js:363:68)\n    at applyReading (http://127.0.0.1:3210/js/cardTableCamera.js:274:13)\n    at Object.focusCard (http://127.0.0.1:3210/js/cardTableCamera.js:378:13)\n    at presentPendingBuildCues (http://127.0.0.1:3210/js/cardBoardField.js:807:26)\n    at finishMarketClose (http://127.0.0.1:3210/js/cardBoardField.js:877:13)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1291.1000000238419,
+              "duration": 0.3999999761581421,
+              "callback": "",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at showBuildNotice (http://127.0.0.1:3210/js/cardBoardField.js:665:39)\n    at showBuildCue (http://127.0.0.1:3210/js/cardBoardField.js:711:13)\n    at presentPendingBuildCues (http://127.0.0.1:3210/js/cardBoardField.js:809:18)\n    at finishMarketClose (http://127.0.0.1:3210/js/cardBoardField.js:877:13)\n    at closeMarket (http://127.0.0.1:3210/js/cardBoardField.js:936:9)\n    at HTMLButtonElement.<anonymous> (http://127.0.0.1:3210/js/cardBoardField.js:1193:71)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1291.5,
+              "duration": 0.6000000238418579,
+              "callback": "",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at schedule (http://127.0.0.1:3210/js/cardBoardField.js:555:43)\n    at stageBuildFlight (http://127.0.0.1:3210/js/cardBoardField.js:570:9)\n    at startBuildFlight (http://127.0.0.1:3210/js/cardBoardField.js:617:9)\n    at showBuildCue (http://127.0.0.1:3210/js/cardBoardField.js:712:18)\n    at presentPendingBuildCues (http://127.0.0.1:3210/js/cardBoardField.js:809:18)\n    at finishMarketClose (http://127.0.0.1:3210/js/cardBoardField.js:877:13)\n    at closeMarket (http://127.0.0.1:3210/js/cardBoardField.js:936:9)\n    at HTMLButtonElement.<anonymous> (http://127.0.0.1:3210/js/cardBoardField.js:1193:71)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1370.3000000715256,
+              "duration": 0.6999999284744263,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1371,
+              "duration": 0.20000004768371582,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1371.2000000476837,
+              "duration": 0.3999999761581421,
+              "callback": "",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at schedule (http://127.0.0.1:3210/js/cardBoardField.js:555:43)\n    at http://127.0.0.1:3210/js/cardBoardField.js:560:36\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1371.6000000238419,
+              "duration": 7.100000023841858,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at ResizeObserver.schedule (http://127.0.0.1:3210/js/cardTableLayout.js:53:52)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1445.6000000238419,
+              "duration": 0.6000000238418579,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1446.3000000715256,
+              "duration": 0.10000002384185791,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1446.5,
+              "duration": 2.3000000715255737,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at Object.refresh (http://127.0.0.1:3210/js/cardTableCamera.js:473:44)\n    at onLayout (http://127.0.0.1:3210/js/cardBoardField.js:358:48)\n    at layout (http://127.0.0.1:3210/js/cardTableLayout.js:417:13)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1456.4000000953674,
+              "duration": 0.8999999761581421,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1457.4000000953674,
+              "duration": 0.19999992847442627,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1457.6000000238419,
+              "duration": 2.200000047683716,
+              "callback": "layout",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at refresh (http://127.0.0.1:3210/js/cardTableCamera.js:473:44)\n    at http://127.0.0.1:3210/js/cardTableCamera.js:649:63",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1470.1000000238419,
+              "duration": 1.2000000476837158,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1471.3000000715256,
+              "duration": 0.19999992847442627,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1487.3000000715256,
+              "duration": 0.7999999523162842,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1488.2000000476837,
+              "duration": 0.5,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1504.5,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:182:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1506.1000000238419,
+              "duration": 0.3999999761581421,
+              "callback": "inspect",
+              "scheduledBy": "Error\n    at window.requestAnimationFrame (eval at evaluate (:303:30), <anonymous>:14:96)\n    at inspect (eval at evaluate (:303:30), <anonymous>:195:18)\n    at eval (eval at evaluate (:303:30), <anonymous>:19:29)",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,192,640,176,857,0,\"1\"],[1,108,24,344,197,180,\"2\"]]]"
+            }
+          ],
+          "beforeClose": {
+            "at": 3367.1999999284744,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 116,
+              "width": 312,
+              "height": 540,
+              "top": 116,
+              "right": 316,
+              "bottom": 656,
+              "left": 4
+            },
+            "target": {
+              "x": 22,
+              "y": 475.75,
+              "width": 120,
+              "height": 93,
+              "top": 475.75,
+              "right": 142,
+              "bottom": 568.75,
+              "left": 22
+            },
+            "origin": {
+              "x": 24,
+              "y": 228.59375,
+              "width": 272,
+              "height": 236.375,
+              "top": 228.59375,
+              "right": 296,
+              "bottom": 464.96875,
+              "left": 24
+            },
+            "shelf": {
+              "x": 20,
+              "y": 224.59375,
+              "width": 280,
+              "height": 472.625,
+              "top": 224.59375,
+              "right": 300,
+              "bottom": 697.21875,
+              "left": 20
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 320,
+              "height": 844
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 320,
+              "height": 844
+            }
+          },
+          "current": {
+            "at": 4888.399999976158,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 116,
+              "width": 312,
+              "height": 540,
+              "top": 116,
+              "right": 316,
+              "bottom": 656,
+              "left": 4
+            },
+            "target": {
+              "x": 92,
+              "y": 333.32501220703125,
+              "width": 136,
+              "height": 105.39996337890625,
+              "top": 333.32501220703125,
+              "right": 228,
+              "bottom": 438.7249755859375,
+              "left": 92
+            },
+            "origin": {
+              "x": -50.80000305175781,
+              "y": 12.70233154296875,
+              "width": 136.00001525878906,
+              "height": 112.20001220703125,
+              "top": 12.70233154296875,
+              "right": 85.20001220703125,
+              "bottom": 124.90234375,
+              "left": -50.80000305175781
+            },
+            "shelf": {
+              "x": -50.80000305175781,
+              "y": 11.0023193359375,
+              "width": 421.5999755859375,
+              "height": 234.60003662109375,
+              "top": 11.0023193359375,
+              "right": 370.7999725341797,
+              "bottom": 245.60235595703125,
+              "left": -50.80000305175781
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 320,
+              "height": 844
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 320,
+              "height": 844
+            }
+          }
+        }
+      }
+    }
+  ]
+}

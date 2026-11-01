@@ -14,12 +14,20 @@ for (const design of ['sunset', 'plaza']) {
         const increase = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
         await increase.click();
         await increase.click();
+        // This is a rendering fixture: use human settings before the real UI
+        // start so shuffled CPU metadata cannot outlive a runtime-only override.
+        await page.evaluate(() => GameSetupState.runtime.setPlayerSettings(
+            Array.from({ length: 4 }, (_, index) => ({ type: 'human', name: `街${index + 1}` }))
+        ));
         await page.locator('#btnStart').click();
         await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
         await page.evaluate(() => {
             const state = GameRuntimeState.runtime.snapshot();
-            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: state.game.players.length }, () => null));
+            state.game.currentPlayerIndex = 0;
+            state.game.log = [];
+            state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
             cancelCpuSchedule('town-display-fixture');
             state.game.phase = GAME_PHASES.BUILD;
         });
@@ -39,12 +47,21 @@ for (const design of ['sunset', 'plaza']) {
             const town = page.locator('.player-box-self .town-street');
             const lots = town.locator('[data-town-building="card:森林"]');
             const shown = Math.min(total, 6);
-            await expect(lots).toHaveCount(shown);
-            for (let index = 0; index < shown; index++) {
-                await expect(lots.nth(index)).toHaveAttribute('data-town-owned', String(total));
-                await expect(lots.nth(index)).toHaveAttribute('data-town-visible', String(shown));
-                await expect(lots.nth(index).locator('.sunset-facility-art')).toBeVisible();
-            }
+            // Read each render in one browser round trip. The exact array length
+            // retains the lot count check alongside both attributes and artwork
+            // visibility, including all six slots in the dense fixture.
+            await expect.poll(() => lots.evaluateAll(elements => elements.map(element => {
+                const art = element.querySelector('.sunset-facility-art');
+                const bounds = art?.getBoundingClientRect();
+                return {
+                    owned: element.getAttribute('data-town-owned'),
+                    visible: element.getAttribute('data-town-visible'),
+                    artVisible: !!art && !!bounds && bounds.width > 0 && bounds.height > 0 &&
+                        getComputedStyle(art).visibility !== 'hidden' && getComputedStyle(art).visibility !== 'collapse',
+                };
+            })), { message: `森林${total}枚の全施設枠とアートが正しく表示される` }).toEqual(
+                Array.from({ length: shown }, () => ({ owned: String(total), visible: String(shown), artVisible: true }))
+            );
             const badges = town.locator('.town-building-count');
             await expect(badges).toHaveCount(total > shown ? 1 : 0);
             if (total > shown) await expect(badges).toHaveText(`+${total - shown}枚`);

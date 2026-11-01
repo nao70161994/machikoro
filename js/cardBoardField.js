@@ -33,6 +33,8 @@ const CardBoardField = (() => {
     let tableCamera = null;
     let tableLayout = null;
     let ownerLabelFrame = null;
+    /** @type {CanvasRenderingContext2D | null} */
+    let ownerLabelMeasure = null;
     let ownerLabelsInspecting = false;
     let mounted = false;
     let actionOrigin = null;
@@ -51,12 +53,16 @@ const CardBoardField = (() => {
     let transferFrame = null;
     let transferSequence = 0;
     let buildCueTimer = null;
+    let buildCueGeneration = 0;
     let buildNoticeTimer = null;
+    let buildNoticeFrame = null;
     let buildNoticeContext = null;
     let purchaseOrigin = null;
     let buildFlight = null;
-    let buildFlightAnimation = null;
+    /** @type {{ left: number, top: number } | null} */
+    let buildFlightScroll = null;
     let buildFlightFrame = null;
+    let buildFlightAnimation = null;
     let buildFlightGeneration = 0;
     let buildCueCard = null;
     let buildCueListener = null;
@@ -82,10 +88,12 @@ const CardBoardField = (() => {
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const disclosureSelector = '#cardboardEventDetails, .compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
     function closeDisclosures(except = null) {
-        node('cardboardBoard')?.querySelectorAll(disclosureSelector).forEach(element => {
-            const details = /** @type {HTMLDetailsElement} */ (element);
-            if (details !== except) details.open = false;
-        });
+        for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
+            root?.querySelectorAll(disclosureSelector).forEach(element => {
+                const details = /** @type {HTMLDetailsElement} */ (element);
+                if (details !== except && !details.contains?.(except)) details.open = false;
+            });
+        }
     }
     /** @param {string} id @returns {HTMLElement | null} */
     function node(id) { return document.getElementById(id); }
@@ -124,12 +132,24 @@ const CardBoardField = (() => {
         }
     }
 
+    function syncOwnerLabels() {
+        if (ownerLabelFrame !== null) window.cancelAnimationFrame(ownerLabelFrame);
+        ownerLabelFrame = null;
+        // The action row changes height with phase, orientation and long names.
+        const actions = node('cardboardActionSlot');
+        const board = node('gameScreen');
+        if (mounted && actions && board) {
+            const actionBounds = actions.getBoundingClientRect();
+            if (actionBounds.height > 0) {
+                board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - actionBounds.top + 8)}px`);
+            }
+        }
+        updateOwnerLabels();
+    }
+
     function scheduleOwnerLabels() {
         if (ownerLabelFrame !== null) return;
-        ownerLabelFrame = window.requestAnimationFrame(() => {
-            ownerLabelFrame = null;
-            updateOwnerLabels();
-        });
+        ownerLabelFrame = window.requestAnimationFrame(syncOwnerLabels);
     }
 
     function updateOwnerLabels() {
@@ -150,56 +170,194 @@ const CardBoardField = (() => {
         layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
         const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
             .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+        const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
+            .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
+        const marketBounds = node('cardboardCenter')?.getBoundingClientRect();
+        const preferMarketHeading = panels.length === 2 && bounds.width <= 500 && window.innerHeight >= window.innerWidth;
         const shallow = bounds.height < 340;
-        const width = shallow || bounds.width < 500 ? 96 : 124;
+        const fallbackWidth = shallow || bounds.width < 500 ? 96 : 124;
+        const maximumWidth = shallow || bounds.width < 500 ? 176 : 200;
         const height = shallow ? 18 : 22;
         const gap = shallow ? 2 : 4;
         const clearance = shallow ? 1 : 3;
         layer.style.setProperty('--owner-label-height', `${height}px`);
         layer.style.setProperty('--owner-label-font', shallow ? '11px' : '12px');
         layer.style.setProperty('--owner-label-padding', shallow ? '0px' : '2px');
-        const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
-            top < rect.bottom + clearance && top + height > rect.top - clearance;
+        if (!ownerLabelMeasure) {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 1;
+            ownerLabelMeasure = canvas.getContext('2d');
+        }
+        if (ownerLabelMeasure) ownerLabelMeasure.font = `800 ${shallow ? 11 : 12}px ${window.getComputedStyle(viewport).fontFamily}`;
         for (const panel of panels) {
             const heading = panel.querySelector('.cardboard-player-heading');
             if (!heading) continue;
             const index = Number(/** @type {HTMLElement} */ (panel).dataset.playerIndex);
             const player = facts?.game?.players?.[index];
             if (!player) continue;
+            const displayName = player.name || `席${index + 1}`;
+            const seatLabelText = player.name ? `席${index + 1} · ${displayName}` : displayName;
+            const duplicateName = Boolean(player.name) && facts.game.players.some((other, otherIndex) => otherIndex !== index && other.name === player.name);
+            const labelText = duplicateName ? seatLabelText : displayName;
+            // Match the actual name rather than reserving a long empty badge.
+            const preferredWidth = Math.max(fallbackWidth, Math.min(maximumWidth,
+                Math.ceil(ownerLabelMeasure?.measureText(labelText).width || maximumWidth) + 16));
             const anchor = heading.getBoundingClientRect();
             const region = panel.getBoundingClientRect();
-            const candidates = [
-                [anchor.left + (anchor.width - width) / 2, anchor.top + (anchor.height - height) / 2],
-                [region.left, region.top - height - 4],
-                [region.right - width, region.top - height - 4],
-                [region.left, region.bottom + 4],
-                [region.right - width, region.bottom + 4],
-                [region.left - width - 4, region.top],
-                [region.right + 4, region.top],
-            ];
-            for (const fraction of [0.15, 0.35, 0.5, 0.65, 0.85]) {
-                const x = region.left + region.width * fraction - width / 2;
-                const y = region.top + region.height * fraction - height / 2;
-                candidates.push(
-                    [anchor.left + (anchor.width - width) * fraction, anchor.top + (anchor.height - height) * fraction],
-                    [x, region.top - height - gap], [x, region.bottom + gap],
-                    [region.left - width - gap, y], [region.right + gap, y],
-                );
+            let placement = null;
+            // Keep both original width searches ahead of the edge fallback,
+            // including an existing compact placement for a longer name.
+            const widths = [...new Set([preferredWidth, fallbackWidth])];
+            for (const { width, inset } of [false, true].flatMap(inset => widths.map(width => ({ width, inset })))) {
+                const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
+                    top < rect.bottom + clearance && top + height > rect.top - clearance;
+                /** @type {[number, number][]} */
+                const candidates = [
+                    [anchor.left + (anchor.width - width) / 2, anchor.top + (anchor.height - height) / 2],
+                    [region.left, region.top - height - 4],
+                    [region.right - width, region.top - height - 4],
+                    [region.left, region.bottom + 4],
+                    [region.right - width, region.bottom + 4],
+                    [region.left - width - 4, region.top],
+                    [region.right + 4, region.top],
+                ];
+                for (const fraction of [0.15, 0.35, 0.5, 0.65, 0.85]) {
+                    const x = region.left + region.width * fraction - width / 2;
+                    const y = region.top + region.height * fraction - height / 2;
+                    candidates.push(
+                        [anchor.left + (anchor.width - width) * fraction, anchor.top + (anchor.height - height) * fraction],
+                        [x, region.top - height - gap], [x, region.bottom + gap],
+                        [region.left - width - gap, y], [region.right + gap, y],
+                    );
+                }
+                const ownCards = cardGroups.find(group => group.panel === panel)?.rects || [];
+                if (!ownCards.length) continue;
+                // Panel boxes include empty cells in ragged collections. Anchor to
+                // actual facility edges, so a label cannot float in that empty rim.
+                for (const card of ownCards) {
+                    candidates.push([card.left, card.top - height - gap], [card.right - width, card.top - height - gap],
+                        [card.left, card.bottom + gap], [card.right - width, card.bottom + gap],
+                        [card.left - width - gap, card.top], [card.right + gap, card.top]);
+                }
+                const distance = (left, top, rect) => Math.hypot(
+                    Math.max(rect.left - left - width, left - rect.right, 0),
+                    Math.max(rect.top - top - height, top - rect.bottom, 0));
+                const nearest = (left, top, cards) => cards.length
+                    ? Math.min(...cards.map(rect => distance(left, top, rect))) : Infinity;
+                const otherCards = cardGroups.filter(group => group.panel !== panel).flatMap(group => group.rects);
+                const centerX = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / ownCards.length : anchor.left;
+                const centerY = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / ownCards.length : anchor.top;
+                const canPlace = ([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
+                    top >= innerTop + gap && top + height <= innerBottom - gap &&
+                    !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)) &&
+                    nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5;
+                const available = candidates.filter(canPlace);
+                if (inset && !available.length) {
+                    // Preserve existing placements. Only a missing label tries
+                    // the viewport's spare edge, with identical collision guards.
+                    /** @type {[number, number][]} */
+                    const insetCandidates = candidates.map(([left, top]) => [
+                        Math.max(innerLeft + gap, Math.min(left, innerRight - gap - width)),
+                        Math.max(innerTop + gap, Math.min(top, innerBottom - gap - height)),
+                    ]);
+                    available.push(...insetCandidates.filter(canPlace));
+                }
+                const score = ([left, top]) => nearest(left, top, ownCards) +
+                    Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
+                const topEdge = Math.min(...ownCards.map(rect => rect.top));
+                const bottomEdge = Math.max(...ownCards.map(rect => rect.bottom));
+                const marketFacing = ([, top]) => {
+                    if (!preferMarketHeading || !marketBounds) return true;
+                    return centerY < marketBounds.top + marketBounds.height / 2
+                        ? top >= bottomEdge
+                        : top + height <= topEdge;
+                };
+                const ranked = available.map(position => ({ position, score: score(position) }));
+                // Shorter names must not make a ragged row's tail outrank a free
+                // market-facing heading. Keep collision/owner-distance guards.
+                ranked.sort((a, b) => Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
+                if (ranked[0]) {
+                    placement = { width, position: ranked[0].position };
+                    break;
+                }
             }
-            const position = candidates.find(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
-                top >= innerTop + gap && top + height <= innerBottom - gap &&
-                !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)));
-            if (!position) continue;
+            if (!placement) continue;
+            const { width, position } = placement;
             const [left, top] = position;
             const label = document.createElement('span');
             label.className = 'cardboard-owner-label';
-            label.textContent = `席${index + 1} · ${player.name}`;
-            label.title = label.textContent;
+            label.dataset.playerIndex = String(index);
+            label.textContent = labelText;
+            label.title = seatLabelText;
+            label.setAttribute('aria-label', seatLabelText);
             label.style.left = `${left - bounds.left - viewport.clientLeft}px`;
             label.style.top = `${top - bounds.top - viewport.clientTop}px`;
             label.style.width = `${width}px`;
             label.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
+            // A badge beside a ragged collection needs a visible owner link.
+            // Keep heading positions and every existing collision guard intact.
+            const ownRects = cardGroups.find(group => group.panel === panel)?.rects || [];
+            const labelRect = { left, top, right: left + width, bottom: top + height };
+            const clamp = (value, low, high) => Math.max(low, Math.min(value, high));
+            const links = ownRects.map(rect => {
+                let x = clamp((rect.left + rect.right) / 2, labelRect.left, labelRect.right);
+                let y = clamp((rect.top + rect.bottom) / 2, labelRect.top, labelRect.bottom);
+                const endX = clamp(x, rect.left, rect.right);
+                const endY = clamp(y, rect.top, rect.bottom);
+                x = clamp(endX, labelRect.left, labelRect.right);
+                y = clamp(endY, labelRect.top, labelRect.bottom);
+                return { rect, x, y, endX, endY, length: Math.hypot(endX - x, endY - y) };
+            }).sort((a, b) => a.length - b.length);
+            const link = links[0];
+            const crosses = rect => {
+                let enter = 0;
+                let exit = 1;
+                for (const [start, delta, low, high] of [
+                    [link.x, link.endX - link.x, rect.left - 1, rect.right + 1],
+                    [link.y, link.endY - link.y, rect.top - 1, rect.bottom + 1],
+                ]) {
+                    if (Math.abs(delta) < 0.001) {
+                        if (start < low || start > high) return false;
+                    } else {
+                        const a = (low - start) / delta;
+                        const b = (high - start) / delta;
+                        enter = Math.max(enter, Math.min(a, b));
+                        exit = Math.min(exit, Math.max(a, b));
+                        if (enter > exit) return false;
+                    }
+                }
+                return true;
+            };
+            // A ragged tail can leave the nearest card above the badge. Judge
+            // side placement against the collection, not that single card.
+            const groupLeft = Math.min(...ownRects.map(rect => rect.left));
+            const groupRight = Math.max(...ownRects.map(rect => rect.right));
+            const beside = link && (left + width / 2 < groupLeft || left + width / 2 > groupRight);
+            if (beside && link.length >= 3 && link.length <= 64 &&
+                !obstacles.some(rect => (rect.left !== link.rect.left || rect.top !== link.rect.top ||
+                    rect.right !== link.rect.right || rect.bottom !== link.rect.bottom) && crosses(rect)) && !placed.some(crosses)) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.classList.add('cardboard-owner-link');
+                svg.dataset.playerIndex = String(index);
+                svg.setAttribute('aria-hidden', 'true');
+                svg.setAttribute('focusable', 'false');
+                // Bound the SVG to its short stroke, not the high-DPR table.
+                const linkLeft = Math.min(link.x, link.endX) - 2;
+                const linkTop = Math.min(link.y, link.endY) - 2;
+                svg.style.left = `${linkLeft - innerLeft}px`;
+                svg.style.top = `${linkTop - innerTop}px`;
+                svg.setAttribute('width', String(Math.abs(link.endX - link.x) + 4));
+                svg.setAttribute('height', String(Math.abs(link.endY - link.y) + 4));
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', String(link.x - linkLeft));
+                line.setAttribute('y1', String(link.y - linkTop));
+                line.setAttribute('x2', String(link.endX - linkLeft));
+                line.setAttribute('y2', String(link.endY - linkTop));
+                svg.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
+                svg.appendChild(line);
+                layer.appendChild(svg);
+            }
             layer.appendChild(label);
             panel.classList.add('cardboard-owner-labeled');
             placed.push({ left, top, right: left + width, bottom: top + height });
@@ -238,7 +396,7 @@ const CardBoardField = (() => {
             const tools = document.createElement('nav');
             tools.id = 'cardboardCameraTools';
             tools.setAttribute('aria-label', 'カード卓の移動と拡大縮小');
-            tools.innerHTML = '<button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button>';
+            tools.innerHTML = '<div id="cardboardCameraButtons"><button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button></div>';
             board.appendChild(tools);
         }
         if (!node('cardboardViewHint')) {
@@ -289,6 +447,7 @@ const CardBoardField = (() => {
         }
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
             tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
+                onPaint: syncOwnerLabels,
                 onReadingChange: (index, minScale) => tableLayout?.setReadingSeat(index, minScale),
                 onContextChange: ({ label, pan, playerIndex, canReturn }) => {
                     ownerLabelsInspecting = playerIndex !== null;
@@ -417,14 +576,26 @@ const CardBoardField = (() => {
 
     function revealInScrollport(target, scrollport) {
         if (!target || !scrollport) return;
-        const targetBounds = target.getBoundingClientRect();
-        const scrollBounds = scrollport.getBoundingClientRect();
-        if (targetBounds.left < scrollBounds.left) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        // Align to the card's start: a small nearest-edge scroll can snap back
-        // to the preceding card and leave the purchased facility clipped.
-        else if (targetBounds.right > scrollBounds.right) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        if (targetBounds.top < scrollBounds.top) scrollport.scrollTop += targetBounds.top - scrollBounds.top;
-        else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
+        // Scroll offsets use layout pixels. Screen rectangles are scaled and
+        // rotated by the table camera, so their deltas cannot be added here.
+        const origin = element => {
+            let left = 0, top = 0;
+            for (let current = element; current; current = current.offsetParent) {
+                left += current.offsetLeft;
+                top += current.offsetTop;
+            }
+            return { left, top };
+        };
+        const start = origin(target), container = origin(scrollport);
+        const left = start.left - container.left - scrollport.clientLeft;
+        const top = start.top - container.top - scrollport.clientTop;
+        if (left < scrollport.scrollLeft || left + target.offsetWidth > scrollport.scrollLeft + scrollport.clientWidth) {
+            scrollport.scrollLeft = left;
+        }
+        if (top < scrollport.scrollTop) scrollport.scrollTop = top;
+        else if (top + target.offsetHeight > scrollport.scrollTop + scrollport.clientHeight) {
+            scrollport.scrollTop = top + target.offsetHeight - scrollport.clientHeight;
+        }
     }
 
     function clearBuildFlight() {
@@ -435,6 +606,7 @@ const CardBoardField = (() => {
         buildFlightAnimation = null;
         buildFlight?.remove();
         buildFlight = null;
+        buildFlightScroll = null;
     }
 
     function visibleMarketOrigin(name) {
@@ -466,55 +638,82 @@ const CardBoardField = (() => {
         }
     }
 
-    function startBuildFlight(card, origin, entry) {
+    function stageBuildFlight(ghost, animation, generation, current) {
+        const schedule = remaining => {
+            buildFlightFrame = globalThis.requestAnimationFrame(() => {
+                // A cancelled callback must not clear a newer flight's handle.
+                if (generation !== buildFlightGeneration || buildFlight !== ghost) return;
+                buildFlightFrame = null;
+                if (!current()) { clearBuildFlight(); return; }
+                if (remaining > 0) schedule(remaining - 1);
+                else {
+                    animation.currentTime = 0;
+                    animation.play();
+                }
+            });
+        };
+        // Give the restored table/ghost a rendering opportunity while paused.
+        // Starting in its first RAF lets the following slow paint consume the
+        // 480ms before a subsequent rendering frame can show a moving card.
+        schedule(1);
+    }
+
+    function startBuildFlight(card, origin, entry, destination = /** @type {DOMRect | null} */ (null), onArrive = () => {}) {
         clearBuildFlight();
-        if (!origin || !entry || reducedMotionEnabled()) return;
+        if (!origin || !entry || reducedMotionEnabled()) return false;
         const generation = buildFlightGeneration;
         const context = { session, turn: facts?.game?.turnCount, actor: facts?.game?.currentPlayerIndex };
         const current = () => generation === buildFlightGeneration && enabled() && mounted && !facts?.replaying &&
             !document.hidden && node('gameScreen')?.style.display !== 'none' && card.isConnected &&
             session === context.session && facts.game.turnCount === context.turn &&
             facts.game.currentPlayerIndex === context.actor && facts.game.log.includes(entry) && !reducedMotionEnabled();
-        // The existing focus operation may update scroll and world geometry.
-        // Two frames read its settled target without delaying any game action.
-        buildFlightFrame = globalThis.requestAnimationFrame(() => {
-            buildFlightFrame = globalThis.requestAnimationFrame(() => {
-                buildFlightFrame = null;
-                if (!current()) return;
-                const viewport = node('cardboardTableViewport');
-                const clip = viewport?.getBoundingClientRect();
-                const target = card.getBoundingClientRect();
-                const angle = (Number(viewport?.dataset.tableAngle || 0) +
-                    Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
-                // Rotated inline seats retain their real-card cue. Do not land
-                // an upright ghost on an edge whose reading direction differs.
-                if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
-                        target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
-                const ghost = card.cloneNode(true);
-                ghost.id = 'cardboardBuildFlight';
-                ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
-                ghost.setAttribute('aria-hidden', 'true');
-                ghost.setAttribute('tabindex', '-1');
-                ghost.removeAttribute('data-action');
-                ghost.dataset.cardName = card.dataset.cardName;
-                ghost.dataset.session = String(context.session);
-                ghost.dataset.turn = String(context.turn);
-                ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
-                ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
-                node('cardboardBoard').appendChild(ghost);
-                buildFlight = ghost;
-                if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
-                const animation = ghost.animate([
-                    { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
-                    { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
-                ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
-                buildFlightAnimation = animation;
-                animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
-            });
-        });
+        // focusCard applies its layout, matrix and instant scroll synchronously.
+        // Read that final geometry now: another RAF delays purchase feedback by
+        // an entire frame on renderers already busy painting the returned table.
+        if (!current()) return false;
+        const viewport = node('cardboardTableViewport');
+        const clip = viewport?.getBoundingClientRect();
+        const target = destination || card.getBoundingClientRect();
+        const angle = (Number(viewport?.dataset.tableAngle || 0) +
+            Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
+        // Rotated inline seats retain their real-card cue. Do not land
+        // an upright ghost on an edge whose reading direction differs.
+        if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
+                target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return false;
+        const ghost = card.cloneNode(true);
+        ghost.id = 'cardboardBuildFlight';
+        ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.setAttribute('tabindex', '-1');
+        ghost.removeAttribute('data-action');
+        ghost.dataset.cardName = card.dataset.cardName;
+        ghost.dataset.session = String(context.session);
+        ghost.dataset.turn = String(context.turn);
+        ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
+        ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
+        node('cardboardBoard').appendChild(ghost);
+        buildFlight = ghost;
+        buildFlightScroll = { left: viewport.scrollLeft, top: viewport.scrollTop };
+        if (typeof ghost.animate !== 'function') { clearBuildFlight(); return false; }
+        const animation = ghost.animate([
+            { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
+            { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
+        ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
+        buildFlightAnimation = animation;
+        animation.pause();
+        animation.currentTime = 0;
+        stageBuildFlight(ghost, animation, generation, current);
+        animation.finished.then(() => {
+            const arrived = buildFlight === ghost && current();
+            if (buildFlight === ghost) clearBuildFlight();
+            if (arrived) onArrive();
+        }).catch(() => {});
+        return true;
     }
 
     function clearBuildNotice() {
+        if (buildNoticeFrame !== null) globalThis.cancelAnimationFrame(buildNoticeFrame);
+        buildNoticeFrame = null;
         if (buildNoticeTimer !== null) clearTimeout(buildNoticeTimer);
         buildNoticeTimer = null;
         buildNoticeContext = null;
@@ -547,12 +746,26 @@ const CardBoardField = (() => {
         const bounds = viewport.getBoundingClientRect();
         notice.style.left = `${Math.max(bounds.left + 8, bounds.right - notice.offsetWidth - 8)}px`;
         notice.style.top = `${Math.max(bounds.top + 8, bounds.bottom - notice.offsetHeight - 8)}px`;
-        buildNoticeContext = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
-        buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
+        buildNoticeContext = context;
+        // Start the readable lifetime at the rendering update, like the flight.
+        // A busy first paint must not consume the whole notice before it appears.
+        buildNoticeFrame = globalThis.requestAnimationFrame(() => {
+            if (buildNoticeContext !== context) return;
+            buildNoticeFrame = null;
+            if (!notice.isConnected || !enabled() || !mounted || document.hidden || facts?.replaying ||
+                    session !== context.session || facts.game.turnCount !== context.turn ||
+                    facts.game.currentPlayerIndex !== context.actor || facts.game.phase !== GAME_PHASES.BUILD) {
+                clearBuildNotice();
+                return;
+            }
+            buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+        });
         return true;
     }
 
     function clearBuildCue() {
+        buildCueGeneration++;
         if (buildCueTimer !== null) clearTimeout(buildCueTimer);
         buildCueTimer = null;
         if (buildCueCard && buildCueListener) buildCueCard.removeEventListener('animationend', buildCueListener);
@@ -563,19 +776,32 @@ const CardBoardField = (() => {
 
     function showBuildCue(card, animate, origin = null, entry = null) {
         clearBuildCue();
+        const generation = buildCueGeneration;
         card.classList.remove('cardboard-card-newly-built');
-        if (animate) void card.offsetWidth;
-        card.classList.add('cardboard-card-newly-built');
+        const destination = card.getBoundingClientRect();
         buildCueCard = card;
-        if (showBuildNotice(card)) startBuildFlight(card, origin, entry);
-        else clearBuildFlight();
-        const clearArrival = event => {
-            if (event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
-            clearBuildCue();
+        const beginArrival = () => {
+            if (generation !== buildCueGeneration || buildCueCard !== card || !card.isConnected) return;
+            if (animate) void card.offsetWidth;
+            card.classList.add('cardboard-card-newly-built');
+            const clearArrival = event => {
+                if (generation !== buildCueGeneration || event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
+                clearBuildCue();
+            };
+            buildCueListener = clearArrival;
+            card.addEventListener('animationend', clearArrival);
+            buildCueTimer = setTimeout(clearBuildCue, 1200);
         };
-        buildCueListener = clearArrival;
-        card.addEventListener('animationend', clearArrival);
-        buildCueTimer = setTimeout(clearBuildCue, 1200);
+        // The destination celebrates the card's arrival, rather than pulsing
+        // while the same purchase is still travelling across the table.
+        // Cancellation never calls beginArrival; reduced motion and purchases
+        // without a visible route retain the immediate real-card feedback.
+        if (showBuildNotice(card)) {
+            if (!startBuildFlight(card, origin, entry, destination, beginArrival)) beginArrival();
+        } else {
+            clearBuildFlight();
+            beginArrival();
+        }
     }
 
     function clearLandmarkCue(landmark) {
@@ -730,9 +956,19 @@ const CardBoardField = (() => {
             launcher?.focus({ preventScroll: true });
         }
         restoreMarketFocus = true;
-        tableLayout?.refresh();
-        if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
-        else presentPendingBuildCues();
+        if (tableLayout && tableCamera) {
+            // Capture the restored table, not the expanded market geometry, as
+            // the inspection return view. Keep both layouts in this task so a
+            // queued overview paint cannot delay the fresh purchase feedback.
+            tableLayout.syncLayout();
+            tableCamera.syncLayout();
+            presentPendingBuildCues();
+        } else {
+            tableLayout?.refresh();
+            if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
+            else presentPendingBuildCues();
+        }
+        tableCamera?.preserveReadingPosition(false);
     }
 
     function isMarketExpanded() {
@@ -778,9 +1014,14 @@ const CardBoardField = (() => {
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
         if (wasOpen && restoreFocus) refreshPendingBuildOrigins();
-        if (wasOpen) dialog.close();
-        restoreMarketNode();
-        if (!wasOpen) finishMarketClose();
+        if (wasOpen) {
+            // Native close is queued asynchronously. Complete this exit now,
+            // before the restored table paints with its old market geometry.
+            // The queued event must not tear down a market reopened meanwhile.
+            ignoredMarketCloseEvents++;
+            dialog.close();
+        }
+        finishMarketClose();
     }
 
     function openMarket() {
@@ -790,6 +1031,7 @@ const CardBoardField = (() => {
         if (!enabled() || !dialog || !market || !slot || typeof dialog.showModal !== 'function') return false;
         if (suspendedMarketDetail) return false;
         if (dialog.open) return true;
+        tableCamera?.preserveReadingPosition(true);
         marketLauncher = document.activeElement;
         marketLauncherSelector = marketLauncher?.closest?.('.compact-market-filter-disclosure')
             ? '.compact-market-filter-disclosure > summary'
@@ -911,10 +1153,16 @@ const CardBoardField = (() => {
         }
         if (revealDiceCandidateAfterMarketUpdate) {
             revealDiceCandidateAfterMarketUpdate = false;
-            const market = node('cardboardMarket');
-            const shelf = market?.querySelector('.compact-market-facilities');
-            const matchingCard = shelf?.querySelector('.compact-market-roll-match');
-            if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+            const revealSession = session;
+            // Layout chooses the market's column count on the next frame.
+            // Reveal against that final shelf, not its previous dimensions.
+            globalThis.requestAnimationFrame(() => {
+                if (!mounted || session !== revealSession) return;
+                const shelf = node('cardboardMarket')?.querySelector('.compact-market-facilities');
+                const matchingCard = shelf?.querySelector('.compact-market-roll-match');
+                if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+                updateMarketOverflow();
+            });
         }
         updateMarketOverflow();
     }
@@ -934,7 +1182,11 @@ const CardBoardField = (() => {
             purchaseOrigin = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex,
                 name: button.dataset.cardName, rect: visibleMarketOrigin(button.dataset.cardName) };
         }, true);
-        node('cardboardTableViewport')?.addEventListener('scroll', () => { if (buildFlight) clearBuildFlight(); }, { passive: true });
+        node('cardboardTableViewport')?.addEventListener('scroll', () => {
+            const viewport = node('cardboardTableViewport');
+            if (buildFlight && viewport && (viewport.scrollLeft !== buildFlightScroll?.left ||
+                    viewport.scrollTop !== buildFlightScroll?.top)) clearBuildFlight();
+        }, { passive: true });
         node('cardboardTableViewport')?.addEventListener('pointerdown', clearBuildFlight, { passive: true });
         node('cardboardTableViewport')?.addEventListener('wheel', clearBuildFlight, { passive: true });
         window.addEventListener('resize', clearBuildFlight, { passive: true });
@@ -993,12 +1245,15 @@ const CardBoardField = (() => {
             event.preventDefault();
             shelf.scrollBy({ left: direction * step, behavior: /** @type {ScrollBehavior} */ (motion) });
         });
-        node('cardboardBoard').addEventListener('toggle', event => {
+        const onDisclosureToggle = event => {
             const details = /** @type {HTMLDetailsElement} */ (event.target);
             if (!details.matches?.(disclosureSelector) || !details.open) return;
             closeDisclosures(details);
             facts?.closeLog?.();
-        }, true);
+        };
+        for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
+            root?.addEventListener('toggle', onDisclosureToggle, true);
+        }
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
                 closeTown(false);
@@ -1024,7 +1279,10 @@ const CardBoardField = (() => {
             if (event.target === event.currentTarget) closeTown();
         });
         node('cardboardMarketClose')?.addEventListener('click', () => closeMarket());
-        node('cardboardMarketDialog')?.addEventListener('cancel', refreshPendingBuildOrigins);
+        node('cardboardMarketDialog')?.addEventListener('cancel', event => {
+            event.preventDefault();
+            closeMarket();
+        });
         node('cardboardMarketDialog')?.addEventListener('close', () => {
             if (ignoredMarketCloseEvents > 0) { ignoredMarketCloseEvents--; return; }
             finishMarketClose();
@@ -1053,13 +1311,16 @@ const CardBoardField = (() => {
         });
         document.addEventListener('visibilitychange', clearHiddenFeedback);
         let wasReducedMotion = reducedMotionEnabled();
-        const updateMotionFeedback = () => {
-            const reduced = reducedMotionEnabled();
+        const updateMotionFeedback = (reduced = reducedMotionEnabled()) => {
             if (reduced && !wasReducedMotion) clearFeedback();
             wasReducedMotion = reduced;
         };
-        window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', updateMotionFeedback);
-        new MutationObserver(updateMotionFeedback).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', event => {
+            // A queued reduce event still cancels feedback if the OS preference
+            // has already changed back by the time this callback is delivered.
+            updateMotionFeedback(event.matches || reducedMotionEnabled());
+        });
+        new MutationObserver(() => updateMotionFeedback()).observe(document.body, { attributes: true, attributeFilter: ['class'] });
         new MutationObserver(clearHiddenFeedback).observe(node('gameScreen'), { attributes: true, attributeFilter: ['style'] });
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
@@ -1470,6 +1731,12 @@ const CardBoardField = (() => {
                 ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
         }
         const seats = node('cardboardSeats');
+        const ownerStructure = () => JSON.stringify(Array.from(seats.querySelectorAll('.cardboard-player')).map(panel => [
+            /** @type {HTMLElement} */ (panel).dataset.playerIndex,
+            Array.from(panel.querySelectorAll('.cardboard-card')).map(card => card.getAttribute('data-card-name')),
+            Array.from(panel.querySelectorAll('.cardboard-landmark-built')).map(card => card.getAttribute('data-landmark-name')),
+        ]));
+        const previousOwnerStructure = ownerStructure();
         seats.dataset.playerCount = String(game.players.length);
         const board = node('cardboardBoard');
         board.dataset.playerCount = String(game.players.length);
@@ -1541,6 +1808,12 @@ const CardBoardField = (() => {
         arrangeCompactStatus();
         tableLayout?.refresh({ selfIndex: selfIndex ?? 0, playerCount: game.players.length, session });
         tableCamera?.refresh({ selfIndex: selfIndex ?? currentIndex, currentIndex, session });
+        if (previousOwnerStructure !== ownerStructure()) {
+            // A new row on a rotated owner extends above its old world bounds.
+            // Commit the new footprint and camera together before the next paint.
+            tableLayout?.syncLayout();
+            tableCamera?.syncLayout();
+        }
         scheduleOwnerLabels();
         updateTown();
         const receipt = node('cardboardDiceReceipt');
@@ -1704,7 +1977,12 @@ const CardBoardField = (() => {
         draw();
         updatePlayerOverflow();
     }
-    return Object.freeze({ render, updateMarket, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
+    function syncViewport() {
+        const screen = node('gameScreen');
+        if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
+        return tableCamera?.syncViewport() === true;
+    }
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

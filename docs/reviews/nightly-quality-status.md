@@ -1,0 +1,325 @@
+# 品質改善の最新確認状況
+
+対象: PR #19 / `feat/nightly-table-quality`。最新main `7954fcd1`（PR #20・RL学習CI）を83d14bb2で取り込み済み。UI比較の旧基点はPR #18のa265ca7e、マージ保留。商用品質への到達は未完了。過去の失敗・訂正・撤回案は[時系列記録](nightly-quality-history.md)、原mainの調査は[一次記録](nightly-table-quality-2026-10-23.md)を参照。
+
+## 先行製品候補の確定結果
+
+`7ecac7a4`: Release・16画面操作・全Nightly成功。Nightly352件=351初回成功/0retry成功/1既存許可skip、6分割8.1〜16.2分、実行ID照合一致。4幅の実UI対局も勝利まで成功。詳細は下記の7ec節と[達成確認表](quality-completion-audit.md)。商用品質の主観評価・ローカル描画遅延の原因には未確定事項が残る。
+
+## 先行候補の検証履歴
+
+|対象|commit・実行|結果|
+|---|---|---|
+|通常Release|8514588a / [40981644006](https://github.com/nao70161994/machikoro/actions/runs/40981644006)|成功|
+|16画面・操作|8514588a / [40981644175](https://github.com/nao70161994/machikoro/actions/runs/40981644175)|成功。基準画像/許容値維持|
+|全Nightly|8514588a / [40982123534](https://github.com/nao70161994/machikoro/actions/runs/40982123534)|347件完走、346初回成功・0再試行・1許可済skip。網羅性照合成功。shard8.5〜12.1分|
+|重点WebKit|8514588a / [40981661263](https://github.com/nao70161994/machikoro/actions/runs/40981661263)|建設・市場7件、retry0成功、2.7分|
+|収支/fixture追加後Release|dedc82d2 / [41107097490](https://github.com/nao70161994/machikoro/actions/runs/41107097490)|成功|
+|同16画面・操作|dedc82d2 / [41107097606](https://github.com/nao70161994/machikoro/actions/runs/41107097606)|成功|
+|同全Nightly|dedc82d2 / [41107113418](https://github.com/nao70161994/machikoro/actions/runs/41107113418)|348件完走、346初回成功・1再試行成功・1許可済skip。網羅性照合成功。安定化は未完了|
+
+勝利ランドマークの語単位表示・PC一列配置は `0d8e68da` へpush済み。ローカル単体・4幅ブラウザ・main/UI型・ESLint成功、通常Release [41109174969](https://github.com/nao70161994/machikoro/actions/runs/41109174969)・16画面操作 [41109175145](https://github.com/nao70161994/machikoro/actions/runs/41109175145)も成功。後続のカメラ候補の結果とは区別する。
+
+## 96bd2923の確定結果と所属名の配置修正
+
+- [重点WebKit](https://github.com/nao70161994/machikoro/actions/runs/41118266311)は11件・再試行0・3.6分で成功。通常再配置2件、購入復帰2件、建設5条件、市場往復2件。観測期限・480ms flight・60..400ms条件は維持。
+- [通常Release](https://github.com/nao70161994/machikoro/actions/runs/41118229926)は所有者名の市場境界配置1件が初回/再試行とも失敗し、32件成功。[16画面操作](https://github.com/nao70161994/machikoro/actions/runs/41118229922)は成功。
+- [全Nightly](https://github.com/nao70161994/machikoro/actions/runs/41119144096)は350件を全分割で実行し網羅性照合成功。失敗は同じ所有者名の1件。35分中断なし。シミュレーション・PWA・オンライン復元/soakは成功。先行の重点成功をこの境界配置の成功と混同しない。
+- 原因は表示名を短くしたことで、施設の不揃いな最終行の横へ候補が入り、近さの評価だけでは空いている市場側の見出しより優先されたこと。狭幅・縦持ち・2人のとき、市場側の候補を優先する。元の衝突・所有者への距離・viewport制約は保持し、境界に置けないときは従来候補へ戻す。全名幅優先は維持するため、任意構成での市場境界配置保証とはしない。
+- 修正候補は既存の境界/全文3ケースがローカル成功（1worker・1.3分）。320/390×844の元assert、320×568と同名の追加assertは変更なし。独立ソースレビュー指摘の縦持ち条件も追加。構文・ESLint・main/UI型は成功。固定WebKit重点に同境界ケースを加えて12件で再確認する。
+- 遅いページloadの単独調査は6.710秒で終了し、過去の40.555秒を再現できなかった。JS資産の完了が約5秒遅れたが、元のタイムアウトの根本原因が確定したとは扱わない。テスト上限は変更していない。
+- [実UI対局320/1440](https://github.com/nao70161994/machikoro/actions/runs/41119150739)は両方勝利まで成功。CPU1500ms・非seed・人間席自動操作で、物理端末/人間による体験評価ではない。画像と操作集計の再レビューは後続で行う。
+
+## 7ecac7a4のnative検証と同版実対局
+
+- [重点WebKit41171828691](https://github.com/nao70161994/machikoro/actions/runs/41171828691)は20件・retry0・3.5分で成功。新しい844/320連鎖ケースも、元の6500ms・第4送金frame<500ms・opacity>0.5を維持して成功。
+- [実frame](assets/nightly-quality/native-activation-7ecac.json)は320でelapsed210ms/opacity1、844で306ms/opacity1、delay2600ms/duration600ms。静止デザインposeとは異なる。各発動元の非被覆・実アート100×65px・全owner・再描画/テーマ復帰/RMの元assertも同caseで確認。localの期限失敗の原因が解消したとは断定しない。
+- 同版の[全Nightly41172214298](https://github.com/nao70161994/machikoro/actions/runs/41172214298)は成功。352件=351初回成功・0再試行成功・1既存許可skip、6分割59/59/59/59/58/58、実行ID和集合も352件で一致。各shard8.1〜16.2分、35分中断なし。単体/PWA/release/online/CPU simulation/soakも成功。
+- 同版の実UI対局は4幅とも勝利まで成功：[390/844](https://github.com/nao70161994/machikoro/actions/runs/41172005824)、[320/1440](https://github.com/nao70161994/machikoro/actions/runs/41172008495)。CPU1500ms・非seed・人間席自動操作。320/390/844のmid/late/first-build/winner計12枚を独立レビューし、新たな重大な切れ・操作の重なりなし。1440の4枚も独立確認し、計16枚で重大なclip/操作重なり/新規崩れなし。winnerのモール名は「ショッピング/モール」の2行・6ランドマーク一列で、旧版の語内部折返しは解消。終盤細字・広い余白は残る。
+- 同版の[通常Release](https://github.com/nao70161994/machikoro/actions/runs/41171833261)・[16画面操作](https://github.com/nao70161994/machikoro/actions/runs/41171833081)も成功。基準画像・許容値は変更しない。
+- [達成確認表](quality-completion-audit.md)で、過去と最新、共有状態互換と各テーマ全操作、静止姿勢と実時間、物理端末未確認を区別。独立レビューで、過去の見送り確認/自動復旧の未確定事象も明示するよう指摘を反映した。
+
+## 発動施設の正面アートと市場スクロールによる誤取消
+
+- 490c9d65の[重点WebKit18件](https://github.com/nao70161994/machikoro/actions/runs/41170369778)は再試行0・3.7分で成功。[Release](https://github.com/nao70161994/machikoro/actions/runs/41170367635)・[16画面](https://github.com/nao70161994/machikoro/actions/runs/41170367645)も成功。全Nightlyの新実行は、この後続候補の重点結果を確認してからまとめて行う。
+- 1d1153a1の全Nightly350件は349初回成功・0再試行成功・1許可済skip。各shard7.4〜14.4分、網羅性照合成功、35分中断なし。後続候補へ結果を転用しない。
+- 発動tagに、実カードと同じSVGシンボルの100×65px正面アートを追加する候補。IDがないSVGだけを複製し、カードのaction/ボタンは複製しない。横に施設名/所有者/収支/経路、実カードとownerの強調を維持。600ms表示・700ms刻み・最大8・generation/session/replay/取消は維持、新しい拡縮animationは加えない。
+- 上下左右の候補をviewportへ収め、発動元被覆→他カード/市場被覆が小さい順で選択。元カード被覆、サイズ不足、他所有施設被覆がpopup面積1/3超なら文字表示へ戻す。市場は選択scoreへ含むが、収益表示中の一時的な被覆は許容。文字表示も従来どおりpointer-events:none。操作欄は卓外で覆わない。
+- 320でtagが出なかった原因を採取。play時も取消時もviewportのscrollLeft/Topは0、取消scrollのtargetはcompact-market-facilitiesだった。市場の自動スクロールをcapture listenerが卓移動として扱い、最初の500ms表示待ち中に全キューを取消していた。owned cardの位置が変わらない子領域scrollは無視し、viewport自体のscroll/resize/画面変更では従来どおり取消す。
+- [320前](assets/nightly-quality/activation-art-320-before.png) / [後](assets/nightly-quality/activation-art-320-after.png)、[844前](assets/nightly-quality/activation-art-844-before.png) / [後](assets/nightly-quality/activation-art-844-after.png)、[4幅測定](assets/nightly-quality/activation-art-comparison.json)。これは4席・森林1枚ずつ・銀行+1のcontrolled静止デザイン比較。画像だけexpiryをresponse内で60秒へ固定して撮影し、製品と実roll検証の600msは変更しない。自然対局/600ms中の快適さ/連続演出の証明とはしない。最初の600msのままの撮影は全8枚でcapturedLive:falseだったため比較証拠から除外した。
+- 独立原寸レビューは4幅で元カード/HUD/下部操作の被覆なし、施設と収支が文字だけより認識しやすいと評価。320/390は市場下段を広く覆うため、700ms刻みで長く隠れる印象と実可視時間はnative/実対局で再評価する。公式PVの大きい主役カード、卓面光、プレイヤー反応との差はまだある。
+- ローカル試作の失敗も保持。縦積み案は横持ちで全件文字fallback、320は市場scroll取消で非表示。横並びの中間案は844成功/320が全textで新art assert失敗。最終候補の2caseは元の6500ms/flight<500ms判定で両方失敗。[frame採取](assets/nightly-quality/activation-local-frame-comparison.json)では第4flightの開始が遅く、観測期限時もdelay内だった。旧490 moduleを使う別診断844は元のflight判定を通過（40.7秒）。これだけで環境原因や回帰なしとは断定しない。期限延長・判定緩和・成功するまで再実行は行わず、固定WebKitで重点20件を確認する。
+- 構文・ESLint・main/UI型・runtime依存順は成功。ローカルswapが上限へ達したためブラウザ連続実行を終了。常にbrowser1worker、型検査と同時実行しない。既存の実roll1caseを844/320の独立2caseへ分け、元の送金frame/全owner/再描画・テーマ復帰・ReducedMotion/正本assertは維持し、アート寸法・元カード非被覆を追加。
+
+## 終盤で欠ける所属名の端への配置
+
+- controlled320×568で11/19施設・5/2ランドマークにすると、自分の名前の98候補がすべて除外され、CPU名だけ表示されることを再現。診断初回の無効カード名/Set.slice誤記はfixture側で修正してから採取し、製品不具合とは区別。
+- 採取geometryでviewport内へ平行移動した候補を同じ条件で評価すると、右端(212,470.16)に有効候補が1つあった。既存のpreferred/compact両幅を先にすべて試し、配置不能のときだけ端へ収めた候補を試す。viewport・全障害物・既配置ラベル・所属距離の条件は緩和しない。名前/フォント/卓/カード寸法は不変。任意構成で全名を必ず置ける保証ではない。
+- [前](assets/nightly-quality/owner-edge-320-before.png) / [後](assets/nightly-quality/owner-edge-320-after.png) / [条件と候補数](assets/nightly-quality/owner-edge-320-comparison.json)。before残高23/after30のcontrolled比較で、同一正本/自然対局ではない。カード群構成とviewportは共通。afterは欠けた自分名を施設群右下の空白で全文表示し、CPU名位置を維持。独立原寸レビューで新しい重なり/誤所属なし。
+- 既存3case+追加1は最終4件27.7秒・retry0成功。初回batchは新testのspanをbutton指定した誤りで1失敗/3成功、selectorを正しい既存classへ修正（製品assertの緩和ではない）。その後新1件8秒成功、探索順修正後の最終4件も成功。構文・ESLint・main/UI型・関連単体も成功。
+- 直前b7f072a3の[重点WebKit17件](https://github.com/nao70161994/machikoro/actions/runs/41169846950)は再試行0・4.1分で成功。4幅勝利の語内部1行assertと結果後の収支操作も含む。今回の端fallbackは含まないため、追加して18件を確認する。
+
+## 勝利の単語内部折返しに対する候補
+
+- 96のnative実対局画像ではモール名が3行。既存wordsFitはspan外枠のみの検査で内部折返しを検出できなかった。Intl分割の誤りとは断定しない。
+- [ローカル測定](assets/nightly-quality/winner-word-inner-width.json)は同じ1440×900・controlled勝利fixture。card97.3125px、copy/name83.3125px、name左右padding計4px、ショッピング78.015625px。文字内幅79.3125pxで余裕は約1.3px。copyをwidth100%へ伸ばす試案は同値で改善なし。ローカルでは元から2行だったためnativeの3行を再現したとは言わない。
+- 勝利の縦カードだけ、横カードから継承していたnameの左右paddingを除き、文字の利用幅を4px増やす候補。カード幅・13px文字・6列・art寸法は不変。全名escape/Intl fallback/詳細操作は変えない。一律nowrapによる長名はみ出しは導入しない。
+- 既存の勝利4幅caseで全wordのRange.getClientRectsの行数も確認。元の全文・外枠fit・モール分割・1440同一行・詳細focus/正本assertは維持し、4件24.6秒で成功。独立ソースレビューは妥当と評価。nativeの再検証前に解消済みとはしない。
+- focused WebKitへこの4幅と結果後の収支操作1件もまとめ、従来12件と合わせ17件を同じ候補で確認する。既存全Nightlyの進行中実行は中断・やり直ししない。
+
+## 最新候補1d1153a1の進行中確認
+
+- 最新mainは `a265ca7e` のまま確認。PR #19はDraft・マージ保留。
+- [Release 41169297749](https://github.com/nao70161994/machikoro/actions/runs/41169297749)、[16画面41169297738](https://github.com/nao70161994/machikoro/actions/runs/41169297738)、[Nightly41169303901](https://github.com/nao70161994/machikoro/actions/runs/41169303901)を同じ版で確認中。Nightlyのinventory/online-soak/simulation/unit-PWA-releaseは成功し、6 browser shardが進行中。新しい全件成功はまだ主張しない。
+- 96の1440×900実UI完走は75turn/200actions/305click/39key、934481ms（CPU待機269493ms）、pageErrors0。閲覧復帰は2click/1973ms、scale/angle/正本復帰。320と同じ実行41119150739。非seed・CPU1500msで、物理端末/人間主観評価とは異なる。
+- 1440のmid/late/first-build/winner4枚とsummaryを選択取得し独立再レビュー完了。重大なclip/操作重なりなし。ただし勝利のモール名がnative画像で「ショッピン／グ／モール」の3行になる残差を発見。既存wordsFitは外枠fitのみを見ており、span内部の折返しを検出できないため、意味単位の改行は全環境で解消済みとはしない。ローカルでブラウザと型検査の同時実行は行っていない。関連テストの追加実行やPushはまとめて進める。
+- 320の片側owner overlayが欠ける場合は既存の非衝突候補が全滅し元見出しへfallbackする経路と整合。ただし各候補の除外理由をまだ採取しておらず、clamp候補追加案は未実装。衝突/全文/所属距離制約を緩和して名前を置くことはしない。
+
+## 所属名候補2f88900fと結果後の狭幅操作
+
+- [重点WebKit 41168949776](https://github.com/nao70161994/machikoro/actions/runs/41168949776)は12件・再試行0・3.4分で成功。元の所有者名境界caseも含む。通常Releaseと16画面は確認中。
+- 96の320実対局画像を独立レビューし、出目確定後に収支の92px指定が狭幅用44px指定より強く、自分ボタンが途中で切れる追加不具合を発見。狭幅mediaに結果ありのselectorを加え44pxへ統一。詳細/ariaは保持し、PCの収支表示は不変。
+- 既存の収支操作caseへ実際のrollDice([1])とrenderを加え、結果あり状態を検証。初期のhit確認、320/390/844で44px、320の俯瞰初期位置で自分ボタン全文、4幅で通常click開閉・戻る・Tab・roll後正本不変を確認。ローカル1case12.6秒で成功。独立ソースレビューで採用を止める退行懸念なし。市場正面など戻るが増える状態ではcamera領域の横scroll仕様を維持する。
+- 96の320実対局は73turn/169actions/274click/544255ms、CPU待機268673ms、pageErrors0。閲覧→復帰2click/793ms、scale/angle/正本復帰。画像mid/late/first-build/winnerを独立レビュー。カード・下部操作の重大なclipなし。owner overlayが置けず元の見出しへfallbackする非対称表示と、勝利説明末尾の孤立行が残る。
+- 公式PV72/80/84秒と再比較。大きい立体ダイス、主役カードの拡大と減光、祝福光/プレイヤー反応の強さには差があり、現状の小さい実カードと枠強調だけで同等品質とは評価しない。静止画から連続演出を証明しない。1440画像は選択取得後に再レビューする。
+
+## 743a9b5cの確定結果と後続候補
+
+- [全Nightly 41112650607](https://github.com/nao70161994/machikoro/actions/runs/41112650607)は349件の実行/和集合照合まで完了したが失敗。342初回成功・3再試行成功・3失敗・1許可済skip。時間上限での中断はない。通常Release [41112628743](https://github.com/nao70161994/machikoro/actions/runs/41112628743)も同じ通常カメラ2件で失敗、16画面操作 [41112628737](https://github.com/nao70161994/machikoro/actions/runs/41112628737)は成功。
+- カメラの2件は、通常resize/reflowでも比例位置へ戻す743の製品退行。元の「閲覧カードを中央へ戻す」assertを維持し、市場open〜closeだけpan保持へ限定する。live anchorはclose後false、保存したreturnViewのコピーだけtrueを維持。購入なしも同期復元してから解除する。テーマ離脱時のclose(false)も同じ解除経路、一時的な詳細modalへのsuspendは市場閲覧中として扱う。
+- 建設は[自然終了とframe間隔の記録](assets/nightly-quality/flight-finishes-between-frames-743.json)を採取。1440では173msのpaused0から889msの消失へ進み、finished480だった。320/844も最初の観測が407/424msで60..400msの元判定外。取り消しやscroll誤検出ではない。
+- 後続候補は二重RAFを経てからclockを開始し、最初の描画機会をpausedで待つ。両段階にgeneration/current/同一ghostを検査し、古callbackは新handleを消さない。480ms・1500ms・60..400ms判定を変えない。RAFはpaint完了の保証とは扱わない。
+- 残る[ローカル中間候補の失敗](assets/nightly-quality/local-staging-late-generation.json)では320の生成自体がclose後約1.3秒まで遅れ、1500msに間に合わなかった。別batchの4件はページloadが40.555秒かかるなどsetup/操作段階で45秒上限に達した。これをすべて同じ描画原因として扱わず、成功した再実行だけを報告しない。
+- 2viewportを同一caseで進めていた購入→Back検証は、390/844の独立caseへ分割。各caseの45秒上限・各軸1px・正本assertは維持し、両方成功。新規ケースを除く通常再配置2件も元assertでローカル成功。建設の全条件で6件成功したbatchと、後続の失敗batchは区別する。
+- focused WebKitの選択にoverviewファイルも明示し、通常再配置2件・購入復帰2件・建設5条件・市場往復2件を同じ候補で検証する。期待値緩和・強制clickは行わない。
+- 所属名は[表示整理とA/B](owner-name-readability.md)。カード/文字を縮めず普通名の末尾を読めるようにし、同名時の席番号は残す。境界配置の保証とはしない。
+
+## P0の原因と修正
+
+- 元mainの3回は318件（WebKit316、Chromium2）を1 workerで実行し35分で未完了。[23種類と現在の検証契約](nightly-main-failure-audit.json)を対応付け、case単位6分割とID和集合照合で欠落/重複/未実行/中断を検出する。`nightly-main-failure-audit.json`は9c70127b/340件時点の契約整理であり、最新実行結果は上のrun記録で区別する。
+- 製品の不具合：市場のnative dialog移動後の排他漏れ、回転カードの収支/休業競合、HUD名、変換後の市場スクロール座標、カード追加後のviewport同期、市場close/reopen競合等。時間延長・強制click・assert削除では修復しない。
+- 古いfixture：5/10人の旧3席期待値、正面閲覧と全体倍率の混同、非表示menu内の操作、CPU設定/roster不整合等。現仕様の操作・正本不変の検証へ更新。
+- SW二世代は旧documentのload待機と実reloadが競合。クリック前から実navigationを待ち、v2/cache/controller/error assertは維持。
+- 建設noticeはclose後232msに追加、1430msに削除、次RAF1489msで寿命を消費していた。[失敗記録](assets/nightly-quality/notice-expiry-before-first-frame-320.json)。1200ms寿命は最初の描画更新から数え、取消/世代/phase等を再検査。flight480ms・CSS180ms・観測期限は維持。RAFをpaint完了とは扱わない。
+- 夕暮れ市場の[trace集計](assets/nightly-quality/sunset-market-detached-fixture-evidence.json)：CPU手番で38カード全部が正常値からfontNaN/空style/寸法0へ変化。寸法用fixtureだけ整合した人間2席へ固定し、元assertとisConnectedを確認。CPUの自然進行とは検証を分離する。
+- 建設見送りの過去1失敗は自動復旧表示との関係が未確定。元操作/assertを維持して再発時のcheckpoint/modal状態を追加採取する。診断追加を製品修復とは呼ばない。
+
+## 実UI完走と独立レビュー
+
+CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間による感性評価ではない。全4幅で開始から勝利まで成功し、pageErrors0。
+
+|幅|commit/run|turn|人間actions/クリック|経過ms|正面閲覧→復帰|
+|---|---|---|---|---|---|
+|320×568|25d83934 / [40980824892](https://github.com/nao70161994/machikoro/actions/runs/40980824892)|64|183/295|403603|2クリック613ms|
+|390×844|6e778b87 / [40980359766](https://github.com/nao70161994/machikoro/actions/runs/40980359766)|82|234/344|756842|2クリック789ms|
+|844×390|6e778b87 / 同run|64|155/249|533505|2クリック764ms|
+|1440×900|25d83934 / 同320run|83|193/298|929235|2クリック1936ms|
+
+各対局で正本・倍率・角度の復帰を確認。mid/late/first-build/winnerの全幅画像を独立目視。320収支のclipを発見して後続修正。これらは旧commitの実進行と追加差分のtargeted検証であり、最新候補で4ゲーム再完走したという主張ではない。
+
+2〜10人は全席/市場/所属/詳細/状態不変等のcontrolled fixtureも使い、4テーマ混在オンライン・再接続・保存・Undoは共有正本とモード切替の検証を維持。全幅×全人数の自然対局、全テーマそれぞれの全UI操作を網羅したとは報告しない。
+
+## 見た目・操作の改善比較
+
+各ペアは同条件の表示fixture。実対局画像・物理端末確認とは区別する。独立レビュー済み。
+
+- CPU待機：[前](assets/nightly-quality/cpu-inline-844-before.png) / [後](assets/nightly-quality/cpu-inline-844-after.png) / [条件](assets/nightly-quality/cpu-inline-844-comparison.json)。844×390の卓高218→250px。有効操作/復旧通知は元配置へ戻す。
+- 所属帯：[前](assets/nightly-quality/owner-band-390-before.png) / [後](assets/nightly-quality/owner-band-390-after.png) / [条件](assets/nightly-quality/owner-band-390-comparison.json)。縦2人戦の見出し28→48px、390俯瞰倍率0.360→0.352。40px案は無効、64px案は縮小が大きいため不採用。任意構成の先頭配置保証ではない。
+- 収支：[前](assets/nightly-quality/receipt-controls-320-before.png) / [後](assets/nightly-quality/receipt-controls-320-after.png) / [条件](assets/nightly-quality/receipt-controls-320-comparison.json)。320ガイドONで収支のnav越境を解消。卓高384px/正本不変。4幅・戻る有効・Tab focus・通常click開閉を確認。
+- 勝利：[前](assets/nightly-quality/winner-words-1440-before.png) / [後](assets/nightly-quality/winner-words-1440-after.png) / [条件](assets/nightly-quality/winner-word-comparison.json)。1440で完成6枚が2行→1行、名称は13pxを維持し「ショッピ/ングモール」→「ショッピング/モール」。カード幅118.375→97.3125pxで約18%縮小するが、一覧は約120px上へ移り独立レビューは改善を支持。390の幅143px/3行配置は不変。
+
+勝利名の語分割はwinnerCollectionだけ。Intl非対応は全文fallback、全segmentをescapeしaria/action/titleは完全名のまま。4幅の元詳細操作/フォーカス復帰に全文/語のfit/PC同一行を追加確認。単体で正本不変・escape・非対応fallbackを確認。fullPage画像は全操作が同時にviewport内へ入る証拠ではない。
+
+## dedc82d2で再発した描画待ち
+
+[390px建設flightの失敗記録](assets/nightly-quality/construction-render-gap-390.json)ではclose後約255msに生成済みだったが、次の描画更新は1487ms（paused0）、1518msでrunning31ms。1500ms以内に60ms以上進むframeを観測できず、再試行は成功。取消・寿命不足とは異なる。layoutの93〜227msとcueの227〜255msの後に約1.2秒のframe間隔があり、paint/合成負荷と観測負荷を調査中。前回347件の初回成功だけで安定化完了としない。期限・動作frame判定は維持する。単純なclose時refresh削除は復帰snapshotのgeometryを壊す恐れがあるため採用しない。
+
+## 採用しなかった狭幅所属ラベル案
+
+320pxで既存横持ち仕様の18px帯へ切り替え、市場側候補を優先する案を試したが、320×568の終盤fixtureでは市場境界の必要な空白を確保できなかった。2回の候補検証は失敗し、製品変更・テスト変更は撤回した。元の320/390×844境界assertは維持する。短い画面での改善を確認したとは報告しない。
+
+## 購入後の応答・閲覧位置の候補修正
+
+- 購入cueがある市場closeでは、戻した卓のlayout→cameraを同期してから同taskで演出を提示する。購入なしのcloseは従来経路。単純にlayoutを除く案は復帰snapshotが混在するため不採用。480ms flight、1200ms notice、1500/2500ms観測期限は不変。
+- 独立レビューで相手正面・pan後の購入→Backを追加確認し、修正前の `0d8e68da` でも横pan80pxを失う既存挙動を再現した。viewport高も616→668へ変わるためrawscroll一致だけは正しい指標ではない。
+- カメラが記録する閲覧カードにviewport内の比例位置を追加。通常resizeは二重RAF後、明示syncLayoutは確定済みの卓へその場で復元し、focusCardが復元前のsnapshotを保存しない。geometryが変わるBackはカード識別子も利用。完全表示を保証する仕様ではなく、centerのclampで一部可視を保つ。
+- 初期の新testは先頭カードを比較したが、実際に中央で閲覧していたのは別行のパン屋だった。異なる行のカードを同時に比例復元する要求は不適切なので、新caseを「中央に近い同一カードの追跡」に修正。既存テスト/assertは変更しない。390/844でscale/angle厳密一致・比例位置1px以内・正本不変を確認した。独立レビュー指摘に従い、保存したカードがUndo/交換等で消えていた場合は旧world中心のfallbackへ戻す。
+- 最終ローカル回帰は既存11件＋新1件（390/844の購入→復帰）で12件成功、2.5分・1worker。構文、main/UI型、ESLint、関連単体も成功。native CIは後続確認する。
+- [変更前画像](assets/nightly-quality/camera-return-390-before.png) / [変更後画像](assets/nightly-quality/camera-return-390-after.png)。[前の測定](assets/nightly-quality/camera-return-390-before.json) / [後の測定](assets/nightly-quality/camera-return-390-after.json)。同じ人間2席のcontrolled fixture。前は先頭の麦畑、後は実際の閲覧anchorである別行のパン屋を記録したため、縦の数値を直接比較しない。幅が変わらない横pan80pxの消失を修復。390のscrollLeft584→584、844は835→835。独立画像レビューで新しい操作の重なり・表示崩れなし。afterのカード名左側のclipは利用者が明示したpanを保持した結果で、全景fitの欠落とは区別する。
+- 今回の候補が約1.2秒の描画空白そのものを解消したかは未確認。ローカルChromiumの成功をnative WebKitの安定性の証明にはしない。
+
+## 残課題と完了判定
+
+- 最新候補の固定環境を確認し、再試行/skip/中断を区別する。以前の全Nightlyが再試行0で完走した後も過去の別失敗を調査し、未確定事項を隠さない。
+- 320終盤の任意構成でowner名の末尾配置/省略が残る。建設の一時通知が自分の施設を覆う場合もあり、操作は覆わないが視線誘導の改善余地がある。
+- 公式の静止画・PVとの比較で、大きな発動カード、卓面の光、プレイヤー反応、連鎖演出の一体感には差が残る。公式の画像・キャラクターを製品へ取り込まない。
+- 俯瞰終盤の細字は自然な拡大閲覧と併せて評価する。物理スマートフォンは未確認。
+- テスト成功・画像一致だけで商用品質へ到達したとはしない。実プレイ・比較画像・独立レビュー・重大問題の解消を照合して判定する。
+
+## 743の実UI完走（後続候補を含まない）
+
+[41112655865](https://github.com/nao70161994/machikoro/actions/runs/41112655865)、CPU1500ms・非seed・人間席の自動UI操作。
+
+|viewport|turn|人間actions/click|経過ms|閲覧→復帰|pageErrors|
+|---|---|---|---|---|---|
+|390×844|50|125/204|410789|2click/906ms、scale/angle/正本復帰|0|
+|844×390|62|151/240|531351|2click/834ms、scale/angle/正本復帰|0|
+
+序盤・中盤・終盤・first-build・winnerを保存し、縦横のmid/late/first-build/winner8枚を独立目視。新たな主要操作の重なり・重大な切れは見つからなかった。owner名の末尾配置、終盤の細字、横の広い余白は残る。diceの撮影target時刻とactualelapsedは一致しないため、この静止画列だけで演出の連続性を検証したとはしない。専用の実frame検証と併せて評価する。物理スマートフォン確認とは区別する。
+
+## 次候補の確認範囲
+
+所属名の3caseと同名確認を含む最終1case、通常再配置2case、独立化した購入復帰2caseはローカルで成功。stageの全建設条件を含む6case成功batchもあるが、後続batchの失敗は上記に残しており「関連ローカル全成功」とは報告しない。最終の構文・ESLint・main/UI型・関連単体は成功。テストの時間上限や許容値は変更していない。追加の固定WebKit重点検証を先に実行し、その結果から次の全Nightlyを判断する。
+
+## 7ecの4幅実UI完走と独立画像確認
+
+[操作集計](assets/nightly-quality/ui-playthrough-7ecac-summary.json)。人間席を通常のUIから自動操作し、CPU弱・1500ms・非seedで進行。全4幅で勝利、pageErrors0、相手正面閲覧→復帰は2clickでscale/angle/正本を維持。
+
+|viewport|turn|人間actions/click/keys|CPU待ちms|全経過ms|閲覧→復帰ms|
+|---|---:|---|---:|---:|---:|
+|320×568|77|180/290/38|287310|579788|802|
+|390×844|83|214/327/42|335146|638674|546|
+|844×390|75|174/269/37|277733|610222|1014|
+|1440×900|90|251/376/45|338699|1117530|1966|
+
+異なる非seed対局なので所要時間を変更前後の性能比較には使わない。action.elapsedMsはメニュー等の複数操作を含み入力遅延そのものではない。1440の最初のrollは10122ms、同じ区間で5枚の撮影actualelapsedは1701〜7909msとなり指定0〜1200msと一致しない。画像採取時間を含むため、この列からサイコロの連続動作や操作遅延を証明しない。
+
+[実発動320](assets/nightly-quality/activation-live-320-7ecac.png) / [実発動844](assets/nightly-quality/activation-live-844-7ecac.png)は時間固定しないnative実rollの第4送金付近。独立レビューは森林/街4/+1/銀行→街4/4/4が読め、HUD/操作への被覆なしと評価。320の市場上部、街4のownerラベルはpopupに隠れ、送金bubbleは実カードの一部に重なる。popupにもownerがあるので情報喪失ではないが、元施設との視覚対応と演出の重なりには改善余地。静止画で600msの読み取りや連鎖テンポを保証しない。
+
+[最新1440の実対局勝利画像](assets/nightly-quality/winner-live-1440-7ecac.png)。独立レビューで語内部折返し解消と6枚一列、操作の明瞭さを確認。下端の所有施設はスクロール領域なので全件同時表示の証明にはしない。
+
+## 発動帯と所有者名の位置対応（後続候補）
+
+7ecの実発動画像の独立レビューで、発動帯がownerラベルを覆う点を発見。従来の位置評価は元カードと施設/市場だけを見ていた。元カード→表示中のowner名→その他の被覆面積の順で評価し、元カード辺沿い8候補を追加。overlayがない席では表示中の元見出しも対象にし、opacity0の見出しを除外する。ownerだけで文字fallbackへ戻さず、元のsource/サイズ/所有施設被覆によるfallbackを維持。100×65px・600ms・700ms刻み・取消guardを変えない。
+
+[844前](assets/nightly-quality/activation-owner-844-before.png) / [後](assets/nightly-quality/activation-owner-844-after.png)、[320前](assets/nightly-quality/activation-owner-320-before.png) / [後](assets/nightly-quality/activation-owner-320-after.png)、[測定](assets/nightly-quality/activation-owner-comparison.json)。4人森林の直接投影で4/4を撮影、撮影だけexpiry60秒固定。実roll/送金/600ms体感の証明ではない。844は街4名の被覆→非被覆、320はこの場面では元から非被覆で配置不変。いずれも元カード非被覆・アート100×65px・正本不変。任意場面で全owner非被覆を保証する変更ではない。
+
+既存844/320実rollケースの元判定を保ち、全発動でowner overlay非被覆の確認を追加。ローカルはbrowser1個の固定画像採取のみ実施し、終了後に構文/ESLint/mainUI型をまとめる。native20件と通常CIは後続確認。先行7ecの成功を候補の成功へ読み替えない。
+
+後続候補の構文・ESLint・main/UI型は成功。独立ソースレビューは辞書順と追加候補の安全性を確認し、overlay欠落時の元見出しも保護する補足を反映。追加の独立画像レビューはエージェント利用上限で未実施。実装者自身の844前後確認では街4名と市場見出しが現れ、操作/元カードへの新しい被覆なし。独立画像レビュー済みとは扱わない。
+
+追加独立レビューは利用上限の復帰後に実施できた。320/844の原寸A/B4枚を確認し、844はowner全文・元カード/市場/HUD/操作非被覆、320は配置不変・市場上部被覆は残るが増悪なしと評価。採用可能との判断。静止fixtureの評価であり実roll/600msテンポの証明とはしない。最新候補668ed718の重点WebKitは[41189002920](https://github.com/nao70161994/machikoro/actions/runs/41189002920)、Releaseは41189004547、16画面は41189004543で結果待ち。
+
+## 668ed718の重点WebKit失敗と次の切り分け
+
+[41189002920](https://github.com/nao70161994/machikoro/actions/runs/41189002920)は18成功/2失敗・retry0・5.7分。844の第4送金は160ms/opacity1の後、次のRAFが終了600ms/opacity0で元の<500ms判定に失敗。1440建設はafterClose238msのpaused0から次が1610msのpaused0で、1500ms内の移動frameを観測できなかった。所有者非被覆の失敗ではない。320は4回ともowner/source非被覆・100×65アート・正本/再生guardの元assertを通過。新配置で描画待ちが解消したとは主張しない。
+
+次の診断はテスト側だけでtimeout callbackの処理時間を最大100件記録し、フレーム間隔との区別を可能にする。caption生記録も元frame判定より前に保存し、失敗で証拠が欠けないようにする。製品の時間軸・元assert・6500/1500ms期限を変えず、同じ条件で処理コストを採る。通常Release/16画面の同版結果を待ち、無変更で成功するまで再実行はしない。
+
+668ed718の通常Release [41189004547](https://github.com/nao70161994/machikoro/actions/runs/41189004547)は成功。16画面ジョブ41189004543は継続中。描画空白は原JS callbackの時間と同時刻のCPU/memory pressure・cgroup throttlingを診断専用ジョブで500ms毎に記録して切り分ける。Linux counterが読めない場合はnullを残し、同時1sample・callback最大100件・ファイル出力でメモリを制限。childコマンドのexit statusを維持することをローカルで終了code7のコマンドにより確認（3行のJSONL、ラッパーもcode7）。新規製品機能やテスト緩和ではない。通常Release/16画面の元実行が終わるまでPushを控え、途中取消を避ける。
+
+668ed718の16画面/表示操作 [41189004543](https://github.com/nao70161994/machikoro/actions/runs/41189004543)も成功。通常Releaseと併せて結果確定。重点20件の2失敗は別に保持する。診断コードの独立レビューで、採取障害によるchild終了コード上書き・直接childだけへのsignal転送・100件以降の計測継続を指摘され、child結果優先・POSIX process groupへ転送・100件以降はnative timerへ戻すよう修正。終了code0/7とSIGTERM143のsmoke成功、構文/ESLint成功。観測負荷はゼロではないため、圧力/処理時間の相関だけで原因確定とはしない。
+
+## DPRと代表端末条件の確認
+
+`mobile-webkit`は全viewportへiPhone13のDPR3を適用している。native320発動画像960×1704、844は2532×1170、1440×900実対局画像は4320×2700とPNGヘッダで確認。1440の約1166万pixelはDPR1の9倍。ただしこの事実だけで描画空白の原因とは確定しない。
+
+独立レビューはPC代表条件としてDesktop Safari/DPR1を追加する妥当性を支持したが、元DPR3の置換による成功扱いを否定。必要な比較は同じiPhone設定でDPRだけ1にした条件と、Desktop Safari/DPR1を分ける。元の高DPR・期限・opacity・動作frame条件は保持する。現時点では比較未実行で、現在のresource/JS時間診断41190117722の結果を優先する。
+
+## ceadc4e2の診断結果と採用しなかった旧景観省略案
+
+[重点WebKit41190117722](https://github.com/nao70161994/machikoro/actions/runs/41190117722)は20成功・retry0・5.8分。[記録](assets/nightly-quality/native-resources-cead.json)では4CPU/noCPUquota、692sample、採取最大19ms、throttle/OOM kill増分0。CPU pressure some avg10は1.57〜37.99%、memoryは最大1.84%。これは成功時の実行記録であり、先行失敗の原因解消や環境原因の証明ではない。
+
+320/844のcaption show callbackは6〜18ms、第4送金は394/203ms・opacity1で元判定成功、両幅4回ともowner/source非被覆・100×65px。一方600ms後のroll解決callbackは363/391ms、成功時にもRAF最大gap548/914msが残る。さらにcallback/描画の内訳が必要。通常Release41190118504も成功、16画面41190118369は継続中。
+
+[旧景観省略の採用しなかった比較](assets/nightly-quality/hidden-town-rejected.json)はTermux Chromium/DPR1・controlled4人/各12施設。cardboardの非表示legacy街景観を作らない案はDOM879→95要素だが、renderPlayers5回の時間はbefore265〜1001ms/after299〜1092msで改善を証明できなかった。helper自体はbefore0.4〜0.7ms。theme-changeは全renderPlayersを再実行しないため、切替後の街景観が欠ける退行も見つかった。UI候補と追加assertは撤回し、元の製品・テストを保持する。既存assertの削除や許容値変更ではない。ローカルswapが上限へ達したため追加ブラウザ比較は行わない。ゲーム正本は4テーマ切替で不変、pageErrorsなしだが、表示互換性の退行は採用理由にしない。
+
+次の診断差分は2つの既存実rollケースだけで、render/_render/renderPlayers/renderBuildMenu等の内訳とRAF callback処理時間を各最大100件記録する。native callbackの引数/this/handle・呼出順・例外を維持し、上限以降は計測しない。render時間は入れ子を含むため合計して全体時間にしない。新規ゲームテストや期限変更はなく、元の判定を通るまで繰り返す用途ではない。採用しなかった景観案は製品へ残さない。
+
+render/RAF診断ラッパーは独立ソースレビュー済み。元handle/this/引数/順序/例外を保つ一方、事前に捕捉された参照は計測されない場合があるため、記録なしを未実行としない。診断専用workflowへ任意のrender_profile_onlyを追加し、既存の発動844/320と建設1440の3件だけを選べるようにした。既定falseの20件・通常PR/全Nightlyの範囲とassertを維持し、原因特定時の待ち時間を減らす。
+
+最新main再確認で7954fcd1（RL学習CI #20）を検出。a265ca7eからの差分はRL workflow/README/専用docs/専用unit/テスト一覧の5ファイルで、ゲーム画面・ルールは変更なし。新しいテスト登録を保って作業ブランチへ取り込む。上記既存CIの証明対象は取り込み前のcommitであり、統合後の成功へ読み替えない。render_profile_onlyの--listは元の3件だけ選択することを確認、workflow YAML parseと抽出shellのsh -n、構文/ESLintも成功。
+
+## 83d14bb2の描画工程診断と発動影の候補
+
+[3件の実行41301011666](https://github.com/nao70161994/machikoro/actions/runs/41301011666)は2成功/1失敗・43.3秒、retry0。[生記録](assets/nightly-quality/render-profile-83d.json)。844送金は89ms/opacity約1の次が終了600msで元の<500ms判定に失敗。320発動と1440建設は成功。844のrender139ms（内renderPlayers80/build37ms）、RAF callback最大7ms、caption5〜7msなのに537〜934msのframe間隔が残る。期間のCPU some avg10約9%、memory pressure0、throttling0。JS callback・OOM・CPU quotaだけでは説明できず、paint/compositing側の負荷を調べる。
+
+候補は発動カードkeyframeのbox-shadow blur補間をやめ、同じgold影をclassの固定shadowへ移す。transformリフト/元の650ms連鎖/イベント遅延・送金600ms・期限は維持。resolvingのbrightness filterは外し、元アート色・outline・固定ringで識別する。大収益のshadow・到着shadowを区別し、table baseの高特異性に負けないようactivation変数をarrivalの次fallbackで参照。新しい恒久compositing layerは増やさない。これは描画負荷の仮説を検証する候補で、根本原因や改善を未測定のまま断定しない。
+
+既存2実rollの元name/delay/frame/正本/再生guardを保ち、shadowがkeyframe補間へ戻らないassertを追加。通常CIやDPR3条件を緩和しない。構文/ESLint成功、独立レビューとnative3件で候補を比較する。
+
+83d14bb2の通常Release41300997156と16画面/操作41300997153は成功。工程診断3件の844失敗は別に保持。影候補は独立ソースレビューとnative比較を並行して進め、未検証候補として作業ブランチへ保存する。
+
+## ad5f90f2の固定影候補の実測
+
+[同3件41302816863](https://github.com/nao70161994/machikoro/actions/runs/41302816863)は3成功・retry0・1.0分。[生記録](assets/nightly-quality/render-profile-ad5.json)で320/844の第4送金329/339ms・opacity1、両幅4回owner/source非被覆・100×65アート。keyframeの影補間なしを元name/delayと共に確認。ただしRAF最大gap371/972msは残り、前の失敗との比較で速度改善/根本原因解消/安定化を証明していない。1回の成功を理由に失敗を除外しない。
+
+[実発動320](assets/nightly-quality/activation-static-shadow-320-ad5.png) / [844](assets/nightly-quality/activation-static-shadow-844-ad5.png)。撮影は時間固定しない実roll、取得時刻は同一A/Bではない。独立ソースレビューはcascade/arrival優先/ReducedMotion維持を承認、光が一定/brightness弱化の見た目を別途確認する。通信エラー後に同artifactの全ZIP6.7MBをghで取得しCRC検証、64KB単位で展開した。CI再起動は行わない。
+
+候補の[全Nightly41303280049](https://github.com/nao70161994/machikoro/actions/runs/41303280049)を起動。元の6分割・網羅性照合・高DPRを保持し、重複する重点20件の再実行を挟まない。現在unit/PWA/online/CPU simulation/soak/inventory成功、browser6分割進行中。
+
+## ad5の全件回帰と最新実UI対局
+
+全Nightly41303280049は成功。352件=351初回成功/0retry成功/既存任意UI対局skip1。分割59/59/59/59/58/58、各8.4/8.9/9.9/8.4/9.1/14.0分、全実行ID352件一致。simulation/CPU2〜10/online-soak/unit/PWA/復元も成功。通常Release41302492807・16画面/操作41302492793も成功。元DPR3/期限/opacity/移動frame条件の成功であり、以前の失敗や長いRAF gapを削除していない。
+
+固定影の実roll画像320/844は独立レビューで色/森林アート/金枠の判別性、新たなHUD/下部操作被覆なしを承認。844はowner/市場を避ける。送金bubbleの実カード一部被覆と320の市場被覆は残り、旧画像にもあるため今回固有の退行とは判断しない。静止画からテンポや性能改善は断定しない。
+
+最新4幅の実UI完走を[390/844:41304737355](https://github.com/nao70161994/machikoro/actions/runs/41304737355)と[320/1440:41304760519](https://github.com/nao70161994/machikoro/actions/runs/41304760519)で開始。ad5/CPU1500ms/非seed・人間席自動UI。結果と原寸画像確認は未完了。以降はこの同じ実行を追跡し、機能テストの追加再実行を挟まない。
+
+## ad5の4幅完走結果と独立再レビュー
+
+上記の実UI対局2実行は両方成功。320/390/844/1440の全幅で開始から勝利まで完走し、pageErrorsは全て0。[集計](assets/nightly-quality/ui-playthrough-ad5-summary.json)。最終turnは92/74/46/68、人間席操作246/184/109/201、所要597/627/368/634秒。CPU待ち290/274/145/248秒を含む。非seedの別対局なので幅による速度A/Bとは扱わない。各幅で相手正面への移動と全体復帰を2クリックで行い、ゲーム状態不変・元の倍率/角度への復帰を確認（662/714/773/1218ms）。連続動画ではないdice撮影時刻をアニメーションの滑らかさの証明に使わない。
+
+390/844の14画像、追加320/1440の10画像を独立目視。後者の[記録](ui-playthrough-ad5-image-review.md)。主要操作の重大な重なりは見当たらないが、狭幅終盤の細部判読、名前札の回り込み、特殊効果の文中折返し、結果画面の下方への到達案内は改善余地が残る。物理端末確認ではない。所有一覧の全体縮小だけでは細字を十分に読めない点を未達として保持する。
+
+320の勝利補足文が末尾「た。」だけ折り返す実例を修正。文章を2文節のinline-blockに分け、既存文字サイズと全文を維持。各文節はmax-width:100%とoverflow-wrapで文字拡大時には内部折返しも許す。既存4幅勝利ケースへ実テキストRangeの1行検証を追加し、assert削除や許容値変更は行わない。独立ソースレビュー承認、node構文/diff確認成功。変更後のnative描画検証はこれから実施する。ローカルswap残量が少ないためブラウザを追加起動せず、既存CIでまとめて確認する。
+
+## 勝利文修正後の検証と次の所有者対応候補
+
+7d85ee0cで勝利文修正とad5実UI証拠をPush。通常Release41306799112・16画面/操作41306799149を追跡中。関連tests/ui-winner.test.jsは成功。既存4幅勝利ケースが通常Releaseに含まれることを再確認し、重複起動した重点20件41306800152は取り消した（成功扱いにしない）。
+
+320終盤の名前札は、衝突回避により横の空きへ置かれており、単純な上方固定ではカード被覆や表示倍率悪化を招く。独立調査の提案に沿い、配置を変えず横札と最寄り実カードを席色の短線で結ぶ候補を実装中。画面座標の矩形最近接点を使うため回転4方向に共通。3〜64pxの線だけを許し、別カード・ランドマーク・市場・既存札を横切る場合は描かない。SVGはpointer-events:none/aria-hidden/focusable:false、High Contrastは白。構文/ESLint/diff確認済みだが実描画は未確認、独立ソースレビュー中。まだ製品改善完了とは扱わない。
+
+7d85の通常Release41306799112と16画面/操作41306799149は両方成功。Releaseのoverview34件・勝利4件も成功。ただしartifact13084086192（214,971bytes）を全取得・CRC確認したところreport/index.htmlのみで、予定の勝利PNGは未収録だった。生成/アップロードのrunner.temp絶対パス依存を避けるため両方をworkspace相対のartifacts/release-reviewへ揃える。パス不一致が原因かは次回の実収録で確認し、現時点では仮説。YAML解析と生成/収集パスの一致は確認済み。
+
+接続線候補は独立ソースレビュー承認。横札の判定は最寄り1枚との左右関係ではなく、札中央が所有群全体の左右端より外側かで行う。これにより、右下の札の最寄りカードが上にある実例も対象にできる。既存Node suiteに接続先・別障害物回避・通常上部見出し省略・64px超の線省略を1ケース追加、全成功。まだ実線の見え方は未確認。表示テストの許容値や元assertは変更していない。
+
+## 705a7affの実描画と演出の未解決再現
+
+通常Release41308372738は成功。artifact13084581607（5,728,699bytes）を全取得・CRC検証し、勝利320/390/844/1440のPNG各1とgeometry各1の収録を確認。相対workspaceパス修正後の実収録が確認できた。画像内容の独立再レビューは別途進める。
+
+重点20件41308422743は17成功/3失敗・5.5分・retry0。844発動の第4送金は36ms/opacity0.62の次が553ms/0.70で元の<500ms条件に失敗。390建設は300ms/paused0から1867ms/paused0、1440は251ms/paused0から1560ms/paused0で、元1500ms内の移動観測に失敗。基準や期限を緩和せず記録を保持。名前札・勝利4幅は成功しているが、この結果を全演出の安定成功と読み替えない。
+
+[接続線320の実画像](assets/nightly-quality/owner-link-320-705.png)は独立目視で、自分の札から引越し屋外縁へ接続し、市場/相手カード/文字を横切らず所属を追いやすいと承認。これとは別に、線SVGを全viewport面積から線+2px余白の最小矩形に限定する未コミット候補を追加。高DPR卓全体の透明SVG面を作る必要をなくすが、旧ad5でも遅延があったため根本原因解消とは主張しない。関連Node suite/構文確認成功、線の画面上の両端は変えない。
+
+## 順序を逆にした探索診断
+
+診断専用branch bc82fc90、実行41308878997は完了。元ad5製品コードを固定し、既存順forward41305776379と逆順を比較。[全生記録](assets/nightly-quality/observation-order-comparison.json)。全setup有効/pageErrorsなし。forwardはmobile3-driver360ms、mobile3-quiet305ms、mobile1-quiet182ms、desktop1-quiet184msで元フレーム条件を満たす。reverseは先頭desktop1-quiet546msで不成立、後続mobile1-quiet195ms/mobile3-quiet374ms/mobile3-driver400msで成立。診断jobのsuccessは全フレーム条件成功という意味ではない。
+
+DPR3やdriver queriesが遅延の必要条件だとは言えず、単純にDPR1へ変更/操作監視を除去する根拠にはならない。先頭caseの起動/描画warmupやrunner差が交絡しており、順序依存の因果確定でもない。元回帰テスト・DPR・期限・opacity条件は引き続き保持する。起動直後の描画負荷と演出のrendering機会を次の調査対象とする。
+
+Release705のbrowser job124853388660を最後まで確認すると、全体successでも元320発動caseが初回失敗/retry1成功で**1 flaky**だった。初回第4送金は144ms/opacity1の次が終了600ms/opacity0で元<500条件に失敗。[失敗生記録](assets/nightly-quality/presentation-failures-705.json)。17/20重点失敗と併せ、CIの緑を安定性の証拠にしない。テスト期限や失敗assertを変更していない。
+
+勝利PNG4幅は独立レビュー承認。[320の修正後画像](assets/nightly-quality/winner-caption-320-705.png)では補足文が「積み重ねた一枚が、」「勝利につながりました。」の2行となり孤立末尾を解消。390/844/1440も全文・句・重なりに新しい問題なし。接続線SVG最小矩形化も独立ソース承認、画面上の端点を維持・Node幾何検証成功。ただしnativeでの性能効果は未測定。次のPushは演出タイミングの追加修正とまとめる。
+
+## 空画面・待機盤面・発動中の切り分け
+
+診断branch2db084edの41309843201を全取得・CRC検証。[生記録](assets/nightly-quality/idle-baseline-2db.json)。Desktop DPR1の対応する844×390条件では、空画面1200msで69frame/max26ms、準備済み盤面で36frame/max91ms（初回観測まで571ms）、発動中38frame/max723ms。空画面だけの常時低fpsでは説明できず、盤面準備/発動の描画も調べる根拠になる。ただし実行順・warmup・runner差が残り、paint箇所を特定した証明ではない。
+
+同実行のモバイル空画面はmeta viewportがなく980×452/実効DPR0.861または2.584だった。アプリの844×390/DPR1または3と直接比較してはいけない。診断branch f12b7248でmeta viewportと実寸/DPR検証を追加。元の製品・回帰テストは変更しない。
+
+次の探索実行41310645320は同mobile3 quietでABBA（hintなし→あり→あり→なし）を比較。移動送金と発動カードだけにwill-change:transform,opacityを診断内CSSで付け、全体卓や他表示を恒久layerにしない。各contextに同じbaselineを置き、元6500ms/第4送金条件は保持。通常CIの置換や許容値緩和ではない。追加hintは製品未採用であり、結果前に改善を宣言しない。
+
+## 小要素だけの描画hint候補
+
+f12b7248/41310645320のABBA診断完了。[生記録](assets/nightly-quality/compositor-hint-abba-f12.json)。全4contextでblank844×390/DPR3の一致を確認、blank75前後frame/max17〜20ms。発動中はnohint1=12frame/maxgap571ms/第4送金212ms、hint2=69/476/238ms、hint3=69/227/180ms、nohint4=53/325/427ms。対照も含め全frame条件成立。hint側のframe数増加は候補を試す根拠だが、先頭caseのwarmupや順序/runner差は除けず、根本原因解消や定量速度向上の証明ではない。
+
+製品候補として、送金表示（static除外）と発動カードにだけwill-change:transform,opacityを付ける。OSのReduced Motionとアプリ設定の両方を除外。盤面全体や無関係なカードを恒久layer化しない。影/見た目/元duration/delay/guardは変えない。独立ソースレビュー承認。追加レイヤーと重なり順への影響は元回帰ケースの実描画で確認する。
+
+通常PRのCIを候補ごとに重複起動しないため、まず別remote候補branchで元2roll+390/1440建設の4件をretry0で確認する。手動render_profile_onlyのsubsetを3→4件へ拡張、既定20件と通常Release/Nightlyは変更しない。YAML/選択一覧を確認済み。合格前にPRbranchへPushせず、未検証候補として扱う。
+
+## 58e35b6dを元の4回帰条件で確認
+
+別候補branchの[41329715382](https://github.com/nao70161994/machikoro/actions/runs/41329715382)は4初回成功/retry0・1.5分。artifact13092294717を同じdownload handleで完了まで待ち、CRC確認後に抽出した。[生記録](assets/nightly-quality/transient-candidate-58e.json)。元の期限/duration/opacity/状態/再生guardを維持。320送金は273ms/opacity1・75frame/maxgap258ms、844は354ms/opacity1・14frame/maxgap576ms。390/1440建設はmoving69/87ms、通知はclose後667/301msで可視。古い失敗が解消した一般的証明ではなく、この実行の記録である。
+
+10PNGを独立目視し、art/分類色/所有者/金枠/重なり順に新しい退行なしとして承認。[844実送金](assets/nightly-quality/transient-roll-844-58e.png) / [390実建設](assets/nightly-quality/transient-build-390-58e.png)。HUD・下部操作は露出。320の一部カード/市場への送金bubble被覆は既存と同様に残る。390通知に背景施設文字が薄く透けるが通知本文は読める。静止画から滑らかさやhint単独の性能効果を断定しない。
+
+候補の限定ケースと画像承認を得たため、516の最小SVG面・58eの小要素hint・検証証拠をまとめてPRbranchへ反映し、通常Release/16画面に加え全Nightlyの元全件/ID照合を一度実行する。各候補ごとの通常CI重複は避けた。最新mainは再確認して7954fcd1のまま。全体成功や商用品質達成はまだ先取りしない。
+
+## 4e全体検証と2件の再試行を受けた整理
+
+通常Release41330278049・16画面/操作41330278024は成功。全Nightly41330282749も完了・ID照合一致だが、349初回成功＋2再試行成功＋許可済skip1で、安定成功とは判定しない。実UI4幅は全勝利完走。元318件は310同名＋8改名/分割へ対応し未対応0だが、契約の意味が全て同一とは主張しない。
+
+初回失敗traceを調べ、PC市場5往復と37施設の購入/Undo/演出/保存再開が45秒全体期限に達したと確認。[個別の原因・修正方針](nightly-4e-follow-up.md)。PC用の1440ケースだけDesktop SafariのDPR/入力/UAへ合わせ、5連続往復と全assertを維持。通常購入→Undo→保存再開は連続して残し、RMと演出競合の購入/Undoを独立2件へ分離。全体discovery354件・errors0、JS構文/ESLint/coverage script Nodeテスト成功、独立ソース監査でassert消失・参照ミスなし。ネイティブ成功は次の一括実行で確認する。
+
+拡大市場の既存ケースには正本/在庫由来の全施設名照合、最後の詳細への通常clickと二段階Escape/focus復帰を追加。不足していた市場全体への到達を検査する。期限・許容値・force click・skipは変更しない。元全件CIと任意重点9件は別々に結果を記録する。

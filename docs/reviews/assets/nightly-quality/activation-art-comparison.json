@@ -1,0 +1,357 @@
+{
+  "scope": "Controlled four-seat static/reduced-motion DESIGN POSE comparison. Only these screenshots hold expiry at60s via response interception; production and real-roll tests retain600ms. Bank income projected directly, not a naturally played roll. Old490c9d65 module versus current prototype.",
+  "results": [
+    {
+      "width": 320,
+      "version": "before",
+      "capturedLive": true,
+      "tag": {
+        "x": 106.9375,
+        "y": 349.1875,
+        "width": 106.109375,
+        "height": 61.1875,
+        "top": 349.1875,
+        "right": 213.046875,
+        "bottom": 410.375,
+        "left": 106.9375
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "text",
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 312,
+        "height": 392,
+        "top": 116,
+        "right": 316,
+        "bottom": 508,
+        "left": 4
+      },
+      "source": {
+        "x": 129.37026977539062,
+        "y": 415.37530517578125,
+        "width": 61.25946044921875,
+        "height": 47.47607421875,
+        "top": 415.37530517578125,
+        "right": 190.62973022460938,
+        "bottom": 462.85137939453125,
+        "left": 129.37026977539062
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 320,
+      "version": "after",
+      "capturedLive": true,
+      "tag": {
+        "x": 52.9375,
+        "y": 330.875,
+        "width": 214.109375,
+        "height": 79.5,
+        "top": 330.875,
+        "right": 267.046875,
+        "bottom": 410.375,
+        "left": 52.9375
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "illustrated",
+      "art": {
+        "x": 67.9375,
+        "y": 337.875,
+        "width": 100,
+        "height": 65,
+        "top": 337.875,
+        "right": 167.9375,
+        "bottom": 402.875,
+        "left": 67.9375
+      },
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 312,
+        "height": 392,
+        "top": 116,
+        "right": 316,
+        "bottom": 508,
+        "left": 4
+      },
+      "source": {
+        "x": 129.37026977539062,
+        "y": 415.37530517578125,
+        "width": 61.25946044921875,
+        "height": 47.47607421875,
+        "top": 415.37530517578125,
+        "right": 190.62973022460938,
+        "bottom": 462.85137939453125,
+        "left": 129.37026977539062
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 390,
+      "version": "before",
+      "capturedLive": true,
+      "tag": {
+        "x": 141.9375,
+        "y": 367.5,
+        "width": 106.109375,
+        "height": 61.1875,
+        "top": 367.5,
+        "right": 248.046875,
+        "bottom": 428.6875,
+        "left": 141.9375
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "text",
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 382,
+        "height": 392,
+        "top": 116,
+        "right": 386,
+        "bottom": 508,
+        "left": 4
+      },
+      "source": {
+        "x": 158.94366455078125,
+        "y": 433.6901550292969,
+        "width": 72.1126708984375,
+        "height": 55.887298583984375,
+        "top": 433.6901550292969,
+        "right": 231.05633544921875,
+        "bottom": 489.57745361328125,
+        "left": 158.94366455078125
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 390,
+      "version": "after",
+      "capturedLive": true,
+      "tag": {
+        "x": 87.9375,
+        "y": 349.1875,
+        "width": 214.109375,
+        "height": 79.5,
+        "top": 349.1875,
+        "right": 302.046875,
+        "bottom": 428.6875,
+        "left": 87.9375
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "illustrated",
+      "art": {
+        "x": 102.9375,
+        "y": 356.1875,
+        "width": 100,
+        "height": 65,
+        "top": 356.1875,
+        "right": 202.9375,
+        "bottom": 421.1875,
+        "left": 102.9375
+      },
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 382,
+        "height": 392,
+        "top": 116,
+        "right": 386,
+        "bottom": 508,
+        "left": 4
+      },
+      "source": {
+        "x": 158.94366455078125,
+        "y": 433.6901550292969,
+        "width": 72.1126708984375,
+        "height": 55.887298583984375,
+        "top": 433.6901550292969,
+        "right": 231.05633544921875,
+        "bottom": 489.57745361328125,
+        "left": 158.94366455078125
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 844,
+      "version": "before",
+      "capturedLive": true,
+      "tag": {
+        "x": 368.9375,
+        "y": 208.796875,
+        "width": 106.109375,
+        "height": 61.1875,
+        "top": 208.796875,
+        "right": 475.046875,
+        "bottom": 269.984375,
+        "left": 368.9375
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "text",
+      "viewport": {
+        "x": 4,
+        "y": 68,
+        "width": 836,
+        "height": 262,
+        "top": 68,
+        "right": 840,
+        "bottom": 330,
+        "left": 4
+      },
+      "source": {
+        "x": 397.18609619140625,
+        "y": 274.9925537109375,
+        "width": 49.6278076171875,
+        "height": 38.4615478515625,
+        "top": 274.9925537109375,
+        "right": 446.81390380859375,
+        "bottom": 313.4541015625,
+        "left": 397.18609619140625
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 844,
+      "version": "after",
+      "capturedLive": true,
+      "tag": {
+        "x": 178.0625,
+        "y": 246.5,
+        "width": 214.109375,
+        "height": 79.5,
+        "top": 246.5,
+        "right": 392.171875,
+        "bottom": 326,
+        "left": 178.0625
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "illustrated",
+      "art": {
+        "x": 193.0625,
+        "y": 253.5,
+        "width": 100,
+        "height": 65,
+        "top": 253.5,
+        "right": 293.0625,
+        "bottom": 318.5,
+        "left": 193.0625
+      },
+      "viewport": {
+        "x": 4,
+        "y": 68,
+        "width": 836,
+        "height": 262,
+        "top": 68,
+        "right": 840,
+        "bottom": 330,
+        "left": 4
+      },
+      "source": {
+        "x": 397.18609619140625,
+        "y": 274.9925537109375,
+        "width": 49.6278076171875,
+        "height": 38.4615478515625,
+        "top": 274.9925537109375,
+        "right": 446.81390380859375,
+        "bottom": 313.4541015625,
+        "left": 397.18609619140625
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 1440,
+      "version": "before",
+      "capturedLive": true,
+      "tag": {
+        "x": 666.9375,
+        "y": 618.828125,
+        "width": 106.109375,
+        "height": 61.1875,
+        "top": 618.828125,
+        "right": 773.046875,
+        "bottom": 680.015625,
+        "left": 666.9375
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "text",
+      "viewport": {
+        "x": 4,
+        "y": 68,
+        "width": 1432,
+        "height": 772,
+        "top": 68,
+        "right": 1436,
+        "bottom": 840,
+        "left": 4
+      },
+      "source": {
+        "x": 644.5657348632812,
+        "y": 685.0173950195312,
+        "width": 150.8685302734375,
+        "height": 116.92303466796875,
+        "top": 685.0173950195312,
+        "right": 795.4342651367188,
+        "bottom": 801.9404296875,
+        "left": 644.5657348632812
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    },
+    {
+      "width": 1440,
+      "version": "after",
+      "capturedLive": true,
+      "tag": {
+        "x": 425.453125,
+        "y": 703.71875,
+        "width": 214.109375,
+        "height": 79.5,
+        "top": 703.71875,
+        "right": 639.5625,
+        "bottom": 783.21875,
+        "left": 425.453125
+      },
+      "text": "森林街1 · +1コイン銀行 → 街1",
+      "presentation": "illustrated",
+      "art": {
+        "x": 440.453125,
+        "y": 710.71875,
+        "width": 100,
+        "height": 65,
+        "top": 710.71875,
+        "right": 540.453125,
+        "bottom": 775.71875,
+        "left": 440.453125
+      },
+      "viewport": {
+        "x": 4,
+        "y": 68,
+        "width": 1432,
+        "height": 772,
+        "top": 68,
+        "right": 1436,
+        "bottom": 840,
+        "left": 4
+      },
+      "source": {
+        "x": 644.5657348632812,
+        "y": 685.0173950195312,
+        "width": 150.8685302734375,
+        "height": 116.92303466796875,
+        "top": 685.0173950195312,
+        "right": 795.4342651367188,
+        "bottom": 801.9404296875,
+        "left": 644.5657348632812
+      },
+      "sourceCovered": false,
+      "stateUnchanged": true
+    }
+  ]
+}

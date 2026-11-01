@@ -1,0 +1,776 @@
+{
+  "commit": "705a7aff",
+  "focusSummary": "17 initial pass, 3 fail, retries 0",
+  "regularRelease": "success with one flaky original 320px activation case; not stable initial success",
+  "records": [
+    {
+      "run": 41308422743,
+      "diagnostic": {
+        "rafTimestamp": 8411,
+        "measuredAt": 8412,
+        "elapsedMs": 553,
+        "currentTime": 3153,
+        "startTime": 5258,
+        "playState": "running",
+        "progress": 0.9216666666666659,
+        "localTime": 3153,
+        "delay": 2600,
+        "duration": 600,
+        "opacity": 0.696494,
+        "frames": [
+          {
+            "rafTimestamp": 6393,
+            "measuredAt": 6395,
+            "elapsedMs": -1465,
+            "currentTime": 1135,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1135,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6797,
+            "measuredAt": 6799,
+            "elapsedMs": -1061,
+            "currentTime": 1539,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1539,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7295,
+            "measuredAt": 7297,
+            "elapsedMs": -563,
+            "currentTime": 2037,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2037,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7514,
+            "measuredAt": 7516,
+            "elapsedMs": -344,
+            "currentTime": 2256,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2256,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7567,
+            "measuredAt": 7569,
+            "elapsedMs": -291,
+            "currentTime": 2309,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2309,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7594,
+            "measuredAt": 7595,
+            "elapsedMs": -264,
+            "currentTime": 2336,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2336,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7894,
+            "measuredAt": 7898,
+            "elapsedMs": 36,
+            "currentTime": 2636,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0.06000000000000005,
+            "localTime": 2636,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0.622981
+          },
+          {
+            "rafTimestamp": 8411,
+            "measuredAt": 8412,
+            "elapsedMs": 553,
+            "currentTime": 3153,
+            "startTime": 5258,
+            "playState": "running",
+            "progress": 0.9216666666666659,
+            "localTime": 3153,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0.696494
+          }
+        ],
+        "route": "銀行 → 街4",
+        "bounds": {
+          "x": 561.9742431640625,
+          "y": 179.94911193847656,
+          "width": 65.58502197265625,
+          "height": 37.94561767578125,
+          "top": 179.94911193847656,
+          "right": 627.5592651367188,
+          "bottom": 217.8947296142578,
+          "left": 561.9742431640625
+        }
+      }
+    },
+    {
+      "run": 41308422743,
+      "diagnostic": {
+        "moving": {
+          "error": "fresh purchase flight was not observed while moving"
+        },
+        "flightDiagnostic": {
+          "frames": [
+            {
+              "afterClose": 300,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1867,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            }
+          ],
+          "mutations": [
+            {
+              "kind": "add",
+              "id": "cardboardBuildNotice",
+              "at": 2031,
+              "sameScrollRetained": null,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 180
+                }
+              ]
+            },
+            {
+              "kind": "add",
+              "id": "cardboardBuildFlight",
+              "at": 2032,
+              "sameScrollRetained": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "kind": "remove",
+              "id": "cardboardBuildNotice",
+              "at": 3234,
+              "sameScrollRetained": null,
+              "animations": []
+            }
+          ],
+          "cancellations": [],
+          "tasks": [
+            {
+              "afterClose": 299,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 300,
+              "duration": 0,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 300,
+              "duration": 0,
+              "callback": "layout",
+              "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\nonLayout@http://127.0.0.1:3210/js/cardBoardField.js:441:55\nlayout@http://127.0.0.1:3210/js/cardTableLayout.js:417:21\nsetReadingSeat@http://127.0.0.1:3210/js/cardTableLayout.js:425:19\napplyReading@http://127.0.0.1:3210/js/cardTableCamera.js:274:28\nfocusCard@http://127.0.0.1:3210/js/cardTableCamera.js:378:25\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:890:35\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:960:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1019:26",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 300,
+              "duration": 0,
+              "callback": "",
+              "scheduledBy": "@\nshowBuildNotice@http://127.0.0.1:3210/js/cardBoardField.js:748:60\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:794:28\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:892:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:960:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1019:26",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 300,
+              "duration": 0,
+              "callback": "",
+              "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:638:64\nstageBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:653:17\nstartBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:700:25\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:795:34\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:892:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:960:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1019:26",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1866,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": "@\ninspect@\n@",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1867,
+              "duration": 0,
+              "callback": "inspect",
+              "scheduledBy": "@\ninspect@\n@",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1867,
+              "duration": 0,
+              "callback": "",
+              "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:638:64\n@http://127.0.0.1:3210/js/cardBoardField.js:643:44\n@",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1867,
+              "duration": 1,
+              "callback": "layout",
+              "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardTableLayout.js:53:73",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1868,
+              "duration": 1,
+              "callback": "layout",
+              "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\n@http://127.0.0.1:3210/js/cardTableCamera.js:649:70",
+              "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+            }
+          ],
+          "beforeClose": {
+            "at": 1733,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 116,
+              "width": 382,
+              "height": 667.984375,
+              "top": 116,
+              "right": 386,
+              "bottom": 783.984375,
+              "left": 4
+            },
+            "target": {
+              "x": 22,
+              "y": 475.75,
+              "width": 120,
+              "height": 93,
+              "top": 475.75,
+              "right": 142,
+              "bottom": 568.75,
+              "left": 22
+            },
+            "origin": {
+              "x": 24,
+              "y": 211.796875,
+              "width": 342,
+              "height": 236.375,
+              "top": 211.796875,
+              "right": 366,
+              "bottom": 448.171875,
+              "left": 24
+            },
+            "shelf": {
+              "x": 20,
+              "y": 207.796875,
+              "width": 350,
+              "height": 472.625,
+              "top": 207.796875,
+              "right": 370,
+              "bottom": 680.421875,
+              "left": 20
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 390,
+              "height": 844
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 390,
+              "height": 844
+            }
+          },
+          "current": {
+            "at": 3608,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 116,
+              "width": 382,
+              "height": 667.984375,
+              "top": 116,
+              "right": 386,
+              "bottom": 783.984375,
+              "left": 4
+            },
+            "target": {
+              "x": 127.5999984741211,
+              "y": 397.625,
+              "width": 136,
+              "height": 105.39999389648438,
+              "top": 397.625,
+              "right": 263.5999984741211,
+              "bottom": 503.0249938964844,
+              "left": 127.5999984741211
+            },
+            "origin": {
+              "x": 56.20000076293945,
+              "y": 77.0023422241211,
+              "width": 136,
+              "height": 112.20000457763672,
+              "top": 77.0023422241211,
+              "right": 192.20000076293945,
+              "bottom": 189.2023468017578,
+              "left": 56.20000076293945
+            },
+            "shelf": {
+              "x": 56.20000076293945,
+              "y": 75.3023452758789,
+              "width": 421.5999755859375,
+              "height": 234.60000610351562,
+              "top": 75.3023452758789,
+              "right": 477.79997634887695,
+              "bottom": 309.90235137939453,
+              "left": 56.20000076293945
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 390,
+              "height": 844
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 390,
+              "height": 844
+            }
+          }
+        }
+      }
+    },
+    {
+      "run": 41308422743,
+      "diagnostic": {
+        "moving": {
+          "error": "fresh purchase flight was not observed while moving"
+        },
+        "flightDiagnostic": {
+          "frames": [
+            {
+              "afterClose": 251,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "afterClose": 1560,
+              "flight": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            }
+          ],
+          "mutations": [
+            {
+              "kind": "add",
+              "id": "cardboardBuildNotice",
+              "at": 4286,
+              "sameScrollRetained": null,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "running",
+                  "duration": 180
+                }
+              ]
+            },
+            {
+              "kind": "add",
+              "id": "cardboardBuildFlight",
+              "at": 4287,
+              "sameScrollRetained": true,
+              "animations": [
+                {
+                  "currentTime": 0,
+                  "playState": "paused",
+                  "duration": 480
+                }
+              ]
+            },
+            {
+              "kind": "remove",
+              "id": "cardboardBuildNotice",
+              "at": 5491,
+              "sameScrollRetained": null,
+              "animations": []
+            }
+          ],
+          "cancellations": [],
+          "tasks": [
+            {
+              "afterClose": 250,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 251,
+              "duration": 0,
+              "callback": "inspect",
+              "scheduledBy": null,
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 251,
+              "duration": 0,
+              "callback": "layout",
+              "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\nonLayout@http://127.0.0.1:3210/js/cardBoardField.js:441:55\nlayout@http://127.0.0.1:3210/js/cardTableLayout.js:417:21\nsetReadingSeat@http://127.0.0.1:3210/js/cardTableLayout.js:425:19\napplyReading@http://127.0.0.1:3210/js/cardTableCamera.js:274:28\nfocusCard@http://127.0.0.1:3210/js/cardTableCamera.js:378:25\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:890:35\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:960:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1019:26",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 252,
+              "duration": 0,
+              "callback": "",
+              "scheduledBy": "@\nshowBuildNotice@http://127.0.0.1:3210/js/cardBoardField.js:748:60\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:794:28\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:892:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:960:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1019:26",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 252,
+              "duration": 0,
+              "callback": "",
+              "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:638:64\nstageBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:653:17\nstartBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:700:25\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:795:34\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:892:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:960:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1019:26",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1559,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": "@\ninspect@\n@",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1563,
+              "duration": 1,
+              "callback": "inspect",
+              "scheduledBy": "@\ninspect@\n@",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1564,
+              "duration": 0,
+              "callback": "",
+              "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:638:64\n@http://127.0.0.1:3210/js/cardBoardField.js:643:44\n@",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1564,
+              "duration": 1,
+              "callback": "layout",
+              "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardTableLayout.js:53:73",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            },
+            {
+              "afterClose": 1565,
+              "duration": 1,
+              "callback": "layout",
+              "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\n@http://127.0.0.1:3210/js/cardTableCamera.js:649:70",
+              "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+              "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+            }
+          ],
+          "beforeClose": {
+            "at": 4038,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 68,
+              "width": 1432,
+              "height": 807.984375,
+              "top": 68,
+              "right": 1436,
+              "bottom": 875.984375,
+              "left": 4
+            },
+            "target": {
+              "x": 226.70347595214844,
+              "y": 487.9602966308594,
+              "width": 158.01487731933594,
+              "height": 122.46151733398438,
+              "top": 487.9602966308594,
+              "right": 384.7183532714844,
+              "bottom": 610.4218139648438,
+              "left": 226.70347595214844
+            },
+            "origin": {
+              "x": 136,
+              "y": 193,
+              "width": 229.59375,
+              "height": 237.375,
+              "top": 193,
+              "right": 365.59375,
+              "bottom": 430.375,
+              "left": 136
+            },
+            "shelf": {
+              "x": 132,
+              "y": 189,
+              "width": 1176,
+              "height": 524.15625,
+              "top": 189,
+              "right": 1308,
+              "bottom": 713.15625,
+              "left": 132
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 1440,
+              "height": 936
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 1440,
+              "height": 936
+            }
+          },
+          "current": {
+            "at": 5617,
+            "hidden": false,
+            "reducedMotion": false,
+            "phase": "build",
+            "viewport": {
+              "x": 4,
+              "y": 68,
+              "width": 1432,
+              "height": 807.984375,
+              "top": 68,
+              "right": 1436,
+              "bottom": 875.984375,
+              "left": 4
+            },
+            "target": {
+              "x": 641.5347290039062,
+              "y": 411.0980224609375,
+              "width": 158.014892578125,
+              "height": 122.4615478515625,
+              "top": 411.0980224609375,
+              "right": 799.5496215820312,
+              "bottom": 533.5595703125,
+              "left": 641.5347290039062
+            },
+            "origin": {
+              "x": 309.7034606933594,
+              "y": 56.55210876464844,
+              "width": 158.014892578125,
+              "height": 130.36228942871094,
+              "top": 56.55210876464844,
+              "right": 467.7183532714844,
+              "bottom": 186.91439819335938,
+              "left": 309.7034606933594
+            },
+            "shelf": {
+              "x": 309.7034606933594,
+              "y": 54.57692337036133,
+              "width": 987.593017578125,
+              "height": 272.57568359375,
+              "top": 54.57692337036133,
+              "right": 1297.2964782714844,
+              "bottom": 327.1526069641113,
+              "left": 309.7034606933594
+            },
+            "cameraAngle": "0",
+            "ownerAngle": "0",
+            "suppressors": [
+              {
+                "className": "cardboard-activation-tag",
+                "display": "none",
+                "visibility": "visible",
+                "rects": 0
+              }
+            ],
+            "viewportSize": {
+              "width": 1440,
+              "height": 936
+            },
+            "screen": {
+              "left": 0,
+              "top": 0,
+              "width": 1440,
+              "height": 936
+            }
+          }
+        }
+      }
+    },
+    {
+      "run": 41308372738,
+      "diagnostic": {
+        "rafTimestamp": 11542,
+        "measuredAt": 11544,
+        "elapsedMs": 600,
+        "currentTime": 3200,
+        "startTime": 8168,
+        "playState": "finished",
+        "progress": 1,
+        "localTime": 3200,
+        "delay": 2600,
+        "duration": 600,
+        "opacity": 0,
+        "frames": [
+          {
+            "rafTimestamp": 10549,
+            "measuredAt": 10552,
+            "elapsedMs": -219,
+            "currentTime": 2381,
+            "startTime": 8168,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2381,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 10912,
+            "measuredAt": 10915,
+            "elapsedMs": 144,
+            "currentTime": 2744,
+            "startTime": 8168,
+            "playState": "running",
+            "progress": 0.24000000000000243,
+            "localTime": 2744,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 1
+          },
+          {
+            "rafTimestamp": 11542,
+            "measuredAt": 11544,
+            "elapsedMs": 600,
+            "currentTime": 3200,
+            "startTime": 8168,
+            "playState": "finished",
+            "progress": 1,
+            "localTime": 3200,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          }
+        ],
+        "route": "銀行 → 街4",
+        "bounds": {
+          "x": 216.61460876464844,
+          "y": 269.73333740234375,
+          "width": 56.00001525878906,
+          "height": 32.399993896484375,
+          "top": 269.73333740234375,
+          "right": 272.6146240234375,
+          "bottom": 302.1333312988281,
+          "left": 216.61460876464844
+        }
+      }
+    }
+  ]
+}

@@ -29,6 +29,16 @@ on:
             - '.github/workflows/plaza-visual-review.yml'
     workflow_dispatch:
         inputs:
+            construction_diagnostic_only:
+                description: Diagnose market lifecycle and five construction flights; does not replace full PR gates
+                required: true
+                default: false
+                type: boolean
+            render_profile_only:
+                description: With construction diagnostics, check activation, construction, market and isolated round-trip regressions
+                required: true
+                default: false
+                type: boolean
             refresh_baselines:
                 description: Generate candidate baselines for review; never used by pull request checks
                 required: true
@@ -44,14 +54,33 @@ on:
                 required: true
                 default: false
                 type: boolean
+            ui_viewport_set:
+                description: Standard portrait/landscape or additional narrow phone/desktop full UI games
+                required: true
+                default: standard
+                type: choice
+                options:
+                    - standard
+                    - extended
+            ui_cpu_speed_ms:
+                description: CPU delay for the full UI games (1500 is the normal product setting)
+                required: true
+                default: '1500'
+                type: choice
+                options:
+                    - '1500'
+                    - '100'
 
 permissions:
     contents: read
 
 jobs:
     plaza-webkit:
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.ui_playthrough_only != true }}
+        if: ${{ github.event_name != 'workflow_dispatch' || (inputs.ui_playthrough_only != true && inputs.construction_diagnostic_only != true) }}
         runs-on: ubuntu-latest
+        container:
+            image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+            options: --ipc=host --init
         timeout-minutes: 45
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -60,7 +89,8 @@ jobs:
                   node-version: '20'
                   cache: npm
             - run: npm ci
-            - run: npx playwright install --with-deps webkit chromium
+            - name: Verify pinned preinstalled browser runtime
+              run: node scripts/check-playwright-container.js
             - name: Compare theme baselines at target viewports
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
               run: npm run test:browser-visual -- --output=test-results/theme-baseline --retries=0 --workers=1
@@ -75,7 +105,7 @@ jobs:
               run: npx playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目|施設とランドマーク' --project=mobile-webkit --output=test-results/plaza-event-receipts --retries=0 --workers=1
             - name: Generate candidate theme baselines
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
-              run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots=all --grep 'cardboard |sunset ' --retries=0 --workers=1
+              run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots=all --retries=0 --workers=1
             - name: Upload generated baseline candidates
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -104,13 +134,16 @@ jobs:
                   if-no-files-found: warn
 
     card-table-ui-playthrough:
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ui_playthrough == true }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ui_playthrough == true && inputs.construction_diagnostic_only != true }}
         runs-on: ubuntu-latest
+        container:
+            image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+            options: --ipc=host --init
         timeout-minutes: 30
         strategy:
             fail-fast: false
             matrix:
-                landscape: ['0', '1']
+                viewport_width: ${{ fromJSON(inputs.ui_viewport_set == 'extended' && '[320,1440]' || '[390,844]') }}
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
@@ -118,16 +151,50 @@ jobs:
                   node-version: '20'
                   cache: npm
             - run: npm ci
-            - run: npx playwright install --with-deps webkit
+            - name: Verify pinned preinstalled browser runtime
+              run: node scripts/check-playwright-container.js
             - name: Complete a game with UI actions and CPU advice only
               run: npx playwright test ui-playthrough.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/ui-playthrough
               env:
                   RUN_UI_PLAYTHROUGH: '1'
-                  UI_PLAYTHROUGH_LANDSCAPE: ${{ matrix.landscape }}
-                  UI_PLAYTHROUGH_CPU_SPEED: '100'
+                  UI_PLAYTHROUGH_WIDTH: ${{ matrix.viewport_width }}
+                  UI_PLAYTHROUGH_CPU_SPEED: ${{ inputs.ui_cpu_speed_ms || '1500' }}
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
-                  name: card-table-ui-playthrough-${{ matrix.landscape }}
+                  name: card-table-ui-playthrough-${{ matrix.viewport_width }}
                   path: test-results/ui-playthrough/
                   if-no-files-found: warn
+
+    # Optional diagnosis only; Release and Nightly retain all required cases.
+    construction-webkit:
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.construction_diagnostic_only == true }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        container:
+            image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+            options: --ipc=host --init
+        steps:
+            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+            - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+              with:
+                  node-version: '20'
+                  cache: npm
+            - run: npm ci
+            - name: Verify pinned preinstalled browser runtime
+              run: node scripts/check-playwright-container.js
+            - name: Observe market lifecycle and real construction flights
+              env:
+                  RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
+              run: |
+                  render_diagnostic_grep='実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復|市場の即時再表示は古いcloseイベント|相手正面を移動してから市場で購入|正面の全38施設|高密度4人の再配置|縦持ち2人戦の終盤は所有者名|狭幅でも収支操作|にぎわい広場の勝利カードコレクション|終盤の所属名は端の空白|新しいロールの発動帯'
+                  if [ "$RENDER_PROFILE_ONLY" = "true" ]; then
+                      render_diagnostic_grep='新しいロールの発動帯|実ロール後の新規建設通知.*(390|1440)px|同じ対局で市場と表示モードを5連続往復|中央市場を拡大してカードを比較|購入とUndo'
+                  fi
+                  node scripts/diagnostics/run-browser-with-resources.js --output=test-results/construction-resources.jsonl -- npx playwright test cardboard-view.spec.js cardboard-overview.spec.js --grep "$render_diagnostic_grep" --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              if: always()
+              with:
+                  name: construction-webkit-diagnostic
+                  path: test-results/
+                  if-no-files-found: error
