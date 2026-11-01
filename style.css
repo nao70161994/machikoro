@@ -13680,6 +13680,16 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-ro
     flex: 1;
 }
 
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-name-with-id { display: flex; }
+html[data-design="cardboard"] .cardboard-roster-name-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+html[data-design="cardboard"] .cardboard-roster-name-id { flex: 0 0 auto; }
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-seat > strong {
     grid-column: 1;
     grid-row: 1;

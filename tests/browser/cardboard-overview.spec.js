@@ -1252,3 +1252,37 @@ test('終盤の所属名は端の空白を使いカードを覆わず全文を�
     expect(await snapshot(page)).toEqual(before);
     await page.screenshot({ path: testInfo.outputPath('owner-edge-320.png') });
 });
+
+test('4人の共通CPU名の番号は縦持ちHUDでも省略しない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.players.forEach((player, index) => {
+            player.name = `CPU（弱）・${index + 1}`;
+        });
+        render();
+        acceptHotseatHandoff();
+    });
+    const before = await snapshot(page);
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (let index = 0; index < 4; index++) {
+            const seat = page.locator(`#cardboardRoster [data-cardboard-player-index="${index}"]`);
+            await expect(seat.locator('.cardboard-roster-name')).toHaveText(`CPU（弱）・${index + 1}`);
+            await expect(seat).toHaveAccessibleName(new RegExp(`席${index + 1}・CPU（弱）・${index + 1}`));
+            await expect(seat.locator('.cardboard-roster-name-id')).toHaveText(`・${index + 1}`);
+            expect(await seat.locator('.cardboard-roster-name-id').evaluate(element => {
+                const range = document.createRange();
+                range.selectNodeContents(element);
+                const text = range.getBoundingClientRect();
+                const clip = element.parentElement.getBoundingClientRect();
+                const bounds = element.closest('button').getBoundingClientRect();
+                return text.width > 0 && text.left >= clip.left && text.right <= clip.right &&
+                    text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom &&
+                    text.left >= 0 && text.right <= innerWidth &&
+                    document.elementFromPoint((text.left + text.right) / 2, (text.top + text.bottom) / 2) === element;
+            }), `${width}pxの席${index + 1}の末尾番号を隠さない`).toBe(true);
+        }
+        await page.screenshot({ path: testInfo.outputPath(`roster-identifiers-${width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});

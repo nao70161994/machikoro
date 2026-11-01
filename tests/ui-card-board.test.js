@@ -365,3 +365,15 @@ runTest('勝利ランドマーク名は語を保ち全文とescapeを維持す�
     assert.ok(fallbackHtml.includes('class="cardboard-name-word">ショッピングモール</span>'));
     assert.ok(fallbackHtml.includes('aria-label="ショッピングモール、建設済。詳細を表示"'));
 });
+
+runTest('共通の名前の末尾番号を省略せず元の名前とエスケープを保つ', () => {
+    const named = { ...player, name: '<CPU>・10' };
+    const before = JSON.stringify(named);
+    const html = UiCardBoard.buildRosterHtml([named], { ...options, selfIndex: 0 });
+    assert.ok(html.includes('cardboard-roster-name-with-id'));
+    assert.ok(html.includes('class="cardboard-roster-name-main">&lt;CPU&gt;</span><span class="cardboard-roster-name-id">・10</span>'));
+    assert.ok(html.includes('title="席1・&lt;CPU&gt;・10"'));
+    assert.ok(html.includes('aria-label="席1・&lt;CPU&gt;・10'));
+    assert.strictEqual(JSON.stringify(named), before);
+    assert.ok(!UiCardBoard.buildRosterHtml([player], options).includes('cardboard-roster-name-with-id'));
+});
