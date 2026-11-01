@@ -307,3 +307,11 @@ f12b7248/41310645320のABBA診断完了。[生記録](assets/nightly-quality/com
 製品候補として、送金表示（static除外）と発動カードにだけwill-change:transform,opacityを付ける。OSのReduced Motionとアプリ設定の両方を除外。盤面全体や無関係なカードを恒久layer化しない。影/見た目/元duration/delay/guardは変えない。独立ソースレビュー承認。追加レイヤーと重なり順への影響は元回帰ケースの実描画で確認する。
 
 通常PRのCIを候補ごとに重複起動しないため、まず別remote候補branchで元2roll+390/1440建設の4件をretry0で確認する。手動render_profile_onlyのsubsetを3→4件へ拡張、既定20件と通常Release/Nightlyは変更しない。YAML/選択一覧を確認済み。合格前にPRbranchへPushせず、未検証候補として扱う。
+
+## 58e35b6dを元の4回帰条件で確認
+
+別候補branchの[41329715382](https://github.com/nao70161994/machikoro/actions/runs/41329715382)は4初回成功/retry0・1.5分。artifact13092294717を同じdownload handleで完了まで待ち、CRC確認後に抽出した。[生記録](assets/nightly-quality/transient-candidate-58e.json)。元の期限/duration/opacity/状態/再生guardを維持。320送金は273ms/opacity1・75frame/maxgap258ms、844は354ms/opacity1・14frame/maxgap576ms。390/1440建設はmoving69/87ms、通知はclose後667/301msで可視。古い失敗が解消した一般的証明ではなく、この実行の記録である。
+
+10PNGを独立目視し、art/分類色/所有者/金枠/重なり順に新しい退行なしとして承認。[844実送金](assets/nightly-quality/transient-roll-844-58e.png) / [390実建設](assets/nightly-quality/transient-build-390-58e.png)。HUD・下部操作は露出。320の一部カード/市場への送金bubble被覆は既存と同様に残る。390通知に背景施設文字が薄く透けるが通知本文は読める。静止画から滑らかさやhint単独の性能効果を断定しない。
+
+候補の限定ケースと画像承認を得たため、516の最小SVG面・58eの小要素hint・検証証拠をまとめてPRbranchへ反映し、通常Release/16画面に加え全Nightlyの元全件/ID照合を一度実行する。各候補ごとの通常CI重複は避けた。最新mainは再確認して7954fcd1のまま。全体成功や商用品質達成はまだ先取りしない。
