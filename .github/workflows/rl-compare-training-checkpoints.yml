@@ -1,0 +1,64 @@
+name: RL Compare 1100 vs 5000 vs Adopted
+on:
+  push:
+    branches: [run/rl-diverse-eval-20261101]
+    paths: ['.github/workflows/rl-compare-training-checkpoints.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: Retrieve both checkpoints from completed 5000-run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rl-training-41233106917-1
+          run-id: '41233106917'
+          github-token: ${{ github.token }}
+          path: models/rl_model/runs/compare-source
+      - name: Evaluate matched seeds, seats and head-to-head
+        shell: bash
+        run: |
+          set -euo pipefail
+          source=models/rl_model/runs/compare-source
+          output=artifacts/rl-compare
+          mkdir -p "$output"
+          best="$source/best_model.browser.json"
+          latest="$source/model.progress.browser.json"
+          adopted=models/rl_model/portfolio/seed71-top3.browser.json
+          test -s "$best"
+          test -s "$latest"
+          test -s "$adopted"
+          node scripts/eval-rl-models.js --model-paths "$best,$latest,$adopted" \
+            --games 100 --seed 20261101 --max-steps 1500 \
+            --opponents weak,normal,strong --paired-seats \
+            --format json --output "$output/cpu-benchmark.json"
+          node scripts/eval-rl-head-to-head.js \
+            --candidate "$latest" --baseline "$best" \
+            --games 200 --seed 20261101 --max-steps 1500 \
+            --format json --output "$output/latest-versus-best.json"
+          node scripts/eval-rl-head-to-head.js \
+            --candidate "$best" --baseline "$adopted" \
+            --games 200 --seed 20261101 --max-steps 1500 \
+            --format json --output "$output/best-versus-adopted.json"
+          node scripts/eval-rl-head-to-head.js \
+            --candidate "$latest" --baseline "$adopted" \
+            --games 200 --seed 20261101 --max-steps 1500 \
+            --format json --output "$output/latest-versus-adopted.json"
+      - name: Preserve comparison reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-compare-1100-5000-adopted-${{ github.run_id }}
+          path: artifacts/rl-compare/
+          retention-days: 30
+          if-no-files-found: warn
