@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect, devices } = require('@playwright/test');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
@@ -625,68 +625,74 @@ test('市場の即時再表示は古いcloseイベントで共有DOMとフォー
 
 // Retain the original same-page five-cycle stress contract separately from
 // the ten detailed isolated cases above. Batch observations, not UI actions.
-test('同じ対局で市場と表示モードを5連続往復して共有DOMとフォーカスを保つ', async ({ page }) => {
-    await prepare(page, { width: 1440, height: 936 });
-    await page.evaluate(() => {
-        GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD;
-        render();
-        acceptHotseatHandoff();
-        window.sharedMarketBeforeRoundTrips = document.getElementById('buildMenu');
-    });
-    const before = await state(page);
-    let expectedLandmark;
-    for (let cycle = 0; cycle < 5; cycle++) {
-        await camera(page, 'market');
-        await page.locator('#cardboardMarket .compact-market-expand').click();
-        const dialog = page.locator('#cardboardMarketDialog');
-        await dialog.locator('.compact-market-goal-disclosure > summary').click();
-        const opened = await dialog.evaluate(element => {
-            const landmark = element.querySelector('[data-action="buildLandmark"]:enabled');
-            landmark?.focus();
-            const bounds = landmark?.getBoundingClientRect();
-            return {
-                open: element.open && element.matches(':modal'),
-                goalOpen: element.querySelector('.compact-market-goal-disclosure').open,
-                name: landmark?.getAttribute('data-landmark-name'),
-                enabled: !!landmark && !landmark.disabled,
-                visible: !!bounds && bounds.width > 0 && bounds.height > 0 && getComputedStyle(landmark).visibility !== 'hidden',
-                focused: !!landmark && document.activeElement === landmark,
-            };
+test.describe('PCの同一対局での往復', () => {
+    // The project defaults to an iPhone 13. This case exercises a desktop
+    // viewport, so use desktop pixel density and input as well. Keep the
+    // five continuous round trips, all assertions and the 45s deadline.
+    test.use({ deviceScaleFactor: 1, isMobile: false, hasTouch: false, userAgent: devices['Desktop Safari'].userAgent });
+    test('同じ対局で市場と表示モードを5連続往復して共有DOMとフォーカスを保つ', async ({ page }) => {
+        await prepare(page, { width: 1440, height: 936 });
+        await page.evaluate(() => {
+            GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD;
+            render();
+            acceptHotseatHandoff();
+            window.sharedMarketBeforeRoundTrips = document.getElementById('buildMenu');
         });
-        if (cycle === 0) expectedLandmark = opened.name;
-        expect(expectedLandmark).toBeTruthy();
-        expect(opened, `市場往復 ${cycle + 1}/5 の拡大市場`).toEqual({ open: true, goalOpen: true, name: expectedLandmark, enabled: true, visible: true, focused: true });
-        await page.locator('#cardboardMarketClose').click();
-        // Closing restores launcher focus asynchronously after dialog teardown.
-        // Preserve the original retrying focus contract before batch observation.
-        await expect(page.locator('#cardboardMarket .compact-market-expand'), `市場往復 ${cycle + 1}/5 の起動ボタンへフォーカス復帰`).toBeFocused();
-        const closed = await page.evaluate(themes => {
-            const dialog = document.getElementById('cardboardMarketDialog');
-            const launcher = document.querySelector('#cardboardMarket .compact-market-expand');
-            const bounds = launcher.getBoundingClientRect();
-            const closed = !dialog.open;
-            const focused = document.activeElement === launcher;
-            const visible = bounds.width > 0 && bounds.height > 0 && getComputedStyle(launcher).visibility !== 'hidden';
-            const transitions = [];
-            const select = document.getElementById('gameDesignThemeSelect');
-            for (const theme of themes) {
-                select.value = theme;
-                select.dispatchEvent(new Event('change', { bubbles: true }));
-                transitions.push({
-                    theme: document.documentElement.dataset.design,
-                    shared: document.querySelectorAll('#buildMenu').length === 1 &&
-                        document.getElementById('buildMenu') === window.sharedMarketBeforeRoundTrips,
-                    snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
-                });
-            }
-            return { closed, focused, visible, transitions };
-        }, marketRoundTripThemes);
-        expect({ closed: closed.closed, focused: closed.focused, visible: closed.visible }, `市場往復 ${cycle + 1}/5 の閉じる操作`).toEqual({ closed: true, focused: true, visible: true });
-        expect(closed.transitions.map(item => ({ theme: item.theme, shared: item.shared })), `市場往復 ${cycle + 1}/5 のテーマ変更`)
-            .toEqual(marketRoundTripThemes.map(theme => ({ theme, shared: true })));
-        for (const transition of closed.transitions) expect(transition.snapshot, `市場往復 ${cycle + 1}/5 の ${transition.theme} 正本`).toEqual(before);
-    }
-    expect(await state(page)).toEqual(before);
+        const before = await state(page);
+        let expectedLandmark;
+        for (let cycle = 0; cycle < 5; cycle++) {
+            await camera(page, 'market');
+            await page.locator('#cardboardMarket .compact-market-expand').click();
+            const dialog = page.locator('#cardboardMarketDialog');
+            await dialog.locator('.compact-market-goal-disclosure > summary').click();
+            const opened = await dialog.evaluate(element => {
+                const landmark = element.querySelector('[data-action="buildLandmark"]:enabled');
+                landmark?.focus();
+                const bounds = landmark?.getBoundingClientRect();
+                return {
+                    open: element.open && element.matches(':modal'),
+                    goalOpen: element.querySelector('.compact-market-goal-disclosure').open,
+                    name: landmark?.getAttribute('data-landmark-name'),
+                    enabled: !!landmark && !landmark.disabled,
+                    visible: !!bounds && bounds.width > 0 && bounds.height > 0 && getComputedStyle(landmark).visibility !== 'hidden',
+                    focused: !!landmark && document.activeElement === landmark,
+                };
+            });
+            if (cycle === 0) expectedLandmark = opened.name;
+            expect(expectedLandmark).toBeTruthy();
+            expect(opened, `市場往復 ${cycle + 1}/5 の拡大市場`).toEqual({ open: true, goalOpen: true, name: expectedLandmark, enabled: true, visible: true, focused: true });
+            await page.locator('#cardboardMarketClose').click();
+            // Closing restores launcher focus asynchronously after dialog teardown.
+            // Preserve the original retrying focus contract before batch observation.
+            await expect(page.locator('#cardboardMarket .compact-market-expand'), `市場往復 ${cycle + 1}/5 の起動ボタンへフォーカス復帰`).toBeFocused();
+            const closed = await page.evaluate(themes => {
+                const dialog = document.getElementById('cardboardMarketDialog');
+                const launcher = document.querySelector('#cardboardMarket .compact-market-expand');
+                const bounds = launcher.getBoundingClientRect();
+                const closed = !dialog.open;
+                const focused = document.activeElement === launcher;
+                const visible = bounds.width > 0 && bounds.height > 0 && getComputedStyle(launcher).visibility !== 'hidden';
+                const transitions = [];
+                const select = document.getElementById('gameDesignThemeSelect');
+                for (const theme of themes) {
+                    select.value = theme;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    transitions.push({
+                        theme: document.documentElement.dataset.design,
+                        shared: document.querySelectorAll('#buildMenu').length === 1 &&
+                            document.getElementById('buildMenu') === window.sharedMarketBeforeRoundTrips,
+                        snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+                    });
+                }
+                return { closed, focused, visible, transitions };
+            }, marketRoundTripThemes);
+            expect({ closed: closed.closed, focused: closed.focused, visible: closed.visible }, `市場往復 ${cycle + 1}/5 の閉じる操作`).toEqual({ closed: true, focused: true, visible: true });
+            expect(closed.transitions.map(item => ({ theme: item.theme, shared: item.shared })), `市場往復 ${cycle + 1}/5 のテーマ変更`)
+                .toEqual(marketRoundTripThemes.map(theme => ({ theme, shared: true })));
+            for (const transition of closed.transitions) expect(transition.snapshot, `市場往復 ${cycle + 1}/5 の ${transition.theme} 正本`).toEqual(before);
+        }
+        expect(await state(page)).toEqual(before);
+    });
 });
 
 test('横持ちの建設操作は拡大市場を開き購入後は見える操作へフォーカスを戻す', async ({ page }) => {
@@ -753,6 +759,32 @@ test('中央市場を拡大してカードを比較し、閉じると起動操�
     const art = dialog.locator('.compact-market-art').first();
     await expect(art).toBeVisible();
     expect(await art.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(50);
+    const filter = dialog.locator('.compact-market-filter-disclosure');
+    await filter.locator('summary').click();
+    const allFilter = filter.locator('[data-card-filter=""]');
+    await allFilter.click();
+    await expect(allFilter).toHaveAttribute('aria-pressed', 'true');
+    await filter.locator('summary').click();
+    const expectedNames = await page.evaluate(() => {
+        const enabled = getEnabledCardSelection();
+        // Even the all filter omits sold-out facilities; derive availability
+        // from the canonical selection and stock, independently of market DOM.
+        return CARDS.filter(card => enabled.has(card.name) && getShopStockCount(SHOP_STOCK, card) > 0)
+            .map(card => card.name).sort();
+    });
+    const facilities = dialog.locator('.compact-market-facilities .compact-market-detail[data-action="showCardDetail"]');
+    await expect(facilities).toHaveCount(expectedNames.length);
+    expect(await facilities.evaluateAll(elements => elements.map(element => element.dataset.cardName).sort())).toEqual(expectedNames);
+    const lastDetail = facilities.last();
+    const lastName = await lastDetail.getAttribute('data-card-name');
+    expect(lastName).toBeTruthy();
+    await lastDetail.click();
+    await expect(page.locator('#cardDetailModal')).toBeVisible();
+    await expect(page.locator('#cardDetailTitle')).toHaveText(lastName);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#cardDetailModal')).toBeHidden();
+    await expect(dialog).toBeVisible();
+    await expect(lastDetail).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(open).toHaveAttribute('aria-expanded', 'false');
@@ -780,7 +812,7 @@ test('カード詳細を閉じると描画更新後の同じカードへフォ�
     await expect(source).toBeFocused();
 });
 
-test('購入とUndo・保存再開はカード盤面と既存ビューで共通の状態を使う', async ({ page }) => {
+async function prepareEndgameConstruction(page) {
     await prepare(page, { width: 390, height: 844 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
@@ -796,10 +828,9 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
         render();
         acceptHotseatHandoff();
     });
-    const before = await state(page);
-    await camera(page, 'market');
-    await page.locator('#cardboardMarket .compact-market-expand').click();
-    const marketDialog = page.locator('#cardboardMarketDialog');
+}
+
+async function observeEndgameConstruction(page) {
     await page.evaluate(() => {
         window.__observedBuildCue = null;
         window.__observedBuildFlight = null;
@@ -837,6 +868,15 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
         });
         observer.observe(document.getElementById('cardboardBoard'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     });
+}
+
+test('購入とUndo・保存再開はカード盤面と既存ビューで共通の状態を使う', async ({ page }) => {
+    await prepareEndgameConstruction(page);
+    const before = await state(page);
+    await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-expand').click();
+    const marketDialog = page.locator('#cardboardMarketDialog');
+    await observeEndgameConstruction(page);
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(marketDialog).toBeVisible();
     expect(await page.evaluate(() => document.getElementById('cardboardMarketDialog').contains(document.activeElement))).toBe(true);
@@ -883,6 +923,27 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await expect(buildNotice).toHaveCount(0);
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]')).toHaveCount(0);
     expect(await state(page)).toEqual(before);
+    const saved = await page.evaluate(() => {
+        saveGameState();
+        const decoded = getLocalSaveRepository().read(isValidSavedGameState, 0);
+        return { ok: decoded.ok, reason: decoded.reason };
+    });
+    expect(saved, JSON.stringify(saved)).toEqual({ ok: true, reason: undefined });
+    await selectTheme(page, 'sunset');
+    await page.reload();
+    await page.locator('#btnResume').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-design', 'sunset');
+    expect(await state(page)).toEqual(before);
+    await selectTheme(page, 'cardboard');
+    expect(await state(page)).toEqual(before);
+});
+
+test('終盤の購入とUndoはReduced Motionで移動演出を作らない', async ({ page }) => {
+    await prepareEndgameConstruction(page);
+    const before = await state(page);
+    const buildNotice = page.locator('#cardboardBuildNotice');
+    await observeEndgameConstruction(page);
     await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
     await page.evaluate(() => { window.__observedBuildCue = null; window.__observedBuildFlight = null; window.__observedBuildNotice = null; });
     await camera(page, 'market');
@@ -899,6 +960,14 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await page.locator('#confirmOkBtn').click();
     await expect(buildNotice).toHaveCount(0);
     expect(await state(page)).toEqual(before);
+});
+
+test('終盤の購入とUndoは発動中の演出へ建設レイヤーを重ねない', async ({ page }) => {
+    await prepareEndgameConstruction(page);
+    const before = await state(page);
+    const buildNotice = page.locator('#cardboardBuildNotice');
+    await observeEndgameConstruction(page);
+    const newCard = page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]');
     // A visible result caption represents an ongoing event layer. A rapid
     // purchase may update the real card, but must not add another focal layer.
     await page.evaluate(() => {
@@ -928,20 +997,6 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await page.locator('#activeConstructionGuardFixture').evaluate(element => element.remove());
     await page.locator('#cardboardMarket .undo-btn').click();
     await page.locator('#confirmOkBtn').click();
-    expect(await state(page)).toEqual(before);
-    const saved = await page.evaluate(() => {
-        saveGameState();
-        const decoded = getLocalSaveRepository().read(isValidSavedGameState, 0);
-        return { ok: decoded.ok, reason: decoded.reason };
-    });
-    expect(saved, JSON.stringify(saved)).toEqual({ ok: true, reason: undefined });
-    await selectTheme(page, 'sunset');
-    await page.reload();
-    await page.locator('#btnResume').click();
-    await expect(page.locator('#gameScreen')).toBeVisible();
-    await expect(page.locator('html')).toHaveAttribute('data-design', 'sunset');
-    expect(await state(page)).toEqual(before);
-    await selectTheme(page, 'cardboard');
     expect(await state(page)).toEqual(before);
 });
 
