@@ -40,13 +40,14 @@ on:
                 default: false
                 type: boolean
             observation_profile_order:
-                description: Sequential observation profile order for checking order and warmup bias
+                description: Profile order, or opt-in mobile3 quiet compositor hint ABBA comparison
                 required: true
                 default: forward
                 type: choice
                 options:
                     - forward
                     - reverse
+                    - compositor-hint-abba
             observation_idle_baseline:
                 description: Add blank and prepared-board RAF samples; may warm up the browser
                 required: true
@@ -234,9 +235,10 @@ jobs:
             - run: node scripts/check-playwright-container.js
             - name: Observe query traffic and density without changing regression gates
               env:
-                  OBSERVATION_PROFILE_ORDER: ${{ inputs.observation_profile_order || 'forward' }}
+                  OBSERVATION_PROFILE_ORDER: ${{ inputs.observation_profile_order == 'reverse' && 'reverse' || 'forward' }}
                   OBSERVATION_IDLE_BASELINE: ${{ inputs.observation_idle_baseline || false }}
-              run: node scripts/diagnostics/run-browser-with-resources.js --output=test-results/observation-resources.jsonl -- node scripts/diagnostics/profile-cardboard-observation.js --output=test-results/observation-profiles.json --order="$OBSERVATION_PROFILE_ORDER" --idle-baseline="$OBSERVATION_IDLE_BASELINE"
+                  OBSERVATION_COMPOSITOR_HINT_COMPARISON: ${{ inputs.observation_profile_order == 'compositor-hint-abba' }}
+              run: node scripts/diagnostics/run-browser-with-resources.js --output=test-results/observation-resources.jsonl -- node scripts/diagnostics/profile-cardboard-observation.js --output=test-results/observation-profiles.json --order="$OBSERVATION_PROFILE_ORDER" --idle-baseline="$OBSERVATION_IDLE_BASELINE" --compositor-hint-comparison="$OBSERVATION_COMPOSITOR_HINT_COMPARISON"
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

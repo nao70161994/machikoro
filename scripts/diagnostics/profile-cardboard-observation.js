@@ -101,10 +101,17 @@ async function observe(browser, profile, idleBaseline) {
         const pageErrors = [];
         page.on('pageerror', error => pageErrors.push(error.message));
         await page.setViewportSize({ width: 844, height: 390 });
+        if (idleBaseline) {
+            await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body></body></html>');
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        }
         const baselines = idleBaseline ? { blank: await sampleIdleFrames(page, 'about:blank') } : null;
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('http://127.0.0.1:3210', { timeout: 45000 });
+        if (profile.compositorHint) {
+            await page.addStyleTag({ content: '@media (prefers-reduced-motion: no-preference) { body:not(.accessibility-reduced-motion) .cardboard-transfer:not(.cardboard-transfer-static), body:not(.accessibility-reduced-motion) .cardboard-card-activated { will-change: transform, opacity; } }' });
+        }
         await page.evaluate(() => {
             startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
             GameRuntimeState.runtime.setCpuPlayers([null, null, null, null]);
@@ -148,7 +155,9 @@ async function observe(browser, profile, idleBaseline) {
                 players: game.players.map(player => ({ name: player.name, coins: player.coins })) };
         });
         return { profile, metadata, baselines, sample, result, pageErrors, observationError,
-            setupValid: metadata.dpr === profile.dpr && result.dice === 5 &&
+            setupValid: metadata.dpr === profile.dpr && metadata.viewport.width === 844 && metadata.viewport.height === 390 &&
+                (!idleBaseline || [baselines.blank, baselines.board].every(baseline => baseline.dpr === profile.dpr &&
+                    baseline.viewport.width === 844 && baseline.viewport.height === 390)) && result.dice === 5 &&
                 result.players.length === 4 && result.players.every(player => player.coins === 31) && pageErrors.length === 0,
             originalFrameCondition: sample.elapsedMs < 500 && sample.opacity > 0.5 };
     } finally { await context.close(); }
@@ -161,7 +170,10 @@ async function main() {
     if (!['forward', 'reverse'].includes(order)) throw new Error('--order must be forward or reverse');
     const idleBaselineOption = process.argv.find(argument => argument.startsWith('--idle-baseline='))?.slice(16) || 'false';
     if (!['true', 'false'].includes(idleBaselineOption)) throw new Error('--idle-baseline must be true or false');
-    const idleBaseline = idleBaselineOption === 'true';
+    const compositorHintOption = process.argv.find(argument => argument.startsWith('--compositor-hint-comparison='))?.split('=')[1] || 'false';
+    if (!['true', 'false'].includes(compositorHintOption)) throw new Error('--compositor-hint-comparison must be true or false');
+    const compositorHintComparison = compositorHintOption === 'true';
+    const idleBaseline = idleBaselineOption === 'true' || compositorHintComparison;
     let server;
     let browser;
     try {
@@ -184,7 +196,11 @@ async function main() {
             { name: 'desktop1-quiet', desktop: true, dpr: 1, driverQueries: false },
         ];
         if (order === 'reverse') profiles.reverse();
-        for (const profile of profiles) {
+        const comparisonProfiles = [false, true, true, false].map((compositorHint, index) => ({
+            name: `mobile3-quiet-${index + 1}-${compositorHint ? 'hint' : 'nohint'}`,
+            dpr: 3, driverQueries: false, compositorHint, comparisonIndex: index,
+        }));
+        for (const profile of compositorHintComparison ? comparisonProfiles : profiles) {
             try { results.push(await observe(browser, profile, idleBaseline)); }
             catch (error) { results.push({ profile, error: error.message }); }
         }
@@ -192,7 +208,9 @@ async function main() {
         await fs.writeFile(output, JSON.stringify({
             scope: 'Exploratory controlled forest roll, not a replacement for release/nightly or complete UI games. Sequential profiles have order/warmup bias; frame failures are data, not suppressed regression assertions.',
             baselineScope: 'Optional 1200ms requested blank and prepared-board RAF windows. Timers may run late; actual elapsed and gaps are recorded. Baseline sampling may warm up the browser and confound comparisons with runs without baselines; blank/idle/active comparisons do not establish causality.',
-            browser: browser.version(), order, idleBaseline, results,
+            comparisonScope: 'Opt-in mobile3 quiet ABBA (nohint, hint, hint, nohint), each in a fresh context with baseline sampling. Injected will-change is diagnostic only. Sequential order, browser reuse and warmup remain confounds; this small comparison does not establish causality or a product fix.',
+            browser: browser.version(), order: compositorHintComparison ? 'ABBA' : order,
+            idleBaseline, compositorHintComparison, results,
         }, null, 2));
         // The artifact contains observed conditions including failures. Success
         // means the diagnostic completed, never that every frame was correct.
