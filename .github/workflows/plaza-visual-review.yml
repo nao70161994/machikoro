@@ -34,6 +34,11 @@ on:
                 required: true
                 default: false
                 type: boolean
+            observation_profile_only:
+                description: Observe driver traffic and device density; diagnostic data does not replace regression gates
+                required: true
+                default: false
+                type: boolean
             render_profile_only:
                 description: With construction diagnostics, profile only existing two activation cases and 1440px construction
                 required: true
@@ -76,7 +81,7 @@ permissions:
 
 jobs:
     plaza-webkit:
-        if: ${{ github.event_name != 'workflow_dispatch' || (inputs.ui_playthrough_only != true && inputs.construction_diagnostic_only != true) }}
+        if: ${{ github.event_name != 'workflow_dispatch' || (inputs.ui_playthrough_only != true && inputs.construction_diagnostic_only != true && inputs.observation_profile_only != true) }}
         runs-on: ubuntu-latest
         container:
             image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
@@ -134,7 +139,7 @@ jobs:
                   if-no-files-found: warn
 
     card-table-ui-playthrough:
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ui_playthrough == true && inputs.construction_diagnostic_only != true }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ui_playthrough == true && inputs.construction_diagnostic_only != true && inputs.observation_profile_only != true }}
         runs-on: ubuntu-latest
         container:
             image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
@@ -168,7 +173,7 @@ jobs:
 
     # Optional diagnosis only; Release and Nightly retain all required cases.
     construction-webkit:
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.construction_diagnostic_only == true }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.construction_diagnostic_only == true && inputs.observation_profile_only != true }}
         runs-on: ubuntu-latest
         timeout-minutes: 10
         container:
@@ -196,5 +201,29 @@ jobs:
               if: always()
               with:
                   name: construction-webkit-diagnostic
+                  path: test-results/
+                  if-no-files-found: error
+
+    observation-profile:
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.observation_profile_only == true }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        container:
+            image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+            options: --ipc=host --init
+        steps:
+            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+            - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+              with:
+                  node-version: '20'
+                  cache: npm
+            - run: npm ci
+            - run: node scripts/check-playwright-container.js
+            - name: Observe query traffic and density without changing regression gates
+              run: node scripts/diagnostics/run-browser-with-resources.js --output=test-results/observation-resources.jsonl -- node scripts/diagnostics/profile-cardboard-observation.js --output=test-results/observation-profiles.json
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              if: always()
+              with:
+                  name: card-table-observation-profile
                   path: test-results/
                   if-no-files-found: error
