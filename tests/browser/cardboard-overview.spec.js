@@ -1344,3 +1344,45 @@ test('4人の共通CPU名の番号は縦持ちHUDでも省略しない', async (
     }
     expect(await snapshot(page)).toEqual(before);
 });
+
+// Presentation fixture: exercise long dice totals and a three-digit stack
+// without claiming these controlled counts came from a played match.
+test('卓の出目と枚数は長い出目でも重ならず元のカード寸法を保つ', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = ['森林', '引越し屋', '会員制BAR', 'マグロ漁船'].flatMap(name =>
+            Array.from({ length: name === '森林' ? 100 : name === '引越し屋' ? 12 : 1 }, () => createCardByName(name)));
+        render();
+    });
+    const before = await snapshot(page);
+    const cards = page.locator('#cardboardSeats > [data-player-index="0"] .cardboard-card');
+    await expect(cards).toHaveCount(4);
+    await expect(cards.filter({ has: page.locator('[data-dice-count="3"]') })).toHaveCount(2);
+    await expect(cards.locator('.cardboard-count').filter({ hasText: '所有 ×100' })).toHaveCount(1);
+    await expect(cards.locator('.cardboard-count').filter({ hasText: '所有 ×12' })).toHaveCount(1);
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+        await page.setViewportSize(viewport);
+        await expect.poll(() => cards.evaluateAll(elements => elements.every(card => {
+            const dice = card.querySelector('.cardboard-dice');
+            const value = card.querySelector('.cardboard-count-value');
+            const badge = value.parentElement;
+            const range = document.createRange();
+            range.selectNodeContents(dice);
+            const diceText = range.getBoundingClientRect();
+            range.selectNodeContents(value);
+            const countText = range.getBoundingClientRect();
+            const contains = (outer, inner) => inner.left >= outer.left && inner.right <= outer.right &&
+                inner.top >= outer.top && inner.bottom <= outer.bottom;
+            // Unrotated seat 0 allows direct text separation checks in screen coordinates.
+            return card.offsetWidth === 160 && card.offsetHeight === 124 &&
+                getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px') &&
+                getComputedStyle(badge).fontSize === '16px' && badge.offsetHeight === 22 &&
+                diceText.right <= badge.getBoundingClientRect().left &&
+                contains(card.getBoundingClientRect(), diceText) && contains(badge.getBoundingClientRect(), countText);
+        }))).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`card-face-dice-count-${viewport.width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});

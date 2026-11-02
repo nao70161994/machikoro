@@ -15,7 +15,7 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     const before = JSON.stringify(player);
     const html = UiCardBoard.buildPlayerHtml(player, options);
     assert.strictEqual((html.match(/data-card-name="森林"/g) || []).length, 1);
-    assert.ok(html.includes('所有 ×2'));
+    assert.ok(html.includes('class="cardboard-count-label">所有 </span><span class="cardboard-count-value">×2</span>'));
     assert.ok(html.includes('休業 1枚 / 稼働 1枚'));
     assert.ok(html.includes('cardboard-card-blue'));
     assert.ok(html.includes('aria-label="森林。青、工業。青：全員の手番に発動。出目 5。所有 2枚。休業 1枚、稼働 1枚。詳しい効果を表示"'));
@@ -313,7 +313,7 @@ runTest('勝利コレクションは実所有を全種類集約し過去の発�
     assert.ok(html.includes('勝利を支えたカード'));
     assert.ok(html.includes('2種類') === false);
     assert.ok(html.includes('1種類 · 2枚'));
-    assert.ok(html.includes('所有 ×2'));
+    assert.ok(html.includes('class="cardboard-count-label">所有 </span><span class="cardboard-count-value">×2</span>'));
     assert.ok(html.includes('完成ランドマーク <span>1/2</span>'));
     assert.ok(!html.includes('cardboard-card-activated'));
     assert.ok(!html.includes('景観'));
@@ -376,4 +376,16 @@ runTest('共通の名前の末尾番号を省略せず元の名前とエスケ�
     assert.ok(html.includes('aria-label="席1・&lt;CPU&gt;・10'));
     assert.strictEqual(JSON.stringify(named), before);
     assert.ok(!UiCardBoard.buildRosterHtml([player], options).includes('cardboard-roster-name-with-id'));
+});
+
+runTest('卓の出目数と所有枚数を別領域で表現し元の情報を保つ', () => {
+    const cards = ['森林', '引越し屋', '会員制BAR'].map(createCardByName);
+    const subject = { ...player, cards, dormantCards: [] };
+    const before = JSON.stringify(subject);
+    const html = UiCardBoard.buildPlayerHtml(subject, options);
+    for (const count of [1, 2, 3]) assert.ok(html.includes(`data-dice-count="${count}"`));
+    assert.ok(html.includes('12・13・14'));
+    assert.strictEqual((html.match(/class="cardboard-count-value">×1<\/span>/g) || []).length, 3);
+    assert.ok(html.includes('所有 1枚'));
+    assert.strictEqual(JSON.stringify(subject), before);
 });
