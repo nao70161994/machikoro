@@ -337,6 +337,64 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
     });
 }
 
+test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も全景へ戻る', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const enabled = getEnabledCardSelection();
+        const names = ['麦畑', 'パン屋', ...CARDS.filter(card => enabled.has(card.name) &&
+            !['麦畑', 'パン屋'].includes(card.name)).map(card => card.name)].slice(0, 5);
+        const landmarks = Player.landmarkNames().filter(name => getEnabledLandmarkSelection().has(name)).slice(0, 2);
+        game.players.forEach(player => {
+            player.cards = names.map(name => createCardByName(name));
+            Object.keys(player.landmarks).forEach(name => { player.landmarks[name] = landmarks.includes(name); });
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+        });
+        render();
+    });
+    const rails = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
+    await expect(rails).toHaveCount(2);
+    await expectWholeTable(page, 4);
+    await expectOwnedCards(page);
+    await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(8);
+    await expect.poll(() => page.locator('#cardboardTableViewport').evaluate(viewport => {
+        const clip = viewport.getBoundingClientRect();
+        const contains = (outer, rect) => rect.width > 0 && rect.height > 0 &&
+            rect.left >= outer.left - 1 && rect.right <= outer.right + 1 &&
+            rect.top >= outer.top - 1 && rect.bottom <= outer.bottom + 1;
+        return [...viewport.querySelectorAll('.cardboard-player')].every(owner => {
+            const landmarks = [...owner.querySelectorAll('.cardboard-landmark-built')];
+            const bounds = owner.getBoundingClientRect();
+            return landmarks.length === 2 && landmarks.every(landmark => {
+                const rect = landmark.getBoundingClientRect();
+                return contains(bounds, rect) && contains(clip, rect);
+            });
+        });
+    })).toBe(true);
+    expect(await rails.evaluateAll(owners => owners.map(owner => Number(owner.dataset.tableAngle)).sort((a, b) => a - b))).toEqual([0, 180]);
+    await expect.poll(() => page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+        Math.min(...cards.map(card => Math.max(card.getBoundingClientRect().width, card.getBoundingClientRect().height))))).toBeGreaterThanOrEqual(40);
+    const before = await snapshot(page);
+    const table = page.locator('#cardboardTableViewport');
+    const scale = await table.getAttribute('data-table-scale');
+    const layout = await page.locator('#cardboardSeats').getAttribute('data-table-layout-key');
+    await page.screenshot({ path: testInfo.outputPath('four-seat-middle-landmarks-beside.png') });
+    await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+    await expect(rails).toHaveCount(0);
+    await page.locator('[data-cardboard-camera="back"]').click();
+    await expect(rails).toHaveCount(2);
+    await page.locator('[data-cardboard-camera="market"]').click();
+    await page.locator('#cardboardMarket .compact-market-expand').click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+    await expect(rails).toHaveCount(2);
+    await page.locator('#cardboardMarketClose').click();
+    await page.locator('[data-cardboard-camera="back"]').click();
+    await expectWholeTable(page, 4);
+    await expect(table).toHaveAttribute('data-table-scale', scale);
+    await expect(page.locator('#cardboardSeats')).toHaveAttribute('data-table-layout-key', layout);
+    expect(await snapshot(page)).toEqual(before);
+});
+
 for (const count of [2,3,5,10]) {
     test(`共通カード卓の人数適応 ${count}`, async ({page},testInfo)=>{
         await prepare(page,{width:844,height:390},count);
