@@ -1,0 +1,60 @@
+{
+  "run": "https://github.com/nao70161994/machikoro/actions/runs/41487916802",
+  "scope": "Controlled real viewport changes, not an animation FPS benchmark",
+  "results": [
+    {
+      "variant": "before",
+      "cardEdgePx": 37.95072,
+      "layoutTimingsMs": [
+        41,
+        85,
+        106,
+        129,
+        1
+      ],
+      "interaction": {
+        "steadyRefreshes": [
+          [
+            183,
+            97
+          ],
+          [
+            99,
+            102
+          ]
+        ],
+        "cameraRestored": true,
+        "stateUnchanged": true
+      },
+      "failures": [],
+      "pageErrors": []
+    },
+    {
+      "variant": "after",
+      "cardEdgePx": 44.18224000000001,
+      "layoutTimingsMs": [
+        53,
+        62,
+        69,
+        120,
+        13
+      ],
+      "interaction": {
+        "steadyRefreshes": [
+          [
+            225,
+            126
+          ],
+          [
+            133,
+            130
+          ]
+        ],
+        "cameraRestored": true,
+        "stateUnchanged": true
+      },
+      "failures": [],
+      "pageErrors": []
+    }
+  ]
+}
