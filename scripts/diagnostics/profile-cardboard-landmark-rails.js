@@ -115,16 +115,25 @@ async function review(browser, source, variant, viewport, stage, output, focused
             const original = { scale: await viewportNode.getAttribute('data-table-scale'),
                 angle: await viewportNode.getAttribute('data-table-angle'),
                 layout: await world.getAttribute('data-table-layout-key') };
-            const steadyRefreshes = await page.evaluate(async () => {
-                const samples = [];
-                for (let cycle = 0; cycle < 3; cycle++) {
-                    const start = window.__railReviewTimings.length;
-                    window.dispatchEvent(new Event('resize'));
-                    for (let frame = 0; frame < 4; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
-                    samples.push(window.__railReviewTimings.slice(start));
-                }
-                return samples;
-            });
+            const steadyRefreshes = [];
+            for (let cycle = 0; cycle < 2; cycle++) {
+                const start = await page.evaluate(() => window.__railReviewTimings.length);
+                // An unchanged synthetic resize never reaches the ResizeObserver.
+                // Exercise real geometry changes and return to the original viewport.
+                await page.setViewportSize({ ...viewport, width: viewport.width + 1 });
+                await page.evaluate(async () => {
+                    for (let frame = 0; frame < 6; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+                });
+                await page.setViewportSize(viewport);
+                await expect(viewportNode).toHaveAttribute('data-table-scale', original.scale);
+                await expect(world).toHaveAttribute('data-table-layout-key', original.layout);
+                await page.evaluate(async () => {
+                    for (let frame = 0; frame < 6; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+                });
+                const timings = await page.evaluate(start => window.__railReviewTimings.slice(start), start);
+                assert.ok(timings.length >= 2, 'Actual viewport changes must execute layout callbacks');
+                steadyRefreshes.push(timings);
+            }
             await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
             await expect(viewportNode).toHaveAttribute('data-table-focus-player', '1');
             await page.locator('[data-cardboard-camera="back"]').click();
