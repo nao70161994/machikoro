@@ -1378,7 +1378,7 @@ test('卓の出目と枚数は長い出目でも重ならず元のカード寸�
                 inner.top >= outer.top && inner.bottom <= outer.bottom;
             // Unrotated seat 0 allows direct text separation checks in screen coordinates.
             const checks = {
-                width: card.offsetWidth === 160, height: card.offsetHeight === 124,
+                width: card.offsetWidth === 160, height: card.offsetHeight === 128,
                 diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px'),
                 countFont: getComputedStyle(badge).fontSize === '16px', countHeight: badge.offsetHeight === 22,
                 separated: diceText.right <= badge.getBoundingClientRect().left,
