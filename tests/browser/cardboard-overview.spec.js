@@ -1364,6 +1364,23 @@ test('卓の出目と枚数は長い出目でも重ならず元のカード寸�
     for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
         { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
         await page.setViewportSize(viewport);
+        await page.evaluate(async () => {
+            await document.fonts.ready;
+            let previous = '', stable = 0;
+            for (let frame = 0; frame < 90; frame++) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                const world = document.getElementById('cardboardSeats');
+                const viewport = document.getElementById('cardboardTableViewport');
+                const key = JSON.stringify([world.dataset.tableLayoutKey, viewport.dataset.tableScale,
+                    viewport.clientWidth, viewport.clientHeight]);
+                stable = key === previous ? stable + 1 : 0;
+                previous = key;
+                if (stable >= 4 && world.dataset.tableLayoutKey) return;
+            }
+            throw new Error('Card face review geometry did not settle');
+        });
+        await expectWholeTable(page, 4);
+        await expectOwnedCards(page);
         await expect.poll(() => cards.evaluateAll(elements => elements.map(card => {
             const dice = card.querySelector('.cardboard-dice');
             const value = card.querySelector('.cardboard-count-value');
