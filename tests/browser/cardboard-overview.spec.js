@@ -1371,6 +1371,7 @@ test('卓の出目と枚数は長い出目でも重ならず元のカード寸�
             const range = document.createRange();
             range.selectNodeContents(dice);
             const diceText = range.getBoundingClientRect();
+            const diceLines = range.getClientRects().length;
             range.selectNodeContents(value);
             const countText = range.getBoundingClientRect();
             const contains = (outer, inner) => inner.left >= outer.left && inner.right <= outer.right &&
@@ -1380,6 +1381,7 @@ test('卓の出目と枚数は長い出目でも重ならず元のカード寸�
                 getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px') &&
                 getComputedStyle(badge).fontSize === '16px' && badge.offsetHeight === 22 &&
                 diceText.right <= badge.getBoundingClientRect().left &&
+                diceLines === 1 && contains(dice.getBoundingClientRect(), diceText) &&
                 contains(card.getBoundingClientRect(), diceText) && contains(badge.getBoundingClientRect(), countText);
         }))).toBe(true);
         await page.screenshot({ path: testInfo.outputPath(`card-face-dice-count-${viewport.width}.png`) });
