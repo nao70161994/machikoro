@@ -1,0 +1,171 @@
+{
+  "sourceRevision": "45e565610799104c0d05fe8115f50dc9a5bf5295",
+  "run": 41334659147,
+  "scope": "Unseeded one automated-human-seat UI plus three weak CPUs, normal delay. Before accessible-name and HUD identifier fixes; not physical-device or continuous-motion review.",
+  "results": [
+    {
+      "playerCount": 4,
+      "completed": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "cpuSpeedMs": 1500,
+      "humanActions": 85,
+      "clicks": 144,
+      "keyboardActions": 18,
+      "cpuWaitMs": 347291,
+      "lastTurn": 75,
+      "elapsedMs": 519651,
+      "pageErrors": [],
+      "cameraReview": {
+        "turn": 15,
+        "targetIndex": 0,
+        "initialScale": "0.345",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.345",
+          "angle": "0",
+          "mode": "overview",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 1084,
+          "worldHeight": 1674,
+          "frames": [
+            {
+              "scale": "0.345",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1084,
+              "worldHeight": 1674
+            },
+            {
+              "scale": "0.345",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1084,
+              "worldHeight": 1674
+            },
+            {
+              "scale": "0.345",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1084,
+              "worldHeight": 1674
+            },
+            {
+              "scale": "0.345",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1084,
+              "worldHeight": 1674
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.345",
+          "angle": "0",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 1084,
+          "worldHeight": 1674
+        },
+        "clicks": 2,
+        "readableScale": "1.017",
+        "elapsedMs": 659
+      }
+    },
+    {
+      "playerCount": 4,
+      "completed": true,
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "cpuSpeedMs": 1500,
+      "humanActions": 126,
+      "clicks": 195,
+      "keyboardActions": 25,
+      "cpuWaitMs": 551648,
+      "lastTurn": 99,
+      "elapsedMs": 836961,
+      "pageErrors": [],
+      "cameraReview": {
+        "turn": 15,
+        "targetIndex": 0,
+        "initialScale": "0.237",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.237",
+          "angle": "0",
+          "mode": "overview",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 2438,
+          "worldHeight": 1054,
+          "frames": [
+            {
+              "scale": "0.237",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2438,
+              "worldHeight": 1054
+            },
+            {
+              "scale": "0.237",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2438,
+              "worldHeight": 1054
+            },
+            {
+              "scale": "0.237",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2438,
+              "worldHeight": 1054
+            },
+            {
+              "scale": "0.237",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2438,
+              "worldHeight": 1054
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.237",
+          "angle": "0",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 2438,
+          "worldHeight": 1054
+        },
+        "clicks": 2,
+        "readableScale": "1.531",
+        "elapsedMs": 713
+      }
+    }
+  ]
+}
