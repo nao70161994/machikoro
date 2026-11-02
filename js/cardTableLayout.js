@@ -244,7 +244,8 @@ const CardTableLayout = (() => {
             }
             // Two opposite seats can spend their unused horizontal space on
             // completed landmarks. Compare measured boxes, never shrink art.
-            let landmarkRail = compactOpponents && !readingSeat && !marketAtHome && chosen.landmarkRail === true;
+            const railEligible = compactOpponents || (wide && panels.length === 4);
+            let landmarkRail = railEligible && !readingSeat && !marketAtHome && chosen.landmarkRail === true;
             if (compactOpponents && !readingSeat && marketAtHome &&
                 panels.some(panel => panel.querySelector('.cardboard-landmark-built'))) {
                 const marketBox = marketSize(chosen.market, chosen.rows);
@@ -311,6 +312,44 @@ const CardTableLayout = (() => {
                 }
                 if (pinwheel && pinwheel.score >= crossScore * 1.08) chosen = pinwheel.plan;
             }
+            // Four-seat landscapes can put the end seats' completed landmarks
+            // beside their facilities instead of spending scarce table height.
+            // Keep lateral seats unchanged, and adopt only a measured 15% gain.
+            if (wide && panels.length === 4 && !readingSeat && marketAtHome &&
+                [...sides.top, ...sides.bottom].some(panel => panel.querySelector('.cardboard-landmark-built'))) {
+                const marketBox = marketSize(chosen.market, chosen.rows);
+                const scoreFor = (endColumns, rail, packing) => {
+                    const dimensions = {};
+                    for (const [side, owners] of Object.entries(sides)) {
+                        const lateral = side === 'left' || side === 'right';
+                        const panel = owners[0];
+                        const columns = Math.min(lateral ? chosen.side : endColumns, Math.max(1, countFor(panel)));
+                        const box = ownerSize(panel, columns, rail && !lateral);
+                        dimensions[side] = { width: lateral ? box.nativeHeight : box.nativeWidth,
+                            height: lateral ? box.nativeWidth : box.nativeHeight };
+                    }
+                    let width, height;
+                    if (packing === 'pinwheel') {
+                        const footprint = computePinwheelGeometry({ ...dimensions, market: marketBox, gap, padding });
+                        width = footprint.width;
+                        height = footprint.height;
+                    } else {
+                        width = padding * 2 + Math.max(marketBox.width, dimensions.top.width, dimensions.bottom.width) +
+                            dimensions.left.width + dimensions.right.width + gap * 2;
+                        height = padding * 2 + Math.max(marketBox.height, dimensions.left.height, dimensions.right.height) +
+                            dimensions.top.height + dimensions.bottom.height + gap * 2;
+                    }
+                    return Math.min(viewportWidth / width, viewportHeight / height);
+                };
+                const baseline = scoreFor(chosen.end, false, chosen.packing);
+                // Reuse the selected card columns; this adds only the two end
+                // rail measurements, rather than another full shape search.
+                const railScore = scoreFor(chosen.end, true, 'cross');
+                if (railScore >= baseline * 1.15) {
+                    landmarkRail = true;
+                    chosen = { ...chosen, packing: 'cross' };
+                }
+            }
             if (marketAtHome) lastSelection = { ...chosen, landmarkRail };
             if (market.dataset.marketColumns !== String(chosen.market)) market.dataset.marketColumns = String(chosen.market);
             setStyle(market, '--table-market-columns', String(chosen.market));
@@ -349,7 +388,7 @@ const CardTableLayout = (() => {
                     const columns = readingSeat?.playerIndex === Number(panel.dataset.playerIndex) && readingColumns !== null
                         ? readingColumns : chosen.side === null ? existingColumns(side, count)
                             : Math.min(lateral ? chosen.side : chosen.end, Math.max(1, count));
-                    applyOwnerShape(panel, columns, landmarkRail);
+                    applyOwnerShape(panel, columns, landmarkRail && !lateral);
                     const nativeWidth = panel.offsetWidth, nativeHeight = panel.offsetHeight;
                     sizes.set(panel, { nativeWidth, nativeHeight, width: lateral ? nativeHeight : nativeWidth,
                         height: lateral ? nativeWidth : nativeHeight });

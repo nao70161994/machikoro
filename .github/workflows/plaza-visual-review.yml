@@ -39,6 +39,11 @@ on:
                 required: true
                 default: false
                 type: boolean
+            layout_comparison_only:
+                description: With construction diagnostics, compare the fixed prior layout and current four-seat landmark rails
+                required: false
+                default: false
+                type: boolean
             refresh_baselines:
                 description: Generate candidate baselines for review; never used by pull request checks
                 required: true
@@ -199,7 +204,13 @@ jobs:
             - run: npm ci
             - name: Verify pinned preinstalled browser runtime
               run: node scripts/check-playwright-container.js
+            - name: Compare four-seat landmark layout with the fixed reference
+              if: ${{ inputs.layout_comparison_only == true }}
+              run: |
+                  git fetch --depth=1 origin 98addf35b4b123fa33e907700f5f2d0271bef95b
+                  node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison
             - name: Observe market lifecycle and real construction flights
+              if: ${{ inputs.layout_comparison_only != true }}
               env:
                   RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
               run: |
