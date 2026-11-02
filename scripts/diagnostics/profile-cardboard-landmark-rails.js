@@ -16,7 +16,7 @@ function observeLayout(source) {
 }
 
 async function review(browser, source, variant, viewport, stage, output, focused) {
-    const device = devices[viewport.width === 844 ? 'iPhone 13' : 'Desktop Safari'];
+    const device = devices[viewport.width < 1000 ? 'iPhone 13' : 'Desktop Safari'];
     const context = await browser.newContext({ viewport, deviceScaleFactor: device.deviceScaleFactor,
         isMobile: device.isMobile, hasTouch: device.hasTouch, userAgent: device.userAgent,
         serviceWorkers: 'block', reducedMotion: 'reduce' });
@@ -172,7 +172,7 @@ async function main() {
     const output = process.argv.find(value => value.startsWith('--output='))?.slice(9);
     if (!output) throw new Error('--output=DIR is required');
     const scene = process.argv.find(value => value.startsWith('--scene='))?.slice(8) || 'all';
-    if (!['all', 'middle-844'].includes(scene)) throw new Error('Invalid layout review scene');
+    if (!['all', 'middle-844', 'portrait'].includes(scene)) throw new Error('Invalid layout review scene');
     const baselineRef = '98addf35b4b123fa33e907700f5f2d0271bef95b';
     const sources = { before: observeLayout(execFileSync('git', ['show', `${baselineRef}:js/cardTableLayout.js`], { encoding: 'utf8' })),
         after: observeLayout(await fs.readFile('js/cardTableLayout.js', 'utf8')) };
@@ -189,7 +189,10 @@ async function main() {
         }
         if (!ready) throw new Error('Review server did not start');
         browser = await webkit.launch();
-        for (const viewport of [{ width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+        const viewports = scene === 'portrait'
+            ? [{ width: 320, height: 568 }, { width: 390, height: 844 }]
+            : [{ width: 844, height: 390 }, { width: 1440, height: 936 }];
+        for (const viewport of viewports) {
             for (const stage of [{ name: 'early', cards: 2, landmarks: 0 }, { name: 'middle', cards: 5, landmarks: 2 }, { name: 'late', cards: 18, landmarks: 5 }]) {
                 if (scene === 'middle-844' && (viewport.width !== 844 || stage.name !== 'middle')) continue;
                 for (const variant of ['before', 'after']) results.push(await review(browser, sources[variant], variant, viewport, stage, output, scene === 'middle-844'));

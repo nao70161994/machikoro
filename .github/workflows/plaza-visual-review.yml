@@ -52,6 +52,7 @@ on:
                 options:
                     - all
                     - middle-844
+                    - portrait
             refresh_baselines:
                 description: Generate candidate baselines for review; never used by pull request checks
                 required: true
