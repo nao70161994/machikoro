@@ -44,6 +44,14 @@ on:
                 required: false
                 default: false
                 type: boolean
+            layout_review_scene:
+                description: Scope for the optional layout comparison (focused scene also checks navigation and steady refresh)
+                required: false
+                default: all
+                type: choice
+                options:
+                    - all
+                    - middle-844
             refresh_baselines:
                 description: Generate candidate baselines for review; never used by pull request checks
                 required: true
@@ -212,7 +220,7 @@ jobs:
                   GIT_CONFIG_VALUE_0: ${{ github.workspace }}
               run: |
                   git fetch --depth=1 origin 98addf35b4b123fa33e907700f5f2d0271bef95b
-                  node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison
+                  node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison --scene=${{ inputs.layout_review_scene || 'all' }}
             - name: Observe market lifecycle and real construction flights
               if: ${{ inputs.layout_comparison_only != true }}
               env:

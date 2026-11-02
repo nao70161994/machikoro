@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const { spawn, execFileSync } = require('node:child_process');
-const { webkit, devices } = require('@playwright/test');
+const { webkit, devices, expect } = require('@playwright/test');
 
 function observeLayout(source) {
     assert.ok(source.includes('function layout() {'));
@@ -15,7 +15,7 @@ function observeLayout(source) {
         .replace('            onLayout();', '            onLayout();\n            (window.__railReviewTimings ||= []).push(performance.now() - reviewStarted);');
 }
 
-async function review(browser, source, variant, viewport, stage, output) {
+async function review(browser, source, variant, viewport, stage, output, focused) {
     const device = devices[viewport.width === 844 ? 'iPhone 13' : 'Desktop Safari'];
     const context = await browser.newContext({ viewport, deviceScaleFactor: device.deviceScaleFactor,
         isMobile: device.isMobile, hasTouch: device.hasTouch, userAgent: device.userAgent,
@@ -108,6 +108,44 @@ async function review(browser, source, variant, viewport, stage, output) {
         const screenshot = `${variant}-${stage.name}-${viewport.width}.png`;
         await page.screenshot({ path: path.join(output, screenshot), animations: 'disabled', scale: 'css' });
         await fs.writeFile(path.join(output, screenshot.replace('.png', '.json')), JSON.stringify({ variant, stage, pageErrors, ...sample }, null, 2) + '\n');
+        let interaction = null;
+        if (focused) {
+            const world = page.locator('#cardboardSeats');
+            const viewportNode = page.locator('#cardboardTableViewport');
+            const original = { scale: await viewportNode.getAttribute('data-table-scale'),
+                angle: await viewportNode.getAttribute('data-table-angle'),
+                layout: await world.getAttribute('data-table-layout-key') };
+            const steadyRefreshes = await page.evaluate(async () => {
+                const samples = [];
+                for (let cycle = 0; cycle < 3; cycle++) {
+                    const start = window.__railReviewTimings.length;
+                    window.dispatchEvent(new Event('resize'));
+                    for (let frame = 0; frame < 4; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+                    samples.push(window.__railReviewTimings.slice(start));
+                }
+                return samples;
+            });
+            await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+            await expect(viewportNode).toHaveAttribute('data-table-focus-player', '1');
+            await page.locator('[data-cardboard-camera="back"]').click();
+            await expect(viewportNode).toHaveAttribute('data-table-scale', original.scale);
+            await expect(viewportNode).toHaveAttribute('data-table-angle', original.angle);
+            await expect(world).toHaveAttribute('data-table-layout-key', original.layout);
+            await page.locator('[data-cardboard-camera="market"]').click();
+            await page.locator('#cardboardMarket .compact-market-expand').click();
+            await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+            await page.locator('#cardboardMarketClose').click();
+            await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
+            await page.locator('[data-cardboard-camera="back"]').click();
+            await expect(viewportNode).toHaveAttribute('data-table-scale', original.scale);
+            await expect(viewportNode).toHaveAttribute('data-table-angle', original.angle);
+            await expect(world).toHaveAttribute('data-table-layout-key', original.layout);
+            const afterInteraction = await page.evaluate(() => JSON.stringify(GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER)));
+            assert.equal(afterInteraction, before);
+            interaction = { steadyRefreshes, cameraRestored: true, stateUnchanged: true };
+            await page.screenshot({ path: path.join(output, `${variant}-after-interactions.png`), animations: 'disabled', scale: 'css' });
+        }
         assert.equal(sample.state, before, 'Layout must not change canonical game state');
         assert.equal(sample.owners.length, 4);
         assert.equal(sample.groups.length, 5);
@@ -117,13 +155,15 @@ async function review(browser, source, variant, viewport, stage, output) {
             assert.equal(owner.cards, stage.cards);
             assert.equal(owner.landmarks, stage.landmarks);
         }
-        return { variant, stage, screenshot, pageErrors, ...sample };
+        return { variant, stage, screenshot, pageErrors, interaction, ...sample };
     } finally { await context.close(); }
 }
 
 async function main() {
     const output = process.argv.find(value => value.startsWith('--output='))?.slice(9);
     if (!output) throw new Error('--output=DIR is required');
+    const scene = process.argv.find(value => value.startsWith('--scene='))?.slice(8) || 'all';
+    if (!['all', 'middle-844'].includes(scene)) throw new Error('Invalid layout review scene');
     const baselineRef = '98addf35b4b123fa33e907700f5f2d0271bef95b';
     const sources = { before: observeLayout(execFileSync('git', ['show', `${baselineRef}:js/cardTableLayout.js`], { encoding: 'utf8' })),
         after: observeLayout(await fs.readFile('js/cardTableLayout.js', 'utf8')) };
@@ -142,7 +182,8 @@ async function main() {
         browser = await webkit.launch();
         for (const viewport of [{ width: 844, height: 390 }, { width: 1440, height: 936 }]) {
             for (const stage of [{ name: 'early', cards: 2, landmarks: 0 }, { name: 'middle', cards: 5, landmarks: 2 }, { name: 'late', cards: 18, landmarks: 5 }]) {
-                for (const variant of ['before', 'after']) results.push(await review(browser, sources[variant], variant, viewport, stage, output));
+                if (scene === 'middle-844' && (viewport.width !== 844 || stage.name !== 'middle')) continue;
+                for (const variant of ['before', 'after']) results.push(await review(browser, sources[variant], variant, viewport, stage, output, scene === 'middle-844'));
             }
         }
     } finally {
