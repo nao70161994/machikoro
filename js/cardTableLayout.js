@@ -189,6 +189,10 @@ const CardTableLayout = (() => {
             let chosen = !marketAtHome && lastSelection ? lastSelection
                 : { market: wide ? 6 : 2, rows: rowsFor(wide ? 6 : 2), side: null, end: null };
             const denseFour = wide && panels.length === 4 && panels.some(panel => countFor(panel) >= 13);
+            // Diagnostic portrait candidate: keep the existing cross search and
+            // reading layout intact; compare only dense four-seat overviews.
+            const densePortraitFour = !wide && panels.length === 4 && !readingSeat &&
+                panels.some(panel => countFor(panel) >= 13);
             // Evaluate only a small, shared set of edge shapes for 2–4 owners.
             // Measuring native boxes includes header and landmark wrapping, so
             // the score reflects the actual rotated footprint rather than rows
@@ -272,7 +276,7 @@ const CardTableLayout = (() => {
             }
             // Candidate measurements must not leak presentation into reading.
             panels.forEach(panel => delete panel.dataset.tableLandmarkRail);
-            if (denseFour && marketAtHome) {
+            if ((denseFour || densePortraitFour) && marketAtHome) {
                 let pinwheel = null;
                 const crossMarket = marketSize(chosen.market, chosen.rows);
                 const crossStrips = {};
@@ -289,10 +293,13 @@ const CardTableLayout = (() => {
                 const crossHeight = padding * 2 + Math.max(crossMarket.height, crossStrips.left.height, crossStrips.right.height) +
                     crossStrips.top.height + crossStrips.bottom.height + gap * 2;
                 const crossScore = Math.min(viewportWidth / crossWidth, viewportHeight / crossHeight);
-                for (const marketColumns of [6, 4]) {
+                const pinwheelMarkets = densePortraitFour ? [2, 3] : [6, 4];
+                const pinwheelSides = densePortraitFour ? [3, 4, 6, 8] : [1, 2, 3, 4, 6, 8];
+                const pinwheelEnds = densePortraitFour ? [1, 2, 3, 4] : [4, 6, 8, 12, 18];
+                for (const marketColumns of pinwheelMarkets) {
                     const rows = rowsFor(marketColumns);
                     const marketBox = marketSize(marketColumns, rows);
-                    for (const sideColumns of [1, 2, 3, 4, 6, 8]) for (const endColumns of [4, 6, 8, 12, 18]) {
+                    for (const sideColumns of pinwheelSides) for (const endColumns of pinwheelEnds) {
                         /** @type {Record<string, CardTableFootprint>} */
                         const dimensions = {};
                         for (const [side, owners] of Object.entries(sides)) {
