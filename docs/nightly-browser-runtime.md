@@ -28,3 +28,21 @@ PNG基準の自動更新・許容差の緩和で環境差を隠さない。
 MCR manifest HEADで確認したdigest：
 `sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48`。
 ローカルでイメージpullやブラウザ起動は行っていない。実行環境の最終確認はCIで行う。
+
+## 網羅性と安定成功の別判定（2026-11-03）
+
+`verifyReports` は全件の実行・ID和集合・許可済skipを検証する。これだけでは
+初回timeout→retry成功も「実行済み」に含まれる。CLIの `verify` ではその後に
+`assertStableExecution` を必ず実行し、各ケースが1回で期待する結果に到達したことも要求する。
+再試行成功、最終失敗・timeout、複数attemptはNightlyを失敗にする。
+意図して定義されたexpected failureと既存の許可済opt-in skipは区別して維持する。
+
+Playwrightのretry設定は診断用に残す。再試行成功を安定成功へ読み替えず、
+失敗時にも全attemptを含むJSON/HTML/画像をartifactへ保存する。
+検査はshardごとと和集合の両方へ同じCLIから適用される。
+ブラウザのassert・期限・出目・fixtureを変更する処理ではない。
+
+過去の実artifactのcoverage JSONを改変せず再判定し、4eの2 retry成功は拒否、
+c433の353初回成功＋許可済skip1は受理することを確認した。
+[再判定記録](reviews/assets/nightly-quality/stability-gate-replay.json)を参照。
+これは保存された実行結果に対するローカル検証で、新しいブラウザ対局ではない。

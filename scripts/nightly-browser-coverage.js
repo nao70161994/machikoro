@@ -72,6 +72,20 @@ function verifyReports(plan, reports, shard) {
         tests: actual };
 }
 
+// Coverage and stability are separate contracts. Keep retries in the report for
+// diagnosis, but never turn a retry success into a stable nightly result.
+function assertStableExecution(summary) {
+    const unstable = summary.tests.filter(test => test.outcomes.length !== 1 ||
+        (test.outcomes[0] !== 'skipped' &&
+            (!['passed', 'failed'].includes(test.expectedStatus) || test.outcomes[0] !== test.expectedStatus)));
+    if (unstable.length) {
+        throw new Error('Nightly execution was not stable: ' + JSON.stringify(unstable.map(test => ({
+            id: test.id, file: test.file, title: test.title, expectedStatus: test.expectedStatus, outcomes: test.outcomes,
+        }))));
+    }
+    return { ...summary, stable: true, retries: 0 };
+}
+
 function discover(shard) {
     const cli = require.resolve('@playwright/test/cli');
     const args = [cli, 'test', '--list', '--reporter=json', '--workers=1', '--fully-parallel'];
@@ -101,11 +115,11 @@ function main(argv = process.argv.slice(2)) {
         const plan = JSON.parse(fs.readFileSync(values.plan, 'utf8'));
         const files = values.shard ? [values.report] : Array.from({ length: plan.shards.length }, (_, index) =>
             path.join(values.report, `report-${index + 1}.json`));
-        const summary = verifyReports(plan, files.map(file => JSON.parse(fs.readFileSync(file, 'utf8'))), Number(values.shard) || undefined);
+        const summary = assertStableExecution(verifyReports(plan, files.map(file => JSON.parse(fs.readFileSync(file, 'utf8'))), Number(values.shard) || undefined));
         if (values.output) fs.writeFileSync(values.output, JSON.stringify(summary, null, 2) + '\n');
-        console.log(`Nightly execution coverage: ${summary.total} tests; ${JSON.stringify(summary.projects)}`);
+        console.log(`Nightly stable execution coverage: ${summary.total} tests; ${summary.skipped} allowed skips; 0 retries; ${JSON.stringify(summary.projects)}`);
     } else throw new Error('Expected plan or verify');
 }
 
 if (require.main === module) main();
-module.exports = { collectTests, assertSameTests, createPlan, verifyReports };
+module.exports = { collectTests, assertSameTests, createPlan, verifyReports, assertStableExecution };

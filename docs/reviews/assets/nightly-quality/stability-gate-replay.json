@@ -1,0 +1,40 @@
+{
+  "scope": "Local strict stability verifier applied to original CI coverage JSON artifacts; no browser rerun and no altered outcomes.",
+  "results": [
+    {
+      "revision": "4e",
+      "run": 41330282749,
+      "total": 352,
+      "skipped": 1,
+      "accepted": false,
+      "retried": [
+        {
+          "title": "同じ対局で市場と表示モードを5連続往復して共有DOMとフォーカスを保つ",
+          "file": "cardboard-view.spec.js",
+          "outcomes": [
+            "timedOut",
+            "passed"
+          ]
+        },
+        {
+          "title": "購入とUndo・保存再開はカード盤面と既存ビューで共通の状態を使う",
+          "file": "cardboard-view.spec.js",
+          "outcomes": [
+            "timedOut",
+            "passed"
+          ]
+        }
+      ],
+      "error": "Nightly execution was not stable: [{\"id\":\"mobile-webkit:6d62443100e0db56030a-58b468a4fc8d7f725d2b\",\"file\":\"cardboard-view.spec.js\",\"title\":\"同じ対局で市場と表示モードを5連続往復して共有DOMとフォーカスを保つ\",\"expectedStatus\":\"passed\",\"outcomes\":[\"timedOut\",\"passed\"]},{\"id\":\"mobile-webkit:6d62443100e0db56030a-bfc67d3e4ab9e17e390e\",\"file\":\"cardboard-view.spec.js\",\"title\":\"購入とUndo・保存再開はカード盤面と既存ビューで共通の状態を使う\",\"expectedStatus\":\"passed\",\"outcomes\":[\"timedOut\",\"passed\"]}]"
+    },
+    {
+      "revision": "c433",
+      "run": 41333510157,
+      "total": 354,
+      "skipped": 1,
+      "accepted": true,
+      "retried": [],
+      "error": ""
+    }
+  ]
+}
