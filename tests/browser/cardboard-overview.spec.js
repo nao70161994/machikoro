@@ -1364,7 +1364,7 @@ test('卓の出目と枚数は長い出目でも重ならず元のカード寸�
     for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
         { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
         await page.setViewportSize(viewport);
-        await expect.poll(() => cards.evaluateAll(elements => elements.every(card => {
+        await expect.poll(() => cards.evaluateAll(elements => elements.map(card => {
             const dice = card.querySelector('.cardboard-dice');
             const value = card.querySelector('.cardboard-count-value');
             const badge = value.parentElement;
@@ -1377,13 +1377,18 @@ test('卓の出目と枚数は長い出目でも重ならず元のカード寸�
             const contains = (outer, inner) => inner.left >= outer.left && inner.right <= outer.right &&
                 inner.top >= outer.top && inner.bottom <= outer.bottom;
             // Unrotated seat 0 allows direct text separation checks in screen coordinates.
-            return card.offsetWidth === 160 && card.offsetHeight === 124 &&
-                getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px') &&
-                getComputedStyle(badge).fontSize === '16px' && badge.offsetHeight === 22 &&
-                diceText.right <= badge.getBoundingClientRect().left &&
-                diceLines === 1 && contains(dice.getBoundingClientRect(), diceText) &&
-                contains(card.getBoundingClientRect(), diceText) && contains(badge.getBoundingClientRect(), countText);
-        }))).toBe(true);
+            const checks = {
+                width: card.offsetWidth === 160, height: card.offsetHeight === 124,
+                diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px'),
+                countFont: getComputedStyle(badge).fontSize === '16px', countHeight: badge.offsetHeight === 22,
+                separated: diceText.right <= badge.getBoundingClientRect().left,
+                oneLine: diceLines === 1, diceBand: contains(dice.getBoundingClientRect(), diceText),
+                card: contains(card.getBoundingClientRect(), diceText), count: contains(badge.getBoundingClientRect(), countText),
+            };
+            return Object.values(checks).every(Boolean) ? null : { name: card.dataset.cardName, checks,
+                diceText: diceText.toJSON(), diceBand: dice.getBoundingClientRect().toJSON(),
+                countText: countText.toJSON(), badge: badge.getBoundingClientRect().toJSON() };
+        }).filter(Boolean))).toEqual([]);
         await page.screenshot({ path: testInfo.outputPath(`card-face-dice-count-${viewport.width}.png`) });
     }
     expect(await snapshot(page)).toEqual(before);
