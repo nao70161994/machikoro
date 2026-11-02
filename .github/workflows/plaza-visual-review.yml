@@ -206,6 +206,10 @@ jobs:
               run: node scripts/check-playwright-container.js
             - name: Compare four-seat landmark layout with the fixed reference
               if: ${{ inputs.layout_comparison_only == true }}
+              env:
+                  GIT_CONFIG_COUNT: '1'
+                  GIT_CONFIG_KEY_0: safe.directory
+                  GIT_CONFIG_VALUE_0: ${{ github.workspace }}
               run: |
                   git fetch --depth=1 origin 98addf35b4b123fa33e907700f5f2d0271bef95b
                   node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison

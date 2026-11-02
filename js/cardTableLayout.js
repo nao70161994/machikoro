@@ -319,6 +319,7 @@ const CardTableLayout = (() => {
                 [...sides.top, ...sides.bottom].some(panel => panel.querySelector('.cardboard-landmark-built'))) {
                 const marketBox = marketSize(chosen.market, chosen.rows);
                 const scoreFor = (endColumns, rail, packing) => {
+                    /** @type {Record<string, CardTableFootprint>} */
                     const dimensions = {};
                     for (const [side, owners] of Object.entries(sides)) {
                         const lateral = side === 'left' || side === 'right';
@@ -330,7 +331,8 @@ const CardTableLayout = (() => {
                     }
                     let width, height;
                     if (packing === 'pinwheel') {
-                        const footprint = computePinwheelGeometry({ ...dimensions, market: marketBox, gap, padding });
+                        const footprint = computePinwheelGeometry({ top: dimensions.top, right: dimensions.right,
+                            bottom: dimensions.bottom, left: dimensions.left, market: marketBox, gap, padding });
                         width = footprint.width;
                         height = footprint.height;
                     } else {
