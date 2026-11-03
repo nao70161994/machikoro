@@ -2618,9 +2618,18 @@ test.describe('市場の連続操作', () => {
                 render();
                 acceptHotseatHandoff();
             });
-            const focusLandmarks = async () => {
+            const focusLandmarks = async (focusDetailBeforeCloseFrame = false) => {
                 if (design !== 'plaza') return;
                 await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+                if (focusDetailBeforeCloseFrame) {
+                    // Deterministically exercise a newer focus in the same
+                    // dispatch, before the menu's deferred heading callback.
+                    await page.evaluate(() => {
+                        document.getElementById('plazaCameraTools').addEventListener('click', () => {
+                            document.querySelector('#buildMenu [data-action="showLandmarkDetail"][data-landmark-name="駅"]').focus();
+                        }, { once: true });
+                    });
+                }
                 await page.locator('#plazaCameraTools [data-field-section="landmarks"]').click();
             };
             await focusLandmarks();
@@ -2639,12 +2648,13 @@ test.describe('市場の連続操作', () => {
             await detail.evaluate(element => {
                 window.__heldMarketDetail = element;
                 window.__marketPointerEvents = [];
-                for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'keydown', 'keyup']) {
+                for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'keydown', 'keyup', 'focusin']) {
                     document.addEventListener(type, event => {
                         const button = event.target.closest?.('[data-action], [data-ui-action]');
                         window.__marketPointerEvents.push({ type, action: button?.dataset.action,
                             uiAction: button?.dataset.uiAction, name: button?.dataset.landmarkName,
-                            held: button === window.__heldMarketDetail, at: performance.now() });
+                            held: button === window.__heldMarketDetail, targetId: event.target.id,
+                            tag: event.target.tagName, at: performance.now() });
                     }, true);
                 }
             });
@@ -2692,8 +2702,17 @@ test.describe('市場の連続操作', () => {
             await detail.click();
             await expect(page.locator('#cardDetailModal')).toBeVisible();
             await page.locator('#cardDetailModal [data-ui-action="closeCardDetail"]').click();
-            await focusLandmarks();
-            await detail.focus();
+            await focusLandmarks(true);
+            if (design !== 'plaza') await detail.focus();
+            // A queued menu-close frame must respect this newer focus.
+            await page.evaluate(async () => {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                await new Promise(resolve => requestAnimationFrame(resolve));
+            });
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-focus-${design}.json`),
+                JSON.stringify(await detail.evaluate(element => ({ focused: document.activeElement === element,
+                    activeId: document.activeElement?.id, activeTag: document.activeElement?.tagName,
+                    events: window.__marketPointerEvents }))));
             await expect(detail).toBeFocused();
             await page.keyboard.press('Enter');
             await require('node:fs/promises').writeFile(testInfo.outputPath(`market-keyboard-${design}.json`),
