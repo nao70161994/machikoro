@@ -231,7 +231,7 @@ jobs:
                   if [ "$RENDER_PROFILE_ONLY" = "true" ]; then
                       render_diagnostic_grep='新しいロールの発動帯|実ロール後の新規建設通知.*(390|1440)px|同じ対局で市場と表示モードを5連続往復|中央市場を拡大してカードを比較|購入とUndo|狭幅でも収支操作|4人の共通CPU名の番号|844の四方向卓は中盤ランドマーク|相手正面を移動してから市場で購入|市場の詳細ボタンは購入再描画|夕暮れのランドマーク詳細|卓の出目と枚数は長い出目|共通カード卓の市場から建設して全員のカードへ戻れる|共通カード卓で全員の施設と中央市場を見渡せる (320|390)'
                   fi
-                  git -c safe.directory="$GITHUB_WORKSPACE" fetch --depth=1 origin e7a3fe32
+                  git -c safe.directory="$GITHUB_WORKSPACE" fetch --depth=1 origin e7a3fe32f7c9e410eb292dde84753016ca09dcb0
                   cp js/plazaField.js /tmp/plaza-field-focus-candidate.js
                   git -c safe.directory="$GITHUB_WORKSPACE" show FETCH_HEAD:js/plazaField.js > js/plazaField.js
                   set +e
