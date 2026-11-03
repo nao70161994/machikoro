@@ -2596,3 +2596,59 @@ test('広場は場外でマウスを離した後にパンを続けず、フォ�
     await page.setViewportSize({ width: 390, height: 844 });
     await expect.poll(focusedCardFits).toMatchObject({ active: true, fits: true });
 });
+
+
+test.describe('市場の連続操作', () => {
+    test.use({ serviceWorkers: 'block' });
+    for (const design of ['classic', 'sunset', 'plaza', 'cardboard']) {
+        test(`市場の詳細ボタンは購入再描画をまたぐタップでも開く ${design}`, async ({ page }, testInfo) => {
+            await page.setViewportSize({ width: 390, height: 844 });
+            await stubAds(page);
+            await page.goto('/');
+            await selectDesignTheme(page, design);
+            await page.evaluate(() => {
+                startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
+                GameRuntimeState.runtime.setCpuPlayers([null, null]);
+                cancelCpuSchedule('market-pointer-fixture');
+                const game = GameRuntimeState.runtime.snapshot().game;
+                game.currentPlayerIndex = 0;
+                game.currentPlayer().coins = 30;
+                game.phase = GAME_PHASES.BUILD;
+                setTutorialEnabled(false);
+                render();
+                acceptHotseatHandoff();
+            });
+            if (design === 'cardboard') {
+                await page.locator('[data-cardboard-camera="market"]').click();
+                await page.locator('#cardboardMarket .compact-market-expand').click();
+                await page.locator('#cardboardMarket .compact-market-goal-disclosure > summary').click();
+            }
+            const root = design === 'cardboard' ? '#cardboardMarket' : '#buildMenu';
+            const detail = page.locator(`${root} [data-action="showLandmarkDetail"][data-landmark-name="駅"]`);
+            await detail.scrollIntoViewIfNeeded();
+            const bounds = await detail.boundingBox();
+            expect(bounds).not.toBeNull();
+            await detail.evaluate(element => { window.__heldMarketDetail = element; });
+            await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+            await page.mouse.down();
+            const transition = await page.evaluate(() => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                const before = game.currentPlayer().cards.length;
+                onBuildCard('麦畑');
+                return { before, after: game.currentPlayer().cards.length,
+                    targetRetained: window.__heldMarketDetail.isConnected };
+            });
+            expect(transition.after).toBe(transition.before + 1);
+            const purchased = await page.evaluate(() => GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+            await page.mouse.up();
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-pointer-${design}.json`), JSON.stringify(transition));
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+            await expect(page.locator('#cardDetailTitle')).toHaveText('駅');
+            expect(transition.targetRetained, '押している詳細ボタンを市場更新で破棄しない').toBe(true);
+            expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
+            await page.locator('#cardDetailModal [data-ui-action="closeCardDetail"]').click();
+        });
+    }
+});
