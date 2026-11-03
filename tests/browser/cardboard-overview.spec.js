@@ -524,6 +524,7 @@ for (const viewport of [{width:390,height:844},{width:844,height:390}]) {
         }), '購入後も中央市場の全文を一行で読める').toBe(true);
         await page.screenshot({path:testInfo.outputPath(`market-after-purchase-${viewport.width}.png`)});
         await page.locator('#cardboardMarket [data-action="undoBuild"]').click();
+        await page.locator('#confirmOkBtn').click();
         await expect.poll(()=>page.evaluate(()=>{
             const player=GameRuntimeState.runtime.snapshot().game.players[0];
             return {count:player.cards.length,coins:player.coins};
