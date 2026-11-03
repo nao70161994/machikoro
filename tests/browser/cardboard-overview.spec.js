@@ -1347,7 +1347,7 @@ test('4人の共通CPU名の番号は縦持ちHUDでも省略しない', async (
 
 // Presentation fixture: exercise long dice totals and a three-digit stack
 // without claiming these controlled counts came from a played match.
-test('卓の出目と枚数は長い出目でも重ならず元のカード寸法を保つ', async ({ page }, testInfo) => {
+test('卓の出目と枚数は長い出目でも重ならず施設アートを保つ', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
