@@ -11,8 +11,10 @@ const UiBuildMenu = (() => {
         if (pointerBoundMarkets.has(root)) return;
         pointerBoundMarkets.add(root);
         let held = null;
-        const release = () => {
+        let cancelled = false;
+        const release = (cancelClick = false) => {
             const previous = held;
+            if (previous && cancelClick) cancelled = true;
             held = null;
             try {
                 if (previous?.button.hasPointerCapture(previous.id)) previous.button.releasePointerCapture(previous.id);
@@ -20,6 +22,8 @@ const UiBuildMenu = (() => {
         };
         root.addEventListener('pointerdown', event => {
             if (!event.isPrimary || event.button !== 0) return;
+            release();
+            cancelled = false;
             const button = event.target.closest?.('[data-action="showCardDetail"], [data-action="showLandmarkDetail"]');
             if (!button || !root.contains(button) || typeof button.setPointerCapture !== 'function') return;
             try {
@@ -28,23 +32,33 @@ const UiBuildMenu = (() => {
             } catch (_) { /* Keyboard and unsupported capture retain ordinary clicks. */ }
         });
         root.addEventListener('pointermove', event => {
-            if (held && held.id === event.pointerId && Math.hypot(event.clientX - held.x, event.clientY - held.y) > 8) release();
+            if (held && held.id === event.pointerId && Math.hypot(event.clientX - held.x, event.clientY - held.y) > 8) release(true);
         });
         root.addEventListener('pointerup', event => {
             if (!held || held.id !== event.pointerId) return;
             const button = held.button;
             if (!button.isConnected || button.disabled || button.closest('[inert], [hidden]') ||
                     button.getClientRects().length === 0 ||
-                    root.ownerDocument.defaultView.getComputedStyle(button).visibility === 'hidden') release();
+                    root.ownerDocument.defaultView.getComputedStyle(button).visibility === 'hidden') release(true);
             // Native pointerup releases capture after dispatch and preserves
             // the intended click target. Never synthesize/replay an action.
             held = null;
         });
-        root.addEventListener('pointercancel', release);
+        root.addEventListener('pointercancel', () => release(true));
         root.addEventListener('lostpointercapture', event => {
             if (held && held.id === event.pointerId) held = null;
         });
-        root.addEventListener('wheel', release, { passive: true });
+        root.addEventListener('wheel', () => release(true), { passive: true });
+        root.addEventListener('click', event => {
+            const ignore = cancelled;
+            cancelled = false;
+            // WebKit can retain the former capture target for its click even
+            // after a drag released capture. Cancel only that gesture; keyboard
+            // activation and every new primary press retain native behavior.
+            if (!ignore || event.detail === 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
     }
 
     function presentationNodeKey(node) {

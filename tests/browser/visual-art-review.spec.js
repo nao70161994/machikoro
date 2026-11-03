@@ -2601,7 +2601,7 @@ test('広場は場外でマウスを離した後にパンを続けず、フォ�
 test.describe('市場の連続操作', () => {
     test.use({ serviceWorkers: 'block' });
     for (const design of ['classic', 'sunset', 'plaza', 'cardboard']) {
-        test(`市場の詳細ボタンは購入再描画をまたぐタップでも開く ${design}`, async ({ page }, testInfo) => {
+        test(`市場の詳細ボタンは購入再描画をまたぐ押下でも開く ${design}`, async ({ page }, testInfo) => {
             await page.setViewportSize({ width: 390, height: 844 });
             await stubAds(page);
             await page.goto('/');
@@ -2685,6 +2685,8 @@ test.describe('市場の連続操作', () => {
             await page.mouse.down();
             await page.mouse.move(outsideX, drag.y + drag.height / 2, { steps: 4 });
             await page.mouse.up();
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-drag-${design}.json`),
+                JSON.stringify(await page.evaluate(() => window.__marketPointerEvents)));
             await expect(page.locator('#cardDetailModal')).toBeHidden();
             expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
                 GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
