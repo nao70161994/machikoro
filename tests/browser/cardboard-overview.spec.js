@@ -497,7 +497,7 @@ test('10人の320px縦持ちでも全員の所有カードと市場を俯瞰で�
 });
 
 for (const viewport of [{width:390,height:844},{width:844,height:390}]) {
-    test(`共通カード卓の市場から建設して全員のカードへ戻れる ${viewport.width}`,async({page})=>{
+    test(`共通カード卓の市場から建設して全員のカードへ戻れる ${viewport.width}`,async({page},testInfo)=>{
         await prepare(page,viewport,4);
         await page.evaluate(()=>{const game=GameRuntimeState.runtime.snapshot().game;game.phase=GAME_PHASES.BUILD;game.builtThisTurn=false;render();});
         await page.locator('[data-cardboard-camera="market"]').click();
@@ -513,6 +513,22 @@ for (const viewport of [{width:390,height:844},{width:844,height:390}]) {
         await page.locator('[data-cardboard-camera="overview"]').click();
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
+        const title = page.locator('#cardboardMarket .compact-market-header h2');
+        expect(await title.evaluate(element => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            const text = range.getBoundingClientRect();
+            const bounds = element.getBoundingClientRect();
+            const scale = Number(document.getElementById('cardboardTableViewport').dataset.tableScale);
+            return text.width <= bounds.width + 1 && text.height <= 32 * scale;
+        }), '購入後も中央市場の全文を一行で読める').toBe(true);
+        await page.screenshot({path:testInfo.outputPath(`market-after-purchase-${viewport.width}.png`)});
+        await page.locator('#cardboardMarket [data-action="undoBuild"]').click();
+        await expect.poll(()=>page.evaluate(()=>{
+            const player=GameRuntimeState.runtime.snapshot().game.players[0];
+            return {count:player.cards.length,coins:player.coins};
+        })).toEqual(before);
+        await expectWholeTable(page,4);
         expect(name).toBeTruthy();
     });
 }

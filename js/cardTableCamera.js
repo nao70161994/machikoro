@@ -73,9 +73,13 @@ const CardTableCamera = (() => {
             return canvasToWorld({ x: x - bounds.left - viewport.clientLeft + viewport.scrollLeft,
                 y: y - bounds.top - viewport.clientTop + viewport.scrollTop });
         }
-        function alignPoint(point, anchor) {
+        function alignPoint(point, anchor, snapToPixel = false) {
             const position = worldToCanvas(point);
-            scroll(position.x - anchor.x, position.y - anchor.y);
+            const left = position.x - anchor.x;
+            const top = position.y - anchor.y;
+            // WebKit floors fractional scroll positions. Repeated semantic
+            // restores otherwise accumulate a one-direction rounding bias.
+            scroll(snapToPixel ? Math.round(left) : left, snapToPixel ? Math.round(top) : top);
         }
         function paint() {
             const size = measure();
@@ -190,7 +194,7 @@ const CardTableCamera = (() => {
                 // card, rather than carrying an arbitrary edge offset forward.
                 alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
                     { x: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.x)) : 0.5) * viewport.clientWidth,
-                        y: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.y)) : 0.5) * viewport.clientHeight });
+                        y: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.y)) : 0.5) * viewport.clientHeight }, true);
             }
             updateFocus();
             cacheInspectionAnchor();

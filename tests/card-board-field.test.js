@@ -198,17 +198,38 @@ runTest('購入後の市場closeは復帰geometryを同期してから同taskで
     assert.deepStrictEqual(order, ['restore', 'expanded:false', 'cue']);
 });
 
+runTest('閲覧位置の復元は最近傍pixelを使いWebKitの切捨て偏りを避ける', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
+    const start = source.indexOf('        function alignPoint(point, anchor,');
+    const end = source.indexOf('        function paint()', start);
+    assert.ok(start >= 0 && end > start);
+    let destination;
+    const context = { worldToCanvas: point => point, scroll: (left, top) => { destination = { left, top }; } };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    for (const fraction of [0.01, 0.49, 0.51, 0.99]) {
+        const point = { x: 584 + fraction, y: 1777 + fraction };
+        context.alignPoint(point, { x: 0, y: 0 }, true);
+        assert.ok(Math.abs(destination.left - point.x) <= 0.5);
+        assert.ok(Math.abs(destination.top - point.y) <= 0.5);
+        assert.strictEqual(destination.left, Math.floor(destination.left));
+        assert.strictEqual(destination.top, Math.floor(destination.top));
+        context.alignPoint(point, { x: 0, y: 0 });
+        assert.strictEqual(destination.left, point.x, '通常のpan/zoom用座標は変更しない');
+        assert.strictEqual(destination.top, point.y);
+    }
+});
+
 runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比例位置を可視範囲へ保つ', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
     const start = source.indexOf('        function restoreInspectionAnchor(anchor)');
     const end = source.indexOf('        function retainInspectionOnResize(anchor)', start);
     assert.ok(start >= 0 && end > start);
-    let cards = [], destination = null;
+    let cards = [], destination = null, snapped = false;
     const context = {
         destroyed: false, focusPlayer: 1, viewport: { clientWidth: 300, clientHeight: 500 },
         seat: () => ({ querySelectorAll: () => cards }),
         paint() {}, updateFocus() {}, cacheInspectionAnchor() {},
-        clientToWorld: (x, y) => ({ x, y }), alignPoint: (point, target) => { destination = target; },
+        clientToWorld: (x, y) => ({ x, y }), alignPoint: (point, target, snap) => { destination = target; snapped = snap; },
     };
     require('vm').runInNewContext(source.slice(start, end), context);
     const anchor = { playerIndex: 1, name: '麦畑', x: 0.25, y: 0.75, preservePosition: true };
@@ -218,6 +239,7 @@ runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比�
     assert.strictEqual(context.restoreInspectionAnchor(anchor), true);
     assert.strictEqual(destination.x, 75);
     assert.strictEqual(destination.y, 375);
+    assert.strictEqual(snapped, true);
     context.restoreInspectionAnchor({ ...anchor, x: -0.2, y: 1.2 });
     assert.strictEqual(destination.x, 0);
     assert.strictEqual(destination.y, 500);
