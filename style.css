@@ -15231,8 +15231,18 @@ html[data-design="cardboard"] .cardboard-activation-tag span {
 }
 html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount {
     display: inline-block;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.1;
     white-space: nowrap;
     overflow-wrap: normal;
+}
+html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-unit {
+    margin-left: 2px;
+    font-size: 11px;
+}
+html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount[data-compact="true"] {
+    font-size: 12px;
 }
 html[data-design="cardboard"] .cardboard-activation-tag small {
     font-size: 10px;
