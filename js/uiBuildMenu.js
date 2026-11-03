@@ -5,6 +5,48 @@ const UiBuildMenu = (() => {
     // Retain buttons and loaded SVGs across income, inventory and turn updates.
     // A pointer already held on a detail button must reach that same node on up.
     const renderedMarketHtml = new WeakMap();
+    const pointerBoundMarkets = new WeakSet();
+
+    function bindBuildMenuPointerCapture(root) {
+        if (pointerBoundMarkets.has(root)) return;
+        pointerBoundMarkets.add(root);
+        let held = null;
+        const release = () => {
+            const previous = held;
+            held = null;
+            try {
+                if (previous?.button.hasPointerCapture(previous.id)) previous.button.releasePointerCapture(previous.id);
+            } catch (_) { /* Removed nodes already lose native capture. */ }
+        };
+        root.addEventListener('pointerdown', event => {
+            if (!event.isPrimary || event.button !== 0) return;
+            const button = event.target.closest?.('[data-action="showCardDetail"], [data-action="showLandmarkDetail"]');
+            if (!button || !root.contains(button) || typeof button.setPointerCapture !== 'function') return;
+            release();
+            try {
+                button.setPointerCapture(event.pointerId);
+                held = { button, id: event.pointerId, x: event.clientX, y: event.clientY };
+            } catch (_) { /* Keyboard and unsupported capture retain ordinary clicks. */ }
+        });
+        root.addEventListener('pointermove', event => {
+            if (held && held.id === event.pointerId && Math.hypot(event.clientX - held.x, event.clientY - held.y) > 8) release();
+        });
+        root.addEventListener('pointerup', event => {
+            if (!held || held.id !== event.pointerId) return;
+            const button = held.button;
+            if (!button.isConnected || button.disabled || button.closest('[inert], [hidden]') ||
+                    button.getClientRects().length === 0 ||
+                    root.ownerDocument.defaultView.getComputedStyle(button).visibility === 'hidden') release();
+            // Native pointerup releases capture after dispatch and preserves
+            // the intended click target. Never synthesize/replay an action.
+            held = null;
+        });
+        root.addEventListener('pointercancel', release);
+        root.addEventListener('lostpointercapture', event => {
+            if (held && held.id === event.pointerId) held = null;
+        });
+        root.addEventListener('wheel', release, { passive: true });
+    }
 
     function presentationNodeKey(node) {
         if (node.nodeType !== 1) return null;
@@ -787,7 +829,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ patchPresentationChildren, updateBuildMenuHtml, prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ bindBuildMenuPointerCapture, patchPresentationChildren, updateBuildMenuHtml, prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

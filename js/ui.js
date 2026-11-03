@@ -1720,6 +1720,7 @@ function renderBuildMenu() {
     const currentGame = uiGameRuntimeSnapshot().game;
     renderBuildShortcut();
     if (!buildMenu || !currentGame) return;
+    UiBuildMenu.bindBuildMenuPointerCapture(buildMenu);
     const activeElement = document.activeElement;
     let activeWithinBuildMenu = false;
     let ancestor = activeElement;

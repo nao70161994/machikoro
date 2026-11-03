@@ -2618,6 +2618,12 @@ test.describe('市場の連続操作', () => {
                 render();
                 acceptHotseatHandoff();
             });
+            const focusLandmarks = async () => {
+                if (design !== 'plaza') return;
+                await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+                await page.locator('#plazaCameraTools [data-field-section="landmarks"]').click();
+            };
+            await focusLandmarks();
             if (design === 'cardboard') {
                 await page.locator('[data-cardboard-camera="market"]').click();
                 await page.locator('#cardboardMarket .compact-market-expand').click();
@@ -2626,6 +2632,8 @@ test.describe('市場の連続操作', () => {
             const root = design === 'cardboard' ? '#cardboardMarket' : '#buildMenu';
             const detail = page.locator(`${root} [data-action="showLandmarkDetail"][data-landmark-name="駅"]`);
             await detail.scrollIntoViewIfNeeded();
+            await detail.hover();
+            await expect(detail).toBeInViewport({ ratio: 1 });
             const bounds = await detail.boundingBox();
             expect(bounds).not.toBeNull();
             await detail.evaluate(element => {
@@ -2641,6 +2649,9 @@ test.describe('市場の連続操作', () => {
                 }
             });
             await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+            expect(await detail.evaluate((element, point) =>
+                document.elementFromPoint(point.x, point.y)?.closest('[data-action]') === element,
+            { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }), '押下開始位置は詳細ボタン上').toBe(true);
             await page.mouse.down();
             const transition = await page.evaluate(point => {
                 const game = GameRuntimeState.runtime.snapshot().game;
@@ -2665,6 +2676,18 @@ test.describe('市場の連続操作', () => {
             expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
                 GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
             await page.locator('#cardDetailModal [data-ui-action="closeCardDetail"]').click();
+            await focusLandmarks();
+            await detail.scrollIntoViewIfNeeded();
+            await detail.hover();
+            const drag = await detail.boundingBox();
+            const outsideX = drag.x > 80 ? drag.x - 24 : drag.x + drag.width + 24;
+            await page.mouse.move(drag.x + drag.width / 2, drag.y + drag.height / 2);
+            await page.mouse.down();
+            await page.mouse.move(outsideX, drag.y + drag.height / 2, { steps: 4 });
+            await page.mouse.up();
+            await expect(page.locator('#cardDetailModal')).toBeHidden();
+            expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
         });
     }
 });
