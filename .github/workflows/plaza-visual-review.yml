@@ -223,6 +223,7 @@ jobs:
                   git fetch --depth=1 origin f8e7a1706ac66d9f3a344b82a4b30c297144dd68
                   node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/market-room-comparison/wide --scene=all
                   node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/market-room-comparison/portrait --scene=portrait
+                  npx playwright test cardboard-overview.spec.js cardboard-view.spec.js --grep '4人の短い所有者名|中央市場を拡大してカードを比較|購入とUndo|相手正面を移動してから市場で購入|卓の出目と枚数は長い出目|狭幅でも収支操作' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/market-room-operations
             - name: Observe market lifecycle and real construction flights
               if: ${{ inputs.layout_comparison_only != true }}
               env:

@@ -25,6 +25,10 @@ async function review(browser, source, variant, viewport, stage, output, focused
         const pageErrors = [];
         page.on('pageerror', error => pageErrors.push(error.message));
         await page.route('**/js/cardTableLayout.js*', route => route.fulfill({ contentType: 'application/javascript', body: source }));
+        if (variant === 'before') {
+            const field = execFileSync('git', ['show', 'f8e7a1706ac66d9f3a344b82a4b30c297144dd68:js/cardBoardField.js'], { encoding: 'utf8' });
+            await page.route('**/js/cardBoardField.js*', route => route.fulfill({ contentType: 'application/javascript', body: field }));
+        }
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ body: '' }));
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
         await page.goto('http://127.0.0.1:3210/');
@@ -97,6 +101,11 @@ async function review(browser, source, variant, viewport, stage, output, focused
             return { viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio, clip },
                 world: { width: world.offsetWidth, height: world.offsetHeight, packing: world.dataset.tablePacking },
                 scale, cardEdgePx: first.offsetWidth * scale, groups, failures,
+                ownerLabels: [...viewport.querySelectorAll('.cardboard-owner-label')].map(label => ({
+                    index: label.dataset.playerIndex, text: label.textContent,
+                    complete: label.scrollWidth <= label.clientWidth,
+                    rect: label.getBoundingClientRect().toJSON(),
+                })),
                 owners: [...world.querySelectorAll(':scope > .cardboard-player')].map(panel => ({
                     index: panel.dataset.playerIndex, angle: panel.dataset.tableAngle,
                     rail: panel.dataset.tableLandmarkRail === 'true',
@@ -157,6 +166,10 @@ async function review(browser, source, variant, viewport, stage, output, focused
         }
         assert.equal(sample.state, before, 'Layout must not change canonical game state');
         assert.equal(sample.owners.length, 4);
+        if (variant === 'after') {
+            assert.equal(sample.ownerLabels.length, 4, 'All four short names must have screen-space labels');
+            assert.ok(sample.ownerLabels.every(label => label.complete));
+        }
         assert.equal(sample.groups.length, 5);
         assert.deepEqual(sample.failures, []);
         assert.deepEqual(pageErrors, []);
