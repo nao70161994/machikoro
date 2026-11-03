@@ -24,3 +24,14 @@ d225のNightly41625594178は夕暮れランドマーク詳細が初回hidden/再
 ## 採用時の範囲
 
 全4テーマの市場表示のみを変更し、ルール・購入判定・在庫更新・CPU・オンライン・保存の正本は変更しない。キャッシュ済み旧JSを残さないためSWキャッシュ名をv351へ更新する。既存のNightly flakyと同じ機序と断定せず、元ケースを含む集中検証と全Nightlyで確認する。1440px建設のRAF間隔問題と、390px全体俯瞰で市場が小さいという視覚課題は別件で未解決。
+
+## f8e7a170全件結果と残る失敗
+
+- Nightly41673128837：361件（WebKit359/Chromium2）、360初回成功＋既定opt-in skip1、retries0、stable=true。6shardとcoverage検査、simulation/online-soak/release/PWA/onlineも成功。集計と対象ケースはassets/nightly-quality/market-pointer-f8-nightly.json。
+- 既存16画面/操作41673068803：成功。Release41673068807のbrowser/seeded対戦/CPUは成功、Node unitだけ失敗。
+- Node失敗：string内HTMLだけの既存fixtureにownerDocument/createElement/addEventListenerがなく、新しい実DOM境界が例外を出す。製品への偽DOM fallbackは追加せず、fixtureがHTML生成・ポリシーの実関数を保ち、HTML書込とpointer登録という2境界だけ明示adapterへ変更する。assertは削除しない。このfixtureではDOM identityやpointer captureを検証しないと明記し、その根拠はnative4テーマに置く。ui/integration/release-e2e各Node testは修正後成功。
+- 集中41673099528：23/24初回成功。元Nightlyの夕暮れ詳細、4テーマの押下/drag取消/次clickは成功。plazaのみ最後のEnterによる詳細表示でhidden。Nightlyの同ケースは成功しており、フォーカス競合の記録を加えて41676410722で調査する。再試行や強制clickで救済しない。
+
+Nightly一度の成功を安定化完了とはしない。通常ReleaseのNode失敗と集中keyboard失敗を解決し、採用HEADで再確認する。
+
+追加記録版28bc9830/41676410722は4/4初回成功。keypress直前に実際のfocusをassertし、keyboard/clickの到達先をJSONへ保存するようにした。最初の失敗時はその記録がなく、focusの移動元・移動時刻を特定できないため、原因断定や製品のkeyboard不具合解消とは主張しない。最終HEADの集中/全件検証で継続確認する。fixture adapterは独立レビューでも範囲が適切と確認された。

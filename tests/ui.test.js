@@ -1,6 +1,7 @@
 const assert = require('assert');
 const vm = require('vm');
-const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+const { createStorage, makeElement, runTest } = require('./helpers/test-utils');
+const { loadScriptsWithStringMarket } = require('./helpers/string-market-runtime');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function loadUiRuntime(options = {}) {
@@ -139,7 +140,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
+    loadScriptsWithStringMarket(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -1471,6 +1472,8 @@ runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedAction
     context.enabledLandmarks = new Set(['駅']);
 
     context.renderBuildMenu();
+    assert.deepStrictEqual(context.__stringMarketDomCalls.bindings, [elements.buildMenu]);
+    assert.strictEqual(context.__stringMarketDomCalls.updates.at(-1).html, elements.buildMenu.innerHTML);
     assert.ok(/data-action="buildCard"[^>]+disabled/.test(elements.buildMenu.innerHTML));
     assert.ok(/data-action="buildLandmark"[^>]+disabled/.test(elements.buildMenu.innerHTML));
 

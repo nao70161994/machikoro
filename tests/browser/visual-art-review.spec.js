@@ -2639,7 +2639,7 @@ test.describe('市場の連続操作', () => {
             await detail.evaluate(element => {
                 window.__heldMarketDetail = element;
                 window.__marketPointerEvents = [];
-                for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+                for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'keydown', 'keyup']) {
                     document.addEventListener(type, event => {
                         const button = event.target.closest?.('[data-action], [data-ui-action]');
                         window.__marketPointerEvents.push({ type, action: button?.dataset.action,
@@ -2694,7 +2694,14 @@ test.describe('市場の連続操作', () => {
             await page.locator('#cardDetailModal [data-ui-action="closeCardDetail"]').click();
             await focusLandmarks();
             await detail.focus();
+            await expect(detail).toBeFocused();
             await page.keyboard.press('Enter');
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-keyboard-${design}.json`),
+                JSON.stringify(await detail.evaluate(element => ({
+                    focused: document.activeElement === element,
+                    activeAction: document.activeElement?.dataset.action,
+                    events: window.__marketPointerEvents,
+                }))));
             await expect(page.locator('#cardDetailModal')).toBeVisible();
             expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
                 GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
