@@ -2634,7 +2634,9 @@ test.describe('市場の連続操作', () => {
             const transition = await page.evaluate(() => {
                 const game = GameRuntimeState.runtime.snapshot().game;
                 const before = game.currentPlayer().cards.length;
-                onBuildCard('麦畑');
+                const card = createCardByName('麦畑');
+                if (game.buildCard(card)) decrementMarketShopStock(game, SHOP_STOCK, card);
+                render();
                 return { before, after: game.currentPlayer().cards.length,
                     targetRetained: window.__heldMarketDetail.isConnected };
             });
