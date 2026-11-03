@@ -220,8 +220,9 @@ jobs:
                   GIT_CONFIG_KEY_0: safe.directory
                   GIT_CONFIG_VALUE_0: ${{ github.workspace }}
               run: |
-                  git fetch --depth=1 origin 98addf35b4b123fa33e907700f5f2d0271bef95b
-                  node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison --scene=${{ inputs.layout_review_scene || 'all' }}
+                  git fetch --depth=1 origin f8e7a1706ac66d9f3a344b82a4b30c297144dd68
+                  node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/market-room-comparison/wide --scene=all
+                  node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/market-room-comparison/portrait --scene=portrait
             - name: Observe market lifecycle and real construction flights
               if: ${{ inputs.layout_comparison_only != true }}
               env:

@@ -173,7 +173,7 @@ async function main() {
     if (!output) throw new Error('--output=DIR is required');
     const scene = process.argv.find(value => value.startsWith('--scene='))?.slice(8) || 'all';
     if (!['all', 'middle-844', 'portrait'].includes(scene)) throw new Error('Invalid layout review scene');
-    const baselineRef = '98addf35b4b123fa33e907700f5f2d0271bef95b';
+    const baselineRef = 'f8e7a1706ac66d9f3a344b82a4b30c297144dd68';
     const sources = { before: observeLayout(execFileSync('git', ['show', `${baselineRef}:js/cardTableLayout.js`], { encoding: 'utf8' })),
         after: observeLayout(await fs.readFile('js/cardTableLayout.js', 'utf8')) };
     await fs.mkdir(output, { recursive: true });
