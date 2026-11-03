@@ -13816,6 +13816,9 @@ html[data-design="cardboard"] #cardboardTableViewport {
     overscroll-behavior: contain;
     overflow-anchor: none;
     touch-action: pan-x pan-y;
+    /* Experimental bounded paint boundary; no giant-world GPU promotion. */
+    contain: paint;
+    isolation: isolate;
     border-radius: 18px;
     background: radial-gradient(ellipse at center, #258c89, #116a6a 68%, #0b4f57);
     border: 6px solid #c4b17c;

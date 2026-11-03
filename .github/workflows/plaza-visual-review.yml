@@ -222,8 +222,15 @@ jobs:
               run: |
                   git fetch --depth=1 origin 98addf35b4b123fa33e907700f5f2d0271bef95b
                   node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison --scene=${{ inputs.layout_review_scene || 'all' }}
+            - name: Compare bounded paint candidate against unchanged d225 rendering
+              if: ${{ inputs.layout_comparison_only != true && inputs.render_profile_only == true }}
+              env:
+                  GIT_CONFIG_COUNT: '1'
+                  GIT_CONFIG_KEY_0: safe.directory
+                  GIT_CONFIG_VALUE_0: ${{ github.workspace }}
+              run: sh scripts/diagnostics/compare-bounded-table-paint.sh
             - name: Observe market lifecycle and real construction flights
-              if: ${{ inputs.layout_comparison_only != true }}
+              if: ${{ inputs.layout_comparison_only != true && inputs.render_profile_only != true }}
               env:
                   RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
               run: |
