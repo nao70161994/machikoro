@@ -26,6 +26,14 @@ const CardTableLayout = (() => {
                 { ...rect, x: rect.x - minX + padding, y: rect.y - minY + padding }])) };
     }
 
+    // Spend only space already reserved between the owners. World extents and
+    // owned-card size remain unchanged, including in the rotated pinwheel.
+    function marketScaleWithinHole(market, hole, maximum = 1.5) {
+        if (![market.width, market.height, hole.width, hole.height, maximum].every(Number.isFinite) ||
+                market.width <= 0 || market.height <= 0) return 1;
+        return Math.max(1, Math.min(maximum, hole.width / market.width, hole.height / market.height));
+    }
+
     function create({ world, viewport, market, onLayout = () => {} }) {
         let state = { selfIndex: 0, playerCount: 0, session: null };
         let frame = 0;
@@ -435,6 +443,12 @@ const CardTableLayout = (() => {
             const marketY = pinGeometry?.rects.market.y ?? centerTop + (middleHeight - marketHeight) / 2;
             setStyle(market, 'left', `${marketX}px`);
             setStyle(market, 'top', `${marketY}px`);
+            const marketScale = marketAtHome && panels.length <= 4 && !readingSeat
+                ? marketScaleWithinHole({ width: marketWidth, height: marketHeight },
+                    pinGeometry?.hole ?? { width: middleWidth, height: middleHeight }) : 1;
+            setStyle(market, 'transform-origin', 'center center');
+            setStyle(market, 'transform', marketScale > 1 ? `scale(${marketScale})` : 'none');
+            market.dataset.tableMarketScale = String(marketScale);
             const ownerGeometry = [];
             for (const [side, owners] of Object.entries(sides)) {
                 const vertical = side === 'left' || side === 'right';
@@ -460,7 +474,7 @@ const CardTableLayout = (() => {
             }
             const packing = chosen.packing || 'cross';
             if (world.dataset.tablePacking !== packing) world.dataset.tablePacking = packing;
-            const geometryKey = JSON.stringify([packing, chosen.market, chosen.rows, marketX, marketY, marketWidth, marketHeight, ownerGeometry]);
+            const geometryKey = JSON.stringify([packing, chosen.market, chosen.rows, marketX, marketY, marketWidth, marketHeight, marketScale, ownerGeometry]);
             if (world.dataset.tableLayoutKey !== geometryKey) world.dataset.tableLayoutKey = geometryKey;
             onLayout();
         }
@@ -505,7 +519,7 @@ const CardTableLayout = (() => {
         observe(market);
         return Object.freeze({ refresh, syncLayout, setReadingSeat, destroy });
     }
-    return Object.freeze({ create, computePinwheelGeometry });
+    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableLayout;

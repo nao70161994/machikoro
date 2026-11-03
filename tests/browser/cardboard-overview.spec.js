@@ -1427,3 +1427,48 @@ test('卓の出目と枚数は長い出目でも重ならず施設アートを�
     }
     expect(await snapshot(page)).toEqual(before);
 });
+
+
+test('4人の短い所有者名は狭い中盤でも全員の施設につながる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const names = ['麦畑', 'パン屋', '牧場', '森林', 'コンビニ'];
+        game.players.forEach(player => {
+            player.cards = names.map(createCardByName);
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+            for (const name of Array.from(getEnabledLandmarkSelection()).slice(0, 2)) player.landmarks[name] = true;
+        });
+        render();
+    });
+    const before = await snapshot(page);
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport);
+        await cameraCommand(page, 'overview');
+        await expectWholeTable(page, 4);
+        const labels = page.locator('#cardboardOwnerLabels .cardboard-owner-label');
+        await expect(labels).toHaveText(['街1', '街2', '街3', '街4']);
+        await expect.poll(() => labels.evaluateAll(elements => elements.every(label => {
+            const rect = label.getBoundingClientRect();
+            const clip = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+            const cards = [...document.querySelectorAll('#cardboardSeats .cardboard-card')];
+            const obstacles = [...cards, ...document.querySelectorAll('#cardboardSeats .cardboard-landmark, #cardboardCenter')];
+            const distance = node => {
+                const box = node.getBoundingClientRect();
+                return Math.hypot(Math.max(box.left - rect.right, rect.left - box.right, 0),
+                    Math.max(box.top - rect.bottom, rect.top - box.bottom, 0));
+            };
+            const owned = cards.filter(card => card.closest('.cardboard-player').dataset.playerIndex === label.dataset.playerIndex);
+            const others = cards.filter(card => !owned.includes(card));
+            return label.scrollWidth <= label.clientWidth && rect.left >= clip.left && rect.right <= clip.right &&
+                rect.top >= clip.top && rect.bottom <= clip.bottom &&
+                Math.min(...owned.map(distance)) <= Math.min(...others.map(distance)) + 0.5 &&
+                !obstacles.some(node => {
+                    const box = node.getBoundingClientRect();
+                    return rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top;
+                });
+        })), '全員の名前を省略せず、自分の施設群の近くへ重なりなく配置する').toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`owner-short-middle-${viewport.width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});

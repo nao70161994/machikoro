@@ -201,13 +201,13 @@ const CardBoardField = (() => {
             const duplicateName = Boolean(player.name) && facts.game.players.some((other, otherIndex) => otherIndex !== index && other.name === player.name);
             const labelText = duplicateName ? seatLabelText : displayName;
             // Match the actual name rather than reserving a long empty badge.
-            const preferredWidth = Math.max(fallbackWidth, Math.min(maximumWidth,
+            const preferredWidth = Math.max(44, Math.min(maximumWidth,
                 Math.ceil(ownerLabelMeasure?.measureText(labelText).width || maximumWidth) + 16));
             const anchor = heading.getBoundingClientRect();
             const region = panel.getBoundingClientRect();
             let placement = null;
-            // Keep both original width searches ahead of the edge fallback,
-            // including an existing compact placement for a longer name.
+            // Short names can fit narrow owner gaps without shrinking text.
+            // Retain the established compact fallback for longer names.
             const widths = [...new Set([preferredWidth, fallbackWidth])];
             for (const { width, inset } of [false, true].flatMap(inset => widths.map(width => ({ width, inset })))) {
                 const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
