@@ -1,0 +1,26 @@
+# 市場再描画中の詳細操作
+
+## 起点
+
+d225のNightly41625594178は夕暮れランドマーク詳細が初回hidden/再試行成功で失敗した。traceは初手CPU進行中の詳細ボタンdetachを記録するが、押下/解放/開閉の記録がなく元失敗の原因断定はしない。
+
+## 製品候補
+
+既存cardboardのpresentationNodeKey/patchPresentationChildrenをUiBuildMenuへ共有化し、他3テーマの市場innerHTML全置換を差分描画へ変更した。施設/ランドマークsectionとcard-wrapperのキーを追加し、SVG・詳細ボタンを保持、disabled/価格/在庫など実際の変更は反映する。要求HTML同一時のcacheはrootの子identityも検査し、外側からrootが置換された場合は再構築する。任意の内部DOM改変を完全修復する汎用関数ではない。
+
+独立ソースレビューでは重大な問題なし。Node構文3ファイル・ESLint3ファイル・既存card-board-field/facility-artテストは成功。実ブラウザでの採用判定は未完了で、最終版の全件CI判定は未完了。
+
+## 操作再現の証拠と限界
+
+- 15523855/41629784192：onBuildCardを呼ぶfixtureは操作ロックで購入不成立（枚数2のまま）。4失敗を製品不具合の証拠にしない。
+- 319aebc6/41630771533：制御fixtureを合法BUILD中のGameManager.buildCard＋市場在庫減少＋renderへ変更。通常mouse down/up間で購入再描画し、全4テーマで購入枚数は増えるが詳細modal hidden。
+- b514d638/41630929510：同fixture＋共有描画。targetRetained=trueが4/4。classicはmodal表示まで成功したが新testの見出し期待値がemoji仕様と不一致。他3テーマはmodal hiddenが残る。ノード保持だけで解消済みとはしない。
+- 16131a09/41669273320：classicは成功。sunsetは同じボタンがy399→-72へ、cardboardはy689→714へ移動し、解放が別要素へ届いた。plazaは初期座標x=-21で、こちらはfixtureの不備。DOM保持だけでは押下中の配置変更に対応できない。
+- 3ac958f5/41670798986：readonly詳細ボタンだけにnative pointer captureを追加。plazaも実際の「その他→ランドマークへ」で表示後に操作するfixtureへ修正。通常押下は4テーマとも詳細表示成功。ただしドラッグで外へ移動した後のclickがclassic/sunset/cardboardで残り、誤表示した。これを検出するassertは維持。
+- 693520ed/41672193230：8px超の移動・wheel・pointercancelでcaptureを解除し、そのキャンセル操作に続くclickだけを抑止する候補。新しいprimary押下ではキャンセル状態を初期化し、keyboard click(detail=0)は維持。購入・建設・Undoはcapture対象にしない。native WebKitは4/4初回成功（再試行0）。その後の独立レビューで取消状態をpointerId単位へ変更し、keyboard操作で取消情報を消費しないようにした。通常の次clickとEnterによる詳細表示も同じ4ケースへ追加した。最終版は全件CIと併せて再検証する。
+
+これは自動ブラウザのmouse保持による制御fixtureで、物理タッチやquickplay初手CPUの自然進行そのものではない。位置移動・hover後の座標・元nodeへのイベント到達を分けて確認する。synthetic clickやforceによる救済は行わない。購入後と詳細表示後のGameSnapshot一致で閲覧の正本不変も確認する。
+
+## 採用時の範囲
+
+全4テーマの市場表示のみを変更し、ルール・購入判定・在庫更新・CPU・オンライン・保存の正本は変更しない。キャッシュ済み旧JSを残さないためSWキャッシュ名をv351へ更新する。既存のNightly flakyと同じ機序と断定せず、元ケースを含む集中検証と全Nightlyで確認する。1440px建設のRAF間隔問題と、390px全体俯瞰で市場が小さいという視覚課題は別件で未解決。

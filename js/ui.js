@@ -1720,6 +1720,7 @@ function renderBuildMenu() {
     const currentGame = uiGameRuntimeSnapshot().game;
     renderBuildShortcut();
     if (!buildMenu || !currentGame) return;
+    UiBuildMenu.bindBuildMenuPointerCapture(buildMenu);
     const activeElement = document.activeElement;
     let activeWithinBuildMenu = false;
     let ancestor = activeElement;
@@ -1760,7 +1761,7 @@ function renderBuildMenu() {
     }
     const marketHtml = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction, compact);
     if (compact && typeof CardBoardField !== 'undefined') CardBoardField.updateMarket(marketHtml);
-    else buildMenu.innerHTML = marketHtml;
+    else UiBuildMenu.updateBuildMenuHtml(buildMenu, marketHtml);
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {
             if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
