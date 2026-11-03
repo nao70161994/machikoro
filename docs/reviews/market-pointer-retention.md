@@ -35,3 +35,15 @@ d225のNightly41625594178は夕暮れランドマーク詳細が初回hidden/再
 Nightly一度の成功を安定化完了とはしない。通常ReleaseのNode失敗と集中keyboard失敗を解決し、採用HEADで再確認する。
 
 追加記録版28bc9830/41676410722は4/4初回成功。keypress直前に実際のfocusをassertし、keyboard/clickの到達先をJSONへ保存するようにした。最初の失敗時はその記録がなく、focusの移動元・移動時刻を特定できないため、原因断定や製品のkeyboard不具合解消とは主張しない。最終HEADの集中/全件検証で継続確認する。fixture adapterは独立レビューでも範囲が適切と確認された。
+
+## フォーカス競合の因果確認と修正
+
+e7a3fe32のRelease41677179342と16画面/操作41677179447は成功。一方、集中41677207854はplazaのEnter直前toBeFocusedで23/24。元の「modal hidden」だけでは不明だった失敗を、フォーカス自体の喪失まで絞った。
+
+PlazaFieldの「ランドマークへ」操作はdetailsを閉じた後のRAFで無条件に見出しへfocusしていた。この間に詳細ボタンやmodalへfocusが移っても奪い返していた。修正版は、現在のfocusがbody・非接続・元メニュー内に留まる場合だけ見出しへ戻す。他要素への新しいfocusと、既に解除された画面を尊重する。
+
+同じclick dispatch末尾で詳細ボタンへfocusを移し、2RAF後の保持と実Enterを検査する制御比較を実施。12138ef9 / run41679412663では旧版のplazaがtoBeFocusedで失敗し、修正版は全4テーマが初回成功（4 passed、retries0）。単なる期待値変更やsleep追加ではない。旧版取得指定の短縮SHAを修正する前の41679358990は実行を取り消し、比較証拠に含めない。
+
+独立ソースレビューでも、通常のmenu→見出し復帰を維持して新しいfocusを守る条件が妥当と確認された。物理タッチ/自然な1ゲームでの体感はこの制御fixtureでは証明しない。採用HEADの全件・実UI対局で引き続き確認する。
+
+比較時の実focusは旧版H4、修正版BUTTONで、JSONにも保存した（assets/nightly-quality/plaza-menu-focus-121.json）。旧版では後から来た見出しfocusin、修正版では詳細buttonのfocus保持をイベント列で確認できる。

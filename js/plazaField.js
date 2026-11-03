@@ -510,7 +510,13 @@ const PlazaField = (() => {
                 // A closed details element can clear focus moved during the same
                 // click dispatch. Focus the market heading after that transition.
                 requestAnimationFrame(() => {
-                    if (focusAfterDisclosureClose.isConnected) focusAfterDisclosureClose.focus({ preventScroll: true });
+                    const active = document.activeElement;
+                    // A user can already have focused a facility or opened a
+                    // modal before this frame. Do not steal that newer focus.
+                    const stayedWithMenu = !active || active === document.body || !active.isConnected || menu?.contains(active);
+                    if (mounted && stayedWithMenu && focusAfterDisclosureClose.isConnected) {
+                        focusAfterDisclosureClose.focus({ preventScroll: true });
+                    }
                 });
             }
         });
