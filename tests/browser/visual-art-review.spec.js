@@ -2628,25 +2628,39 @@ test.describe('市場の連続操作', () => {
             await detail.scrollIntoViewIfNeeded();
             const bounds = await detail.boundingBox();
             expect(bounds).not.toBeNull();
-            await detail.evaluate(element => { window.__heldMarketDetail = element; });
+            await detail.evaluate(element => {
+                window.__heldMarketDetail = element;
+                window.__marketPointerEvents = [];
+                for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+                    document.addEventListener(type, event => {
+                        const button = event.target.closest?.('[data-action], [data-ui-action]');
+                        window.__marketPointerEvents.push({ type, action: button?.dataset.action,
+                            uiAction: button?.dataset.uiAction, name: button?.dataset.landmarkName,
+                            held: button === window.__heldMarketDetail, at: performance.now() });
+                    }, true);
+                }
+            });
             await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
             await page.mouse.down();
-            const transition = await page.evaluate(() => {
+            const transition = await page.evaluate(point => {
                 const game = GameRuntimeState.runtime.snapshot().game;
                 const before = game.currentPlayer().cards.length;
                 const card = createCardByName('麦畑');
                 if (game.buildCard(card)) decrementMarketShopStock(game, SHOP_STOCK, card);
                 render();
                 return { before, after: game.currentPlayer().cards.length,
-                    targetRetained: window.__heldMarketDetail.isConnected };
-            });
+                    targetRetained: window.__heldMarketDetail.isConnected,
+                    afterBounds: window.__heldMarketDetail.getBoundingClientRect().toJSON(),
+                    atOriginalPoint: document.elementFromPoint(point.x, point.y)?.closest('[data-action]')?.dataset.action,
+                    hitHeld: document.elementFromPoint(point.x, point.y)?.closest('[data-action]') === window.__heldMarketDetail };
+            }, { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 });
             expect(transition.after).toBe(transition.before + 1);
             const purchased = await page.evaluate(() => GameSnapshot.serializeUndoState(
                 GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
             await page.mouse.up();
-            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-pointer-${design}.json`), JSON.stringify(transition));
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-pointer-${design}.json`), JSON.stringify({ ...transition, beforeBounds: bounds, events: await page.evaluate(() => window.__marketPointerEvents) }));
             await expect(page.locator('#cardDetailModal')).toBeVisible();
-            await expect(page.locator('#cardDetailTitle')).toHaveText('駅');
+            await expect(page.locator('#cardDetailTitle')).toHaveText(['classic', 'cardboard'].includes(design) ? '🚉 駅' : '駅');
             expect(transition.targetRetained, '押している詳細ボタンを市場更新で破棄しない').toBe(true);
             expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
                 GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
