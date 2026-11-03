@@ -22,7 +22,6 @@ const UiBuildMenu = (() => {
             if (!event.isPrimary || event.button !== 0) return;
             const button = event.target.closest?.('[data-action="showCardDetail"], [data-action="showLandmarkDetail"]');
             if (!button || !root.contains(button) || typeof button.setPointerCapture !== 'function') return;
-            release();
             try {
                 button.setPointerCapture(event.pointerId);
                 held = { button, id: event.pointerId, x: event.clientX, y: event.clientY };
