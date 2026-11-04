@@ -1531,7 +1531,12 @@ test('844中盤の所有者ラベルは発動と視点復帰の全フレーム�
     }), stage));
     await sampleFrames('initial');
     await page.evaluate(() => {
-        GameRuntimeState.runtime.snapshot().game.rollDice([3]);
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.rollDice(3);
+        if (game.phase === GAME_PHASES.SELECT_DICE) game.selectDiceCount(false, 3);
+        if (game.lastDiceResult !== 3 || game.phase !== GAME_PHASES.BUILD) {
+            throw new Error(`Expected resolved dice 3/build, got ${game.lastDiceResult}/${game.phase}`);
+        }
         render();
     });
     await sampleFrames('roll');
