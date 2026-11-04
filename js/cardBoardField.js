@@ -76,6 +76,7 @@ const CardBoardField = (() => {
     let townLauncher = null;
     let restoreTownFocus = true;
     let marketHome = null;
+    let marketReturnView = null;
     let marketLauncher = null;
     let marketLauncherSelector = null;
     let restoreMarketFocus = true;
@@ -896,29 +897,37 @@ const CardBoardField = (() => {
         else showBuildCue(button, !reducedMotionEnabled(), origin, entry);
     }
 
-    function presentPendingBuildCues() {
+    function pendingBuildTarget(cue) {
+        const game = facts?.game;
+        if (!game || !mounted || !enabled() || facts.replaying || document.hidden || node('gameScreen')?.style.display === 'none' ||
+                cue.session !== session || cue.turn !== game.turnCount || cue.actor !== game.currentPlayerIndex || !game.log.includes(cue.entry)) return null;
+        const panel = node('cardboardSeats')?.querySelector(`[data-player-index="${cue.playerIndex}"]`);
+        const selector = cue.landmark ? '.cardboard-landmark' : '.cardboard-card';
+        const button = Array.from(panel?.querySelectorAll(selector) || []).find(element =>
+            element.getAttribute(cue.landmark ? 'data-landmark-name' : 'data-card-name') === cue.name);
+        if (!button || (cue.landmark && game.players[cue.playerIndex]?.landmarks[cue.name] !== true)) return null;
+        return button;
+    }
+
+    function presentPendingBuildCues(capturedReturnView = null) {
         if (isMarketExpanded()) return;
         const pending = pendingBuildCues;
         pendingBuildCues = [];
         const game = facts?.game;
         if (!game || !mounted || !enabled() || facts.replaying || document.hidden || node('gameScreen')?.style.display === 'none') return;
         for (const cue of pending) {
-            if (cue.session !== session || cue.turn !== game.turnCount || cue.actor !== game.currentPlayerIndex || !game.log.includes(cue.entry)) continue;
-            const panel = node('cardboardSeats')?.querySelector(`[data-player-index="${cue.playerIndex}"]`);
-            const selector = cue.landmark ? '.cardboard-landmark' : '.cardboard-card';
-            const button = Array.from(panel?.querySelectorAll(selector) || []).find(element =>
-                element.getAttribute(cue.landmark ? 'data-landmark-name' : 'data-card-name') === cue.name);
+            const button = pendingBuildTarget(cue);
             if (!button) continue;
-            if (cue.landmark && game.players[cue.playerIndex]?.landmarks[cue.name] !== true) continue;
             // Closing a successful purchase reveals the actual new card,
             // including later rows that a seat-header focus cannot expose.
-            tableCamera?.focusCard(button);
+            tableCamera?.focusCard(button, capturedReturnView);
             if (cue.landmark) showLandmarkCue(button, !reducedMotionEnabled());
             else showBuildCue(button, !reducedMotionEnabled(), cue.origin, cue.entry);
         }
     }
 
     function clearFeedback() {
+        marketReturnView = null;
         clearBuildFlight();
         purchaseOrigin = null;
         clearBuildNotice();
@@ -966,6 +975,8 @@ const CardBoardField = (() => {
     }
 
     function finishMarketClose() {
+        const captured = marketReturnView;
+        marketReturnView = null;
         restoreMarketNode();
         setMarketExpanded(false);
         const launcher = marketLauncher?.isConnected && marketLauncher.getClientRects().length
@@ -977,15 +988,21 @@ const CardBoardField = (() => {
         }
         restoreMarketFocus = true;
         if (tableLayout && tableCamera) {
-            // Capture the restored table, not the expanded market geometry, as
-            // the inspection return view. Keep both layouts in this task so a
-            // queued overview paint cannot delay the fresh purchase feedback.
+            // Restore native geometry in this task. Ordinary exits retain the
+            // established camera refresh; fresh purchases use the pre-dialog
+            // semantic view and need only their final inspection paint.
             tableLayout.syncLayout();
-            tableCamera.syncLayout();
-            presentPendingBuildCues();
+            const game = facts?.game;
+            const purchaseReturn = captured && captured.session === session && captured.game === game &&
+                captured.turn === game?.turnCount && captured.actor === game?.currentPlayerIndex &&
+                pendingBuildCues.some(cue => pendingBuildTarget(cue)) ? captured.view : null;
+            // A valid purchase already has the pre-dialog semantic return view.
+            // Paint only its final card inspection, not an intermediate overview.
+            if (!purchaseReturn) tableCamera.syncLayout();
+            presentPendingBuildCues(purchaseReturn);
         } else {
             tableLayout?.refresh();
-            if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
+            if (tableLayout) globalThis.requestAnimationFrame(() => presentPendingBuildCues());
             else presentPendingBuildCues();
         }
         tableCamera?.preserveReadingPosition(false);
@@ -998,6 +1015,7 @@ const CardBoardField = (() => {
     function suspendMarketForDetail() {
         const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'));
         if (!enabled() || !dialog?.open || suspendedMarketDetail) return false;
+        marketReturnView = null;
         suspendedMarketDetail = { session, game: facts?.game };
         // Native close dispatches asynchronously. This is not a market exit:
         // keep the same shelf, scroll, launcher and pending construction cues.
@@ -1052,6 +1070,8 @@ const CardBoardField = (() => {
         if (suspendedMarketDetail) return false;
         if (dialog.open) return true;
         tableCamera?.preserveReadingPosition(true);
+        marketReturnView = tableCamera ? { view: tableCamera.captureView(), session, game: facts?.game,
+            turn: facts?.game?.turnCount, actor: facts?.game?.currentPlayerIndex } : null;
         marketLauncher = document.activeElement;
         marketLauncherSelector = marketLauncher?.closest?.('.compact-market-filter-disclosure')
             ? '.compact-market-filter-disclosure > summary'

@@ -230,19 +230,22 @@ jobs:
                   GIT_CONFIG_KEY_0: safe.directory
                   GIT_CONFIG_VALUE_0: ${{ github.workspace }}
               run: |
-                  git fetch --depth=1 origin cac364e33987e175196f49a280bea4fdd04a0b87
+                  git fetch --depth=1 origin 83069b01badbeadda849da26b56ed1b527299f60
                   cp js/cardBoardField.js /tmp/review-field-candidate.js
-                  cp style.css /tmp/review-style-candidate.css
-                  git show cac364e33987e175196f49a280bea4fdd04a0b87:js/cardBoardField.js > js/cardBoardField.js
-                  git show cac364e33987e175196f49a280bea4fdd04a0b87:style.css > style.css
+                  cp js/cardTableCamera.js /tmp/review-camera-candidate.js
+                  git show 83069b01badbeadda849da26b56ed1b527299f60:js/cardBoardField.js > js/cardBoardField.js
+                  git show 83069b01badbeadda849da26b56ed1b527299f60:js/cardTableCamera.js > js/cardTableCamera.js
                   before_status=0
-                  npx playwright test cardboard-overview.spec.js --grep '390終盤のCPU所有者名' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/owner-before || before_status=$?
+                  node scripts/diagnostics/run-browser-with-resources.js --output=test-results/before-resources.jsonl -- npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3 --output=test-results/camera-before || before_status=$?
                   cp /tmp/review-field-candidate.js js/cardBoardField.js
-                  cp /tmp/review-style-candidate.css style.css
+                  cp /tmp/review-camera-candidate.js js/cardTableCamera.js
                   after_status=0
-                  npx playwright test cardboard-overview.spec.js --grep '390終盤のCPU所有者名' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/owner-after || after_status=$?
-                  printf '{"beforeExit":%s,"afterExit":%s}\n' "$before_status" "$after_status" > test-results/owner-comparison.json
+                  node scripts/diagnostics/run-browser-with-resources.js --output=test-results/after-resources.jsonl -- npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3 --output=test-results/camera-after || after_status=$?
+                  navigation_status=0
+                  npx playwright test cardboard-view.spec.js cardboard-overview.spec.js --grep '相手正面を移動してから市場で購入|購入とUndo|中央市場を拡大してカードを比較|市場の即時再表示は古いcloseイベント|同じ対局で市場と表示モードを5連続往復' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/camera-navigation || navigation_status=$?
+                  printf '{"beforeExit":%s,"afterExit":%s,"navigationExit":%s}\n' "$before_status" "$after_status" "$navigation_status" > test-results/camera-comparison.json
                   test "$after_status" -eq 0
+                  test "$navigation_status" -eq 0
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

@@ -372,12 +372,14 @@ const CardTableCamera = (() => {
             alignPoint(point, { x: wide ? padding : viewport.clientWidth / 2,
                 y: tall ? padding : viewport.clientHeight / 2 });
         }
-        function focusCard(card) {
+        /** @param {ReturnType<typeof captureView> | null} [capturedReturnView] */
+        function focusCard(card, capturedReturnView = null) {
             if (destroyed || !card?.isConnected || !world.contains(card)) return;
             const initial = card.getBoundingClientRect();
             if (!initial.width || !initial.height) return;
             cancelResizeAnchor();
-            rememberView();
+            if (capturedReturnView) returnView = capturedReturnView;
+            else rememberView();
             const player = card.closest('.cardboard-player');
             applyReading(player ? Number(player.dataset.playerIndex) : null, 0.85);
             focusPlayer = player ? Number(player.dataset.playerIndex) : null;
@@ -675,7 +677,7 @@ const CardTableCamera = (() => {
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, syncLayout, syncViewport, preserveReadingPosition, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
+        return Object.freeze({ refresh, syncLayout, syncViewport, preserveReadingPosition, captureView, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
     return Object.freeze({ create });
 })();
