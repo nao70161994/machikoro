@@ -1703,6 +1703,9 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(liveTag).toContainText('森林');
     await expect(liveTag.locator('.cardboard-activation-route')).toContainText('銀行 →');
     await expect(liveTag.locator('.cardboard-activation-amount')).toHaveCSS('white-space', 'nowrap');
+    await expect(liveTag.locator('.cardboard-activation-amount')).toHaveCSS('font-size', '22px');
+    await expect(liveTag.locator('.cardboard-activation-amount > b')).toHaveText('+1');
+    await expect(liveTag.locator('.cardboard-activation-unit')).toHaveText('コイン');
     const flights = page.locator('.cardboard-transfer[data-facility="森林"]');
     await expect(flights).toHaveCount(4);
     expect(await flights.evaluateAll(elements => elements.map(element => {
@@ -1762,7 +1765,7 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         return GameRuntimeState.runtime.snapshot().game.players[index].name || `席${index + 1}`;
     }));
     expect(tagRecords.map(record => record.text)).toEqual(owners.map((owner, index) =>
-        `森林${owner} · +1コイン銀行 → ${owner}施設発動 ${index + 1} / ${owners.length}`));
+        `森林${owner} · +1コイン銀行 → ${owner}施設結果 ${index + 1} / ${owners.length}`));
     expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
     expect(tagRecords.every(record => !record.sourceCovered), JSON.stringify(tagRecords)).toBe(true);
     expect(tagRecords.every(record => !record.ownerCovered), JSON.stringify(tagRecords)).toBe(true);
@@ -2106,3 +2109,53 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
         await page.screenshot({ path: testInfo.outputPath(`purchase-return-${viewport.width}.png`) });
     });
 }
+
+
+test('施設結果の金額は強調し大きな数値も省略せず収める', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = [createCardByName('森林')];
+        render();
+    });
+    const before = await state(page);
+    const samples = [];
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await camera(page, 'overview');
+        const results = await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            const presenter = CardBoardActivationTags.create({ container: document.getElementById('cardboardBoard'),
+                viewport: document.getElementById('cardboardTableViewport') });
+            try {
+                return [1, 25, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER].map(amount => {
+                    presenter.play({ events: { activations: [{ facility: true, subject: '森林', owner: 0,
+                        from: amount < 0 ? 0 : null, to: amount < 0 ? null : 0, amount: Math.abs(amount) }] },
+                    players: game.players, reducedMotion: true, isCurrent: () => true });
+                    const tag = document.querySelector('.cardboard-activation-tag');
+                    const value = tag.querySelector('.cardboard-activation-amount');
+                    const range = document.createRange();
+                    range.selectNodeContents(value);
+                    const text = range.getBoundingClientRect();
+                    const bounds = tag.getBoundingClientRect();
+                    return { amount, text: value.textContent, fontSize: getComputedStyle(value).fontSize,
+                        complete: text.left >= bounds.left && text.right <= bounds.right &&
+                            text.top >= bounds.top && text.bottom <= bounds.bottom,
+                        whiteSpace: getComputedStyle(value).whiteSpace,
+                        motion: tag.dataset.motion, art: tag.dataset.presentation,
+                        stackedUnit: value.dataset.stacked === 'true',
+                        bounds: bounds.toJSON(), textBounds: text.toJSON(),
+                        incomeBounds: value.parentElement.getBoundingClientRect().toJSON() };
+                });
+            } finally { presenter.clear(); }
+        });
+        samples.push({ width, results });
+        await fs.writeFile(testInfo.outputPath(`facility-result-amounts-${width}.json`), JSON.stringify(results));
+        expect(results.map(sample => sample.text)).toEqual(['+1コイン', '+25コイン',
+            `+${Number.MAX_SAFE_INTEGER}コイン`, `-${Number.MAX_SAFE_INTEGER}コイン`]);
+        expect(results.map(sample => sample.fontSize)).toEqual(['22px', '22px', '12px', '12px']);
+        expect(results.every(sample => sample.complete && sample.whiteSpace === 'nowrap' && sample.motion === 'reduced'), JSON.stringify(results)).toBe(true);
+    }
+    await testInfo.attach('facility-result-amounts', { body: JSON.stringify(samples), contentType: 'application/json' });
+    expect(await state(page)).toEqual(before);
+});

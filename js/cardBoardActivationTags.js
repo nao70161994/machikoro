@@ -109,7 +109,12 @@ const CardBoardActivationTags = (() => {
                 income.textContent = `${ownerName} · `;
                 const amount = documentRef.createElement('span');
                 amount.className = 'cardboard-activation-amount';
-                amount.textContent = `${group.net > 0 ? '+' : ''}${group.net}コイン`;
+                const amountValue = documentRef.createElement('b');
+                amountValue.textContent = `${group.net > 0 ? '+' : ''}${group.net}`;
+                const amountUnit = documentRef.createElement('span');
+                amountUnit.className = 'cardboard-activation-unit';
+                amountUnit.textContent = 'コイン';
+                amount.append(amountValue, amountUnit);
                 income.appendChild(amount);
                 tag.append(name, income);
                 if (group.routes.size) {
@@ -125,10 +130,26 @@ const CardBoardActivationTags = (() => {
                 for (const element of highlighted) element.classList.add('cardboard-resolving');
                 if (entries.length > 1 && !reduced) {
                     const progress = documentRef.createElement('small');
-                    progress.textContent = `施設発動 ${step + 1} / ${entries.length}`;
+                    progress.textContent = `施設結果 ${step + 1} / ${entries.length}`;
                     tag.appendChild(progress);
                 }
                 container.appendChild(tag);
+                // Keep unusually large totals exact and on one line. Ordinary
+                // income leads visually; a total too wide uses the prior size.
+                function fitAmount() {
+                    if (amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
+                        amount.dataset.compact = 'true';
+                        if (art && amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
+                            art.remove();
+                            art = null;
+                        }
+                        if (amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
+                            // Preserve every digit; only the unit moves below it.
+                            amount.dataset.stacked = 'true';
+                        }
+                    }
+                }
+                fitAmount();
                 const inset = 4;
                 const market = viewport.querySelector('#cardboardCenter');
                 const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
@@ -139,7 +160,7 @@ const CardBoardActivationTags = (() => {
                     .filter(label => label.width > 0 && label.height > 0);
                 const overlap = (left, top, size, target) => Math.max(0, Math.min(left + size.width, target.right) - Math.max(left, target.left)) *
                     Math.max(0, Math.min(top + size.height, target.bottom) - Math.max(top, target.top));
-                function placement(size) {
+                function placement(size, exploreViewport = false) {
                     const centerX = rect.left + rect.width / 2 - size.width / 2;
                     const centerY = rect.top + rect.height / 2 - size.height / 2;
                     const candidates = [
@@ -154,7 +175,16 @@ const CardBoardActivationTags = (() => {
                         ...[rect.top, rect.bottom - size.height].flatMap(top => [
                             [rect.left - size.width - 5, top], [rect.right + 5, top],
                         ]),
-                    ].map(([left, top]) => ({
+                    ];
+                    if (exploreViewport) {
+                        // Only when source-edge positions cover a name/source,
+                        // search spare table space before losing the artwork.
+                        for (const x of [0, 0.5, 1]) for (const y of [0, 0.25, 0.5, 0.75, 1]) {
+                            candidates.push([bounds.left + inset + Math.max(0, bounds.width - size.width - inset * 2) * x,
+                                bounds.top + inset + Math.max(0, bounds.height - size.height - inset * 2) * y]);
+                        }
+                    }
+                    const ranked = candidates.map(([left, top]) => ({
                         left: Math.max(bounds.left + inset, Math.min(left, bounds.right - size.width - inset)),
                         top: Math.max(bounds.top + inset, Math.min(top, bounds.bottom - size.height - inset)),
                     })).map(position => ({ ...position,
@@ -163,19 +193,23 @@ const CardBoardActivationTags = (() => {
                         covered: obstacles.reduce((sum, obstacle) => sum + overlap(position.left, position.top, size, obstacle.rect), 0),
                         ownedCovered: obstacles.reduce((sum, obstacle) => sum + (obstacle.market ? 0 : overlap(position.left, position.top, size, obstacle.rect)), 0),
                     }));
-                    candidates.sort((a, b) => a.sourceOverlap - b.sourceOverlap || a.ownerCovered - b.ownerCovered || a.covered - b.covered);
-                    return candidates[0];
+                    ranked.sort((a, b) => a.sourceOverlap - b.sourceOverlap || a.ownerCovered - b.ownerCovered || a.covered - b.covered);
+                    return ranked[0];
                 }
                 let size = tag.getBoundingClientRect();
                 let position = placement(size);
+                if (position.sourceOverlap > 0 || position.ownerCovered > 0) position = placement(size, true);
                 // Prefer empty space, including around the market. Income can
                 // briefly take its place; other owned facilities stay protected.
                 if (art && (size.height > bounds.height / 2 || size.width > bounds.width - inset * 2 ||
-                        position.sourceOverlap > 0 || position.ownedCovered > size.width * size.height / 3)) {
+                        position.sourceOverlap > 0 || position.ownerCovered > 0 ||
+                        position.ownedCovered > size.width * size.height / 3)) {
                     art.remove();
                     art = null;
+                    fitAmount();
                     size = tag.getBoundingClientRect();
                     position = placement(size);
+                    if (position.sourceOverlap > 0 || position.ownerCovered > 0) position = placement(size, true);
                 }
                 tag.dataset.presentation = art ? 'illustrated' : 'text';
                 tag.style.left = `${position.left}px`;

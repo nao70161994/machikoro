@@ -15173,6 +15173,10 @@ html[data-design="cardboard"] .cardboard-activation-tag {
     line-height: 1.2;
     pointer-events: none;
 }
+/* A nowrap total must not expand the grid track beyond the caption's box. */
+html[data-design="cardboard"] .cardboard-activation-tag > :not(.cardboard-activation-art) {
+    min-width: 0;
+}
 /* The activation's original art faces the viewer, independently of seat rotation. */
 html[data-design="cardboard"] .cardboard-activation-tag:has(> .cardboard-activation-art) {
     grid-template-columns: 100px minmax(0, 1fr);
@@ -15231,8 +15235,22 @@ html[data-design="cardboard"] .cardboard-activation-tag span {
 }
 html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount {
     display: inline-block;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.1;
     white-space: nowrap;
     overflow-wrap: normal;
+}
+html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-unit {
+    margin-left: 2px;
+    font-size: 11px;
+}
+html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount[data-compact="true"] {
+    font-size: 12px;
+}
+html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount[data-stacked="true"] .cardboard-activation-unit {
+    display: block;
+    margin-left: 0;
 }
 html[data-design="cardboard"] .cardboard-activation-tag small {
     font-size: 10px;
