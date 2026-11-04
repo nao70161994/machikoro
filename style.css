@@ -15173,6 +15173,10 @@ html[data-design="cardboard"] .cardboard-activation-tag {
     line-height: 1.2;
     pointer-events: none;
 }
+/* A nowrap total must not expand the grid track beyond the caption's box. */
+html[data-design="cardboard"] .cardboard-activation-tag > :not(.cardboard-activation-art) {
+    min-width: 0;
+}
 /* The activation's original art faces the viewer, independently of seat rotation. */
 html[data-design="cardboard"] .cardboard-activation-tag:has(> .cardboard-activation-art) {
     grid-template-columns: 100px minmax(0, 1fr);

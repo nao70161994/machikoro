@@ -2142,11 +2142,15 @@ test('施設結果の金額は強調し大きな数値も省略せず収める',
                         complete: text.left >= bounds.left && text.right <= bounds.right &&
                             text.top >= bounds.top && text.bottom <= bounds.bottom,
                         whiteSpace: getComputedStyle(value).whiteSpace,
-                        motion: tag.dataset.motion, art: tag.dataset.presentation };
+                        motion: tag.dataset.motion, art: tag.dataset.presentation,
+                        stackedUnit: value.dataset.stacked === 'true',
+                        bounds: bounds.toJSON(), textBounds: text.toJSON(),
+                        incomeBounds: value.parentElement.getBoundingClientRect().toJSON() };
                 });
             } finally { presenter.clear(); }
         });
         samples.push({ width, results });
+        await fs.writeFile(testInfo.outputPath(`facility-result-amounts-${width}.json`), JSON.stringify(results));
         expect(results.map(sample => sample.text)).toEqual(['+1コイン', '+25コイン',
             `+${Number.MAX_SAFE_INTEGER}コイン`, `-${Number.MAX_SAFE_INTEGER}コイン`]);
         expect(results.map(sample => sample.fontSize)).toEqual(['22px', '22px', '12px', '12px']);
