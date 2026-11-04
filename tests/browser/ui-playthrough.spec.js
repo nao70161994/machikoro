@@ -36,10 +36,11 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     const capture = async stage => {
         if (stages.has(stage)) return;
         stages.add(stage);
-        if (stage === 'midgame') {
+        const captureGeometry = stage === 'midgame' || stage === 'late-game';
+        if (captureGeometry) {
             await page.evaluate(metadata => {
                 const frames = [];
-                window.midgameGeometrySample = (label, timestamp = performance.now()) => {
+                window.playthroughGeometrySample = (label, timestamp = performance.now()) => {
                     const viewport = document.getElementById('cardboardTableViewport');
                     const world = document.getElementById('cardboardSeats');
                     const game = GameRuntimeState.runtime.snapshot().game;
@@ -59,6 +60,31 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
                             rect:bounds.toJSON(), native:{left:element.offsetLeft,top:element.offsetTop,width:element.offsetWidth,height:element.offsetHeight},
                             visible:element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden', outside };
                     });
+                    // Record actual DOM rectangles alongside the placement model;
+                    // transient card transforms can differ from the last label pass.
+                    const labels = [...viewport.querySelectorAll('.cardboard-owner-label')].map(element => ({
+                        owner: element.dataset.playerIndex, text: element.textContent,
+                        rect: rect(element), className: element.className,
+                        visible: element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden',
+                    }));
+                    const cards = [...world.querySelectorAll('.cardboard-card')].map(element => ({
+                        owner: element.closest('.cardboard-player')?.dataset.playerIndex,
+                        name: element.dataset.cardName, rect: rect(element), className: element.className,
+                        transform: getComputedStyle(element).transform,
+                        visible: element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden',
+                        animations: element.getAnimations().map(animation => ({
+                            name: animation.animationName || null, currentTime: animation.currentTime,
+                            playState: animation.playState, startTime: animation.startTime,
+                            timing: animation.effect?.getComputedTiming(),
+                        })),
+                    }));
+                    const labelCardOverlaps = labels.filter(label => label.visible).flatMap(label =>
+                        cards.filter(card => card.visible).flatMap(card => {
+                            const width = Math.min(label.rect.right, card.rect.right) - Math.max(label.rect.left, card.rect.left);
+                            const height = Math.min(label.rect.bottom, card.rect.bottom) - Math.max(label.rect.top, card.rect.top);
+                            return width > 0 && height > 0 ? [{ labelOwner: label.owner, labelText: label.text,
+                                cardOwner: card.owner, cardName: card.name, width, height }] : [];
+                        }));
                     const angle = Number(viewport.dataset.tableAngle || 0);
                     const quarterTurn = Math.abs(angle % 180) === 90;
                     const fit = (width, height) => Math.max(0.04, Math.min(1.8, viewport.clientWidth / Math.max(1,width), viewport.clientHeight / Math.max(1,height)));
@@ -76,16 +102,16 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
                             const element = document.getElementById(id);
                             return [id,{rect:rect(element),display:element ? getComputedStyle(element).display : null,text:element?.textContent.trim()}];
                         })),
-                        market:rect(document.getElementById('cardboardCenter')), entries,
+                        market:rect(document.getElementById('cardboardCenter')), entries, labels, cards, labelCardOverlaps,
                         outside:entries.filter(entry => entry.visible && entry.outside.length) };
                 };
                 // RAF callbacks run before paint. These samples diagnose timing;
                 // one transient RAF alone does not prove a visible clipping bug.
                 // Start without awaiting eight frames, so the original screenshot
                 // timing is not delayed until a resize/fit has recovered.
-                window.midgameGeometryFrames = new Promise(resolve => {
+                window.playthroughGeometryFrames = new Promise(resolve => {
                     const sample = timestamp => {
-                        frames.push(window.midgameGeometrySample(`raf-${frames.length + 1}`, timestamp));
+                        frames.push(window.playthroughGeometrySample(`raf-${frames.length + 1}`, timestamp));
                         if (frames.length === 8) resolve(frames);
                         else requestAnimationFrame(sample);
                     };
@@ -110,18 +136,24 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         expect(hud.overviewVisible, `${stage}: 全体への入口を隠さない`).toBe(true);
         expect(hud.activityOverlapsRoster, `${stage}: 処理通知で所有者を覆わない`).toBe(false);
         const file = testInfo.outputPath(`ui-playthrough-${stage}.png`);
-        const beforeScreenshot = stage === 'midgame' ? await page.evaluate(() => window.midgameGeometrySample('before-screenshot')) : null;
+        const beforeScreenshot = captureGeometry ? await page.evaluate(() => ({
+            ...window.playthroughGeometrySample('before-screenshot'),
+            snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+        })) : null;
         await page.screenshot({ path: file, fullPage: false });
-        if (stage === 'midgame') {
+        if (captureGeometry) {
             const geometry = await page.evaluate(async before => {
-                const afterScreenshot = window.midgameGeometrySample('after-screenshot');
+                const afterScreenshot = {
+                    ...window.playthroughGeometrySample('after-screenshot'),
+                    snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+                };
                 // Read all eight diagnostic frames only after the original
                 // screenshot has been captured; never wait to make it fit.
-                return { beforeScreenshot:before, afterScreenshot, frames:await window.midgameGeometryFrames };
+                return { beforeScreenshot:before, afterScreenshot, frames:await window.playthroughGeometryFrames };
             }, beforeScreenshot);
-            const diagnosticFile = testInfo.outputPath('ui-playthrough-midgame-geometry.json');
+            const diagnosticFile = testInfo.outputPath(`ui-playthrough-${stage}-geometry.json`);
             await fs.writeFile(diagnosticFile, JSON.stringify(geometry, null, 2));
-            await testInfo.attach('midgame-geometry', { path:diagnosticFile, contentType:'application/json' });
+            await testInfo.attach(`${stage}-geometry`, { path:diagnosticFile, contentType:'application/json' });
         }
         await testInfo.attach(stage, { path: file, contentType: 'image/png' });
         report.screenshots.push(stage);
