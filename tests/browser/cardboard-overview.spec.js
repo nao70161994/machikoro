@@ -1472,3 +1472,118 @@ test('4人の短い所有者名は狭い中盤でも全員の施設につなが�
     }
     expect(await snapshot(page)).toEqual(before);
 });
+
+// Controlled reconstruction of the 323 real-play midgame, not a completed match.
+test('844中盤の所有者ラベルは発動と視点復帰の採取フレームで施設を覆わない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const names = ['CPU（弱）・1', 'CPU（弱）・2', 'プレイヤー1', 'CPU（弱）・4'];
+        const cards = [
+            ['麦畑', 'パン屋', 'コンビニ', '牧場'],
+            ['麦畑', 'パン屋', 'コンビニ', 'バーガーショップ', 'ワイナリー', '青果市場', '出版社'],
+            ['麦畑', '牧場', 'パン屋', 'コーン畑', '青果市場'],
+            ['麦畑', 'パン屋', '出版社', 'テレビ局', '青果市場'],
+        ];
+        game.players.forEach((player, index) => {
+            player.name = names[index];
+            player.cards = cards[index].map(name => createCardByName(name));
+            if (index !== 1) {
+                player.cards.push(createCardByName('麦畑'));
+                SHOP_STOCK['麦畑']--;
+                player.landmarks[LANDMARK_NAMES.STATION] = true;
+            }
+            if (index === 0) player.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+            for (const name of cards[index]) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+        });
+        game.currentPlayerIndex = 0;
+        game.turnCount = 20;
+        game.log = [];
+        game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+        render();
+    });
+    const samples = [];
+    const sampleFrames = async stage => samples.push(...await page.evaluate(stage => new Promise(resolve => {
+        const frames = [];
+        const started = performance.now();
+        const collect = timestamp => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const labels = [...viewport.querySelectorAll('.cardboard-owner-label')].map(element => ({
+                owner: element.dataset.playerIndex, text: element.textContent, rect: element.getBoundingClientRect().toJSON(),
+            }));
+            const cards = [...viewport.querySelectorAll('.cardboard-card')].map(element => ({
+                owner: element.closest('.cardboard-player').dataset.playerIndex, name: element.dataset.cardName,
+                rect: element.getBoundingClientRect().toJSON(), className: element.className,
+                transform: getComputedStyle(element).transform,
+                animations: element.getAnimations().map(animation => ({ currentTime: animation.currentTime, playState: animation.playState })),
+            }));
+            const overlaps = labels.flatMap(label => cards.flatMap(card => {
+                const width = Math.min(label.rect.right, card.rect.right) - Math.max(label.rect.left, card.rect.left);
+                const height = Math.min(label.rect.bottom, card.rect.bottom) - Math.max(label.rect.top, card.rect.top);
+                return width > 0 && height > 0 ? [{ labelOwner: label.owner, cardOwner: card.owner, cardName: card.name, width, height }] : [];
+            }));
+            frames.push({ stage, timestamp, labels, cards, overlaps });
+            if ((frames.length >= 9 && performance.now() - started >= 900) || frames.length >= 120) resolve(frames);
+            else requestAnimationFrame(collect);
+        };
+        collect(performance.now());
+    }), stage));
+    await sampleFrames('initial');
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.rollDice(3);
+        if (game.phase === GAME_PHASES.SELECT_DICE) game.selectDiceCount(false, 3);
+        if (game.lastDiceResult !== 3 || game.phase !== GAME_PHASES.BUILD) {
+            throw new Error(`Expected resolved dice 3/build, got ${game.lastDiceResult}/${game.phase}`);
+        }
+        render();
+    });
+    await sampleFrames('roll');
+    const afterRoll = await snapshot(page);
+    await cameraCommand(page, 'self');
+    await cameraCommand(page, 'overview');
+    await sampleFrames('camera-return');
+    // Save evidence before assertions, including when the original defect recurs.
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-midgame-frames.json'), JSON.stringify(samples, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-midgame-844.png') });
+    expect(samples.every(sample => sample.labels.length === 4), JSON.stringify(samples.map(({ stage, labels }) => ({ stage, owners: labels.map(label => label.owner) })))).toBe(true);
+    expect(samples.flatMap(sample => sample.overlaps.map(overlap => ({ stage: sample.stage, timestamp: sample.timestamp, ...overlap })))).toEqual([]);
+    expect(await snapshot(page)).toEqual(afterRoll);
+});
+
+// Ragged late-game ownership reconstructed from the full UI review.
+test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const counts = [12, 13, 14, 12];
+        const landmarks = [5, 2, 2, 3];
+        const facilities = CARDS.map(card => card.name).filter(name => !['麦畑', 'パン屋'].includes(name));
+        game.players.forEach((player, index) => {
+            player.name = index ? `CPU（弱）・${index + 1}` : 'プレイヤー1';
+            const names = ['麦畑', 'パン屋', ...facilities.slice(index, index + counts[index] - 2)];
+            player.cards = names.map(createCardByName);
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+            Array.from(getEnabledLandmarkSelection()).slice(0, landmarks[index]).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const before = await snapshot(page);
+    const geometry = await page.evaluate(() => {
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')]
+            .map(element => element.getBoundingClientRect());
+        return [...document.querySelectorAll('.cardboard-owner-label')].map(label => {
+            const rect = label.getBoundingClientRect();
+            return { owner: label.dataset.playerIndex, text: label.textContent, rect: rect.toJSON(),
+                font: getComputedStyle(label).fontSize, complete: label.scrollWidth <= label.clientWidth && label.scrollHeight <= label.clientHeight,
+                overlaps: obstacles.filter(box => rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top).length };
+        });
+    });
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-late-390.json'), JSON.stringify(geometry, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-late-390.png') });
+    expect(geometry.map(label => label.text)).toEqual(['プレイヤー1', 'CPU（弱）・2', 'CPU（弱）・3', 'CPU（弱）・4']);
+    expect(geometry.every(label => label.font === '12px' && label.complete && label.overlaps === 0), JSON.stringify(geometry)).toBe(true);
+    expect(await snapshot(page)).toEqual(before);
+});
