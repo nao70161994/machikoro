@@ -1070,7 +1070,8 @@ const CardBoardField = (() => {
         if (suspendedMarketDetail) return false;
         if (dialog.open) return true;
         tableCamera?.preserveReadingPosition(true);
-        marketReturnView = tableCamera ? { view: tableCamera.captureView(), session, game: facts?.game,
+        const returnView = tableCamera?.captureView();
+        marketReturnView = returnView?.stable ? { view: returnView, session, game: facts?.game,
             turn: facts?.game?.turnCount, actor: facts?.game?.currentPlayerIndex } : null;
         marketLauncher = document.activeElement;
         marketLauncherSelector = marketLauncher?.closest?.('.compact-market-filter-disclosure')

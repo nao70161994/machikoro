@@ -284,7 +284,7 @@ const CardTableCamera = (() => {
             const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
             const size = measure();
-            return { scale, angle, overviewMode, inspectionPadding, focusPlayer,
+            return { stable: !geometryChanged(), scale, angle, overviewMode, inspectionPadding, focusPlayer,
                 readingState: readingState ? { ...readingState } : null,
                 anchor: inspectionAnchor ? { ...inspectionAnchor } : null, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
