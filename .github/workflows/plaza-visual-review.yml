@@ -227,11 +227,15 @@ jobs:
               env:
                   RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
               run: |
-                  render_diagnostic_grep='実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復|市場の即時再表示は古いcloseイベント|相手正面を移動してから市場で購入|正面の全38施設|高密度4人の再配置|縦持ち2人戦の終盤は所有者名|狭幅でも収支操作|にぎわい広場の勝利カードコレクション|終盤の所属名は端の空白|新しいロールの発動帯'
-                  if [ "$RENDER_PROFILE_ONLY" = "true" ]; then
-                      render_diagnostic_grep='844中盤の所有者ラベルは発動'
-                  fi
-                  node scripts/diagnostics/run-browser-with-resources.js --output=test-results/construction-resources.jsonl -- npx playwright test cardboard-view.spec.js cardboard-overview.spec.js visual-art-review.spec.js --grep "$render_diagnostic_grep" --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
+                  status_on=0
+                  node scripts/diagnostics/run-browser-with-resources.js --output=test-results/video-on-resources.jsonl -- npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3 --output=test-results/video-on > test-results-video-on.log 2>&1 || status_on=$?
+                  cat test-results-video-on.log
+                  status_off=0
+                  REVIEW_VIDEO_MODE=off node scripts/diagnostics/run-browser-with-resources.js --output=test-results/video-off-resources.jsonl -- npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3 --output=test-results/video-off > test-results-video-off.log 2>&1 || status_off=$?
+                  cat test-results-video-off.log
+                  printf '{"videoOnExit":%s,"videoOffExit":%s}\n' "$status_on" "$status_off" > test-results/video-comparison.json
+                  cp test-results-video-on.log test-results-video-off.log test-results/
+                  test "$status_off" -eq 0
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

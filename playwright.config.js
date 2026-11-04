@@ -12,7 +12,7 @@ module.exports = defineConfig({
         baseURL: 'http://127.0.0.1:3210',
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
-        video: 'retain-on-failure',
+        video: process.env.REVIEW_VIDEO_MODE === 'off' ? 'off' : 'retain-on-failure',
     },
     projects: [
         {
