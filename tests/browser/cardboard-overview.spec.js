@@ -1472,3 +1472,70 @@ test('4人の短い所有者名は狭い中盤でも全員の施設につなが�
     }
     expect(await snapshot(page)).toEqual(before);
 });
+
+// Controlled reconstruction of the 323 real-play midgame, not a completed match.
+test('844中盤の所有者ラベルは発動と視点復帰の全フレームで施設を覆わない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const names = ['CPU（弱）・1', 'CPU（弱）・2', 'プレイヤー1', 'CPU（弱）・4'];
+        const cards = [
+            ['麦畑', 'パン屋', 'コンビニ', '牧場'],
+            ['麦畑', 'パン屋', 'コンビニ', 'ハンバーガーショップ', 'ワイナリー', '青果市場', '出版社'],
+            ['麦畑', '牧場', 'パン屋', 'コーン畑', '青果市場'],
+            ['麦畑', 'パン屋', '出版社', 'テレビ局', '青果市場'],
+        ];
+        game.players.forEach((player, index) => {
+            player.name = names[index];
+            player.cards = cards[index].map(name => createCardByName(name));
+            for (const name of cards[index]) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+        });
+        game.currentPlayerIndex = 0;
+        game.turnCount = 20;
+        game.log = [];
+        game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+        render();
+    });
+    const samples = [];
+    const sampleFrames = async stage => samples.push(...await page.evaluate(stage => new Promise(resolve => {
+        const frames = [];
+        const collect = timestamp => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const labels = [...viewport.querySelectorAll('.cardboard-owner-label')].map(element => ({
+                owner: element.dataset.playerIndex, text: element.textContent, rect: element.getBoundingClientRect().toJSON(),
+            }));
+            const cards = [...viewport.querySelectorAll('.cardboard-card')].map(element => ({
+                owner: element.closest('.cardboard-player').dataset.playerIndex, name: element.dataset.cardName,
+                rect: element.getBoundingClientRect().toJSON(), className: element.className,
+                transform: getComputedStyle(element).transform,
+                animations: element.getAnimations().map(animation => ({ currentTime: animation.currentTime, playState: animation.playState })),
+            }));
+            const overlaps = labels.flatMap(label => cards.flatMap(card => {
+                const width = Math.min(label.rect.right, card.rect.right) - Math.max(label.rect.left, card.rect.left);
+                const height = Math.min(label.rect.bottom, card.rect.bottom) - Math.max(label.rect.top, card.rect.top);
+                return width > 0 && height > 0 ? [{ labelOwner: label.owner, cardOwner: card.owner, cardName: card.name, width, height }] : [];
+            }));
+            frames.push({ stage, timestamp, labels, cards, overlaps });
+            if (frames.length === 9) resolve(frames);
+            else requestAnimationFrame(collect);
+        };
+        collect(performance.now());
+    }), stage));
+    await sampleFrames('initial');
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.rollDice([3]);
+        render();
+    });
+    await sampleFrames('roll');
+    const afterRoll = await snapshot(page);
+    await cameraCommand(page, 'self');
+    await cameraCommand(page, 'overview');
+    await sampleFrames('camera-return');
+    // Save evidence before assertions, including when the original defect recurs.
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-midgame-frames.json'), JSON.stringify(samples, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-midgame-844.png') });
+    expect(samples.every(sample => sample.labels.length === 4), JSON.stringify(samples.map(({ stage, labels }) => ({ stage, owners: labels.map(label => label.owner) })))).toBe(true);
+    expect(samples.flatMap(sample => sample.overlaps.map(overlap => ({ stage: sample.stage, timestamp: sample.timestamp, ...overlap })))).toEqual([]);
+    expect(await snapshot(page)).toEqual(afterRoll);
+});

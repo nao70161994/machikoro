@@ -136,17 +136,20 @@ const CardBoardActivationTags = (() => {
                 container.appendChild(tag);
                 // Keep unusually large totals exact and on one line. Ordinary
                 // income leads visually; a total too wide uses the prior size.
-                if (amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
-                    amount.dataset.compact = 'true';
-                    if (art && amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
-                        art.remove();
-                        art = null;
-                    }
+                function fitAmount() {
                     if (amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
-                        // Preserve every digit; only the unit moves below it.
-                        amount.dataset.stacked = 'true';
+                        amount.dataset.compact = 'true';
+                        if (art && amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
+                            art.remove();
+                            art = null;
+                        }
+                        if (amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
+                            // Preserve every digit; only the unit moves below it.
+                            amount.dataset.stacked = 'true';
+                        }
                     }
                 }
+                fitAmount();
                 const inset = 4;
                 const market = viewport.querySelector('#cardboardCenter');
                 const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
@@ -203,6 +206,7 @@ const CardBoardActivationTags = (() => {
                         position.ownedCovered > size.width * size.height / 3)) {
                     art.remove();
                     art = null;
+                    fitAmount();
                     size = tag.getBoundingClientRect();
                     position = placement(size);
                     if (position.sourceOverlap > 0 || position.ownerCovered > 0) position = placement(size, true);
