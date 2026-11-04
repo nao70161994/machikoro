@@ -142,6 +142,10 @@ const CardBoardActivationTags = (() => {
                         art.remove();
                         art = null;
                     }
+                    if (amount.getBoundingClientRect().width > income.getBoundingClientRect().width) {
+                        // Preserve every digit; only the unit moves below it.
+                        amount.dataset.stacked = 'true';
+                    }
                 }
                 const inset = 4;
                 const market = viewport.querySelector('#cardboardCenter');

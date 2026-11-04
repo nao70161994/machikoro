@@ -15244,6 +15244,10 @@ html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-un
 html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount[data-compact="true"] {
     font-size: 12px;
 }
+html[data-design="cardboard"] .cardboard-activation-tag .cardboard-activation-amount[data-stacked="true"] .cardboard-activation-unit {
+    display: block;
+    margin-left: 0;
+}
 html[data-design="cardboard"] .cardboard-activation-tag small {
     font-size: 10px;
     color: inherit;
