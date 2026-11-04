@@ -178,10 +178,10 @@ const CardBoardField = (() => {
         const shallow = bounds.height < 340;
         const fallbackWidth = shallow || bounds.width < 500 ? 96 : 124;
         const maximumWidth = shallow || bounds.width < 500 ? 176 : 200;
-        const height = shallow ? 18 : 22;
+        const baseHeight = shallow ? 18 : 22;
         const gap = shallow ? 2 : 4;
         const clearance = shallow ? 1 : 3;
-        layer.style.setProperty('--owner-label-height', `${height}px`);
+        layer.style.setProperty('--owner-label-height', `${baseHeight}px`);
         layer.style.setProperty('--owner-label-font', shallow ? '11px' : '12px');
         layer.style.setProperty('--owner-label-padding', shallow ? '0px' : '2px');
         if (!ownerLabelMeasure) {
@@ -209,7 +209,19 @@ const CardBoardField = (() => {
             // Short names can fit narrow owner gaps without shrinking text.
             // Retain the established compact fallback for longer names.
             const widths = [...new Set([preferredWidth, fallbackWidth])];
-            for (const { width, inset } of [false, true].flatMap(inset => widths.map(width => ({ width, inset })))) {
+            const layouts = [false, true].flatMap(inset => widths.map(width => ({ width, inset, height: baseHeight, lines: /** @type {string[] | null} */ (null) })));
+            // Only a standard, unambiguous CPU name may try two complete lines,
+            // after every established single-line placement has failed.
+            const cpuName = !duplicateName && labelText.match(/^(CPU（(?:弱|普通|強|最強)）)(\s*・\s*\d+)$/);
+            if (cpuName && ownerLabelMeasure) {
+                const lines = [cpuName[1], cpuName[2]];
+                const measure = ownerLabelMeasure;
+                const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
+                if (width < preferredWidth) {
+                    for (const inset of [false, true]) layouts.push({ width, inset, height: shallow ? 34 : 38, lines });
+                }
+            }
+            for (const { width, inset, height, lines } of layouts) {
                 const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
                     top < rect.bottom + clearance && top + height > rect.top - clearance;
                 /** @type {[number, number][]} */
@@ -278,17 +290,25 @@ const CardBoardField = (() => {
                 // market-facing heading. Keep collision/owner-distance guards.
                 ranked.sort((a, b) => Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
                 if (ranked[0]) {
-                    placement = { width, position: ranked[0].position };
+                    placement = { width, height, lines, position: ranked[0].position };
                     break;
                 }
             }
             if (!placement) continue;
-            const { width, position } = placement;
+            const { width, height, lines, position } = placement;
             const [left, top] = position;
             const label = document.createElement('span');
             label.className = 'cardboard-owner-label';
             label.dataset.playerIndex = String(index);
-            label.textContent = labelText;
+            if (lines) {
+                label.classList.add('cardboard-owner-label-two-line');
+                label.style.height = `${height}px`;
+                for (const text of lines) {
+                    const line = document.createElement('span');
+                    line.textContent = text;
+                    label.appendChild(line);
+                }
+            } else label.textContent = labelText;
             label.title = seatLabelText;
             label.setAttribute('aria-label', seatLabelText);
             label.style.left = `${left - bounds.left - viewport.clientLeft}px`;

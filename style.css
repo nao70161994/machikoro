@@ -10888,6 +10888,12 @@ html[data-design="cardboard"] .cardboard-owner-label {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+html[data-design="cardboard"] .cardboard-owner-label-two-line > span {
+    display: block;
+    height: 16px;
+    line-height: 16px;
+    white-space: pre;
+}
 html[data-design="cardboard"] #cardboardSeats .cardboard-owner-labeled .cardboard-player-heading { opacity: 0; }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-owner-label { border-color: #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] .cardboard-player { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 7px; border: 1px solid #769483; border-inline-start: 4px solid var(--cardboard-seat-accent, #769483); border-radius: 12px; background: #fffdf5e8; box-shadow: 0 3px 10px #284b3520; color: var(--cardboard-ink); }

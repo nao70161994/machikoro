@@ -227,15 +227,18 @@ jobs:
               env:
                   RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
               run: |
-                  status_on=0
-                  node scripts/diagnostics/run-browser-with-resources.js --output=test-results/video-on-resources.jsonl -- npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3 --output=test-results/video-on > test-results-video-on.log 2>&1 || status_on=$?
-                  cat test-results-video-on.log
-                  status_off=0
-                  REVIEW_VIDEO_MODE=off node scripts/diagnostics/run-browser-with-resources.js --output=test-results/video-off-resources.jsonl -- npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3 --output=test-results/video-off > test-results-video-off.log 2>&1 || status_off=$?
-                  cat test-results-video-off.log
-                  printf '{"videoOnExit":%s,"videoOffExit":%s}\n' "$status_on" "$status_off" > test-results/video-comparison.json
-                  cp test-results-video-on.log test-results-video-off.log test-results/
-                  test "$status_off" -eq 0
+                  cp js/cardBoardField.js /tmp/review-field-candidate.js
+                  cp style.css /tmp/review-style-candidate.css
+                  git show cac364e33987e175196f49a280bea4fdd04a0b87:js/cardBoardField.js > js/cardBoardField.js
+                  git show cac364e33987e175196f49a280bea4fdd04a0b87:style.css > style.css
+                  before_status=0
+                  npx playwright test cardboard-overview.spec.js --grep '390終盤のCPU所有者名' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/owner-before || before_status=$?
+                  cp /tmp/review-field-candidate.js js/cardBoardField.js
+                  cp /tmp/review-style-candidate.css style.css
+                  after_status=0
+                  npx playwright test cardboard-overview.spec.js --grep '390終盤のCPU所有者名' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/owner-after || after_status=$?
+                  printf '{"beforeExit":%s,"afterExit":%s}\n' "$before_status" "$after_status" > test-results/owner-comparison.json
+                  test "$after_status" -eq 0
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

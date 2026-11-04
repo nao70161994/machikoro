@@ -1474,7 +1474,7 @@ test('4人の短い所有者名は狭い中盤でも全員の施設につなが�
 });
 
 // Controlled reconstruction of the 323 real-play midgame, not a completed match.
-test('844中盤の所有者ラベルは発動と視点復帰の全フレームで施設を覆わない', async ({ page }, testInfo) => {
+test('844中盤の所有者ラベルは発動と視点復帰の採取フレームで施設を覆わない', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4, false);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.evaluate(() => {
@@ -1550,4 +1550,40 @@ test('844中盤の所有者ラベルは発動と視点復帰の全フレーム�
     expect(samples.every(sample => sample.labels.length === 4), JSON.stringify(samples.map(({ stage, labels }) => ({ stage, owners: labels.map(label => label.owner) })))).toBe(true);
     expect(samples.flatMap(sample => sample.overlaps.map(overlap => ({ stage: sample.stage, timestamp: sample.timestamp, ...overlap })))).toEqual([]);
     expect(await snapshot(page)).toEqual(afterRoll);
+});
+
+// Ragged late-game ownership reconstructed from the full UI review.
+test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const counts = [12, 13, 14, 12];
+        const landmarks = [5, 2, 2, 3];
+        const facilities = CARDS.map(card => card.name).filter(name => !['麦畑', 'パン屋'].includes(name));
+        game.players.forEach((player, index) => {
+            player.name = index ? `CPU（弱）・${index + 1}` : 'プレイヤー1';
+            const names = ['麦畑', 'パン屋', ...facilities.slice(index, index + counts[index] - 2)];
+            player.cards = names.map(createCardByName);
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+            Array.from(getEnabledLandmarkSelection()).slice(0, landmarks[index]).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const before = await snapshot(page);
+    const geometry = await page.evaluate(() => {
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')]
+            .map(element => element.getBoundingClientRect());
+        return [...document.querySelectorAll('.cardboard-owner-label')].map(label => {
+            const rect = label.getBoundingClientRect();
+            return { owner: label.dataset.playerIndex, text: label.textContent, rect: rect.toJSON(),
+                font: getComputedStyle(label).fontSize, complete: label.scrollWidth <= label.clientWidth && label.scrollHeight <= label.clientHeight,
+                overlaps: obstacles.filter(box => rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top).length };
+        });
+    });
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-late-390.json'), JSON.stringify(geometry, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-late-390.png') });
+    expect(geometry.map(label => label.text)).toEqual(['プレイヤー1', 'CPU（弱）・2', 'CPU（弱）・3', 'CPU（弱）・4']);
+    expect(geometry.every(label => label.font === '12px' && label.complete && label.overlaps === 0), JSON.stringify(geometry)).toBe(true);
+    expect(await snapshot(page)).toEqual(before);
 });
