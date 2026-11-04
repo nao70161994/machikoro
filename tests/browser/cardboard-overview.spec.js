@@ -1489,6 +1489,12 @@ test('844中盤の所有者ラベルは発動と視点復帰の全フレーム�
         game.players.forEach((player, index) => {
             player.name = names[index];
             player.cards = cards[index].map(name => createCardByName(name));
+            if (index !== 1) {
+                player.cards.push(createCardByName('麦畑'));
+                SHOP_STOCK['麦畑']--;
+                player.landmarks[LANDMARK_NAMES.STATION] = true;
+            }
+            if (index === 0) player.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
             for (const name of cards[index]) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
         });
         game.currentPlayerIndex = 0;
@@ -1500,6 +1506,7 @@ test('844中盤の所有者ラベルは発動と視点復帰の全フレーム�
     const samples = [];
     const sampleFrames = async stage => samples.push(...await page.evaluate(stage => new Promise(resolve => {
         const frames = [];
+        const started = performance.now();
         const collect = timestamp => {
             const viewport = document.getElementById('cardboardTableViewport');
             const labels = [...viewport.querySelectorAll('.cardboard-owner-label')].map(element => ({
@@ -1517,7 +1524,7 @@ test('844中盤の所有者ラベルは発動と視点復帰の全フレーム�
                 return width > 0 && height > 0 ? [{ labelOwner: label.owner, cardOwner: card.owner, cardName: card.name, width, height }] : [];
             }));
             frames.push({ stage, timestamp, labels, cards, overlaps });
-            if (frames.length === 9) resolve(frames);
+            if ((frames.length >= 9 && performance.now() - started >= 900) || frames.length >= 120) resolve(frames);
             else requestAnimationFrame(collect);
         };
         collect(performance.now());
