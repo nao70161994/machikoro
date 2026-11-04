@@ -226,7 +226,11 @@ jobs:
               if: ${{ inputs.layout_comparison_only != true }}
               env:
                   RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
+                  GIT_CONFIG_COUNT: '1'
+                  GIT_CONFIG_KEY_0: safe.directory
+                  GIT_CONFIG_VALUE_0: ${{ github.workspace }}
               run: |
+                  git fetch --depth=1 origin cac364e33987e175196f49a280bea4fdd04a0b87
                   cp js/cardBoardField.js /tmp/review-field-candidate.js
                   cp style.css /tmp/review-style-candidate.css
                   git show cac364e33987e175196f49a280bea4fdd04a0b87:js/cardBoardField.js > js/cardBoardField.js
