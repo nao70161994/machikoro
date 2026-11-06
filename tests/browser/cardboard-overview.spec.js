@@ -1668,6 +1668,9 @@ test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, 
     expect(brackets.length, '空いた外縁で所有施設群の範囲を示す').toBeGreaterThan(0);
     expect(brackets.every(bracket => bracket.segments.length === 4 && !bracket.clipped && bracket.overlaps === 0), JSON.stringify(brackets)).toBe(true);
     await expect(page.locator('.cardboard-owner-label')).toHaveText(record.names);
+    expect(await page.locator('.cardboard-owner-bracketed:not(.cardboard-player-current)').evaluateAll(panels =>
+        panels.length > 0 && panels.every(panel => getComputedStyle(panel).borderTopColor === 'rgba(0, 0, 0, 0)'))).toBe(true);
+
     await page.screenshot({ path: testInfo.outputPath('owner-natural-390.png') });
     expect(await snapshot(page)).toEqual(before);
 });

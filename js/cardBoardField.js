@@ -196,7 +196,7 @@ const CardBoardField = (() => {
         if (!viewport || !layer) return;
         layer.replaceChildren();
         const panels = Array.from(node('cardboardSeats')?.querySelectorAll('.cardboard-player') || []);
-        panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled'));
+        panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
         if (!enabled() || !mounted || ownerLabelsInspecting || panels.length > 4) return;
         const bounds = viewport.getBoundingClientRect();
         const innerLeft = bounds.left + viewport.clientLeft;
@@ -416,7 +416,7 @@ const CardBoardField = (() => {
                 svg.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
                 svg.appendChild(line);
                 layer.appendChild(svg);
-                bracketCandidates.push({ svg, cards: ownRects, label: labelRect, segment: [link.x, link.y, link.endX, link.endY] });
+                bracketCandidates.push({ svg, panel, cards: ownRects, label: labelRect, segment: [link.x, link.y, link.endX, link.endY] });
             }
             layer.appendChild(label);
             panel.classList.add('cardboard-owner-labeled');
@@ -447,6 +447,7 @@ const CardBoardField = (() => {
                 `M${line[0] - left},${line[1] - top}L${line[2] - left},${line[3] - top}`).join(' '));
             svg.replaceChildren(path);
             svg.classList.add('cardboard-owner-bracket');
+            candidate.panel.classList.add('cardboard-owner-bracketed');
             acceptedStrokes.push(...segments.map(strokeBounds));
         }
     }
