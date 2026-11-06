@@ -171,5 +171,5 @@ runTest('local RL model dropdown displays actual strategy seed labels and preser
     assert.ok(html.includes('seed73｜RL（自然学習・農業ワイナリー）'));
     assert.ok(html.includes('seed76｜RL（自然学習・花と漁業）'));
     assert.ok(html.includes('value="' + models[1].id + '" selected'));
-    assert.ok(html.includes('戦略を固定する場合はモデルを選択'));
+    assert.ok(html.includes('モデル欄で戦略を固定できます'));
 });
