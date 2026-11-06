@@ -158,3 +158,18 @@ runTest('local player settingsはRL状態と開始pendingから表示だけを�
     assert.deepStrictEqual(LocalPlayerSettings.startButtonView({ status: 'ready' }, false), { disabled: false, textContent: 'ゲーム開始' });
     assert.deepStrictEqual(LocalPlayerSettings.startButtonView({ status: 'failed' }, true), { disabled: true, textContent: 'モデル読み込み中' });
 });
+
+runTest('local RL model dropdown displays actual strategy seed labels and preserves a manual choice', () => {
+    const models = [
+        {id: 'natural-selfplay-2p-seed73-20261101', label: 'RL（自然学習・農業ワイナリー）', aliases: ['seed73']},
+        {id: 'natural-selfplay-2p-seed76-20261101', label: 'RL（自然学習・花と漁業）', aliases: ['seed76']},
+    ];
+    const html = LocalPlayerSettings.buildSettingsHtml([
+        {type: 'cpu', difficulty: 'rl', rlModelId: models[1].id, rlModelSelection: 'manual'},
+    ], 2, models);
+    assert.ok(html.includes('data-ui-change="localRlModel"'));
+    assert.ok(html.includes('seed73｜RL（自然学習・農業ワイナリー）'));
+    assert.ok(html.includes('seed76｜RL（自然学習・花と漁業）'));
+    assert.ok(html.includes('value="' + models[1].id + '" selected'));
+    assert.ok(html.includes('モデル欄で戦略を固定できます'));
+});
