@@ -351,6 +351,7 @@ const TEST_GROUPS = {
         'eval-rl-vs-js.test.js',
         'eval-rl-models.test.js',
         'eval-rl-head-to-head.test.js',
+        'review-rl-paired-league.test.js',
         'rl-statistics.test.js',
         'eval-adopted-stability.test.js',
         'eval-adopted-paired-seat.test.js',
