@@ -95,7 +95,7 @@ const LocalPlayerSettings = (() => {
     }
 
     function modelOptionText(model) {
-        const alias = Array.isArray(model.aliases) ? model.aliases.find(name => /^seed\\d+$/.test(name)) : '';
+        const alias = Array.isArray(model.aliases) ? model.aliases.find(name => /^seed\d+$/.test(name)) : '';
         const label = String(model.label || model.id);
         return alias ? alias + '｜' + label : label;
     }
