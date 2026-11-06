@@ -153,6 +153,43 @@ const CardBoardField = (() => {
         ownerLabelFrame = window.requestAnimationFrame(syncOwnerLabels);
     }
 
+    // A side badge can identify a whole ragged collection without a panel.
+    // Screen-space, axis-aligned strokes never cross a card, market or badge.
+    function ownerGroupBracket(cards, label, obstacles, labels, bounds) {
+        if (!cards.length) return null;
+        const left = Math.min(...cards.map(rect => rect.left));
+        const right = Math.max(...cards.map(rect => rect.right));
+        const top = Math.min(...cards.map(rect => rect.top));
+        const bottom = Math.max(...cards.map(rect => rect.bottom));
+        const center = (label.left + label.right) / 2;
+        const side = center < left ? -1 : center > right ? 1 : 0;
+        if (!side) return null;
+        const edge = side < 0 ? left : right;
+        const x = edge + side * 3;
+        const y = Math.max(top, Math.min((label.top + label.bottom) / 2, bottom));
+        if (y < label.top || y > label.bottom) return null;
+        const start = side < 0 ? label.right : label.left;
+        if ((start - x) * side < 2 || Math.abs(start - x) > 64) return null;
+        const spine = [x, top, x, bottom];
+        const capTop = [x, top, edge + side, top];
+        const capBottom = [x, bottom, edge + side, bottom];
+        const connector = [start, y, x, y];
+        const intersects = (segment, rect) =>
+            Math.min(segment[0], segment[2]) - 1 < rect.right &&
+            Math.max(segment[0], segment[2]) + 1 > rect.left &&
+            Math.min(segment[1], segment[3]) - 1 < rect.bottom &&
+            Math.max(segment[1], segment[3]) + 1 > rect.top;
+        const segments = [spine, capTop, capBottom, connector];
+        const rects = [...obstacles, ...labels];
+        if (segments.some((segment, index) => rects.some(rect =>
+            !(index === 3 && rect === label) && intersects(segment, rect)))) return null;
+        if (segments.some(segment => Math.min(segment[0], segment[2]) - 2 < bounds.left ||
+            Math.max(segment[0], segment[2]) + 2 > bounds.right ||
+            Math.min(segment[1], segment[3]) - 2 < bounds.top ||
+            Math.max(segment[1], segment[3]) + 2 > bounds.bottom)) return null;
+        return segments;
+    }
+
     function updateOwnerLabels() {
         const viewport = node('cardboardTableViewport');
         const layer = node('cardboardOwnerLabels');
@@ -174,6 +211,7 @@ const CardBoardField = (() => {
         const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
             .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
+        const bracketCandidates = [];
         const marketBounds = node('cardboardCenter')?.getBoundingClientRect();
         const preferMarketHeading = panels.length === 2 && bounds.width <= 500 && window.innerHeight >= window.innerWidth;
         const shallow = bounds.height < 340;
@@ -378,10 +416,38 @@ const CardBoardField = (() => {
                 svg.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
                 svg.appendChild(line);
                 layer.appendChild(svg);
+                bracketCandidates.push({ svg, cards: ownRects, label: labelRect, segment: [link.x, link.y, link.endX, link.endY] });
             }
             layer.appendChild(label);
             panel.classList.add('cardboard-owner-labeled');
-            placed.push({ left, top, right: left + width, bottom: top + height });
+            placed.push(labelRect);
+        }
+        // Wait until every badge is placed: a later owner's name must not be
+        // crossed by an earlier owner's bracket. Unsafe groups keep the link.
+        const strokeBounds = line => ({ left: Math.min(line[0], line[2]) - 1,
+            top: Math.min(line[1], line[3]) - 1, right: Math.max(line[0], line[2]) + 1,
+            bottom: Math.max(line[1], line[3]) + 1 });
+        const acceptedStrokes = [];
+        for (const candidate of bracketCandidates) {
+            const { svg, cards, label } = candidate;
+            const otherLinks = bracketCandidates.filter(other => other !== candidate).map(other => strokeBounds(other.segment));
+            const segments = ownerGroupBracket(cards, label, [...obstacles, ...otherLinks, ...acceptedStrokes], placed,
+                { left: innerLeft, top: innerTop, right: innerRight, bottom: innerBottom });
+            if (!segments) continue;
+            const left = Math.min(...segments.flatMap(line => [line[0], line[2]])) - 2;
+            const top = Math.min(...segments.flatMap(line => [line[1], line[3]])) - 2;
+            const right = Math.max(...segments.flatMap(line => [line[0], line[2]])) + 2;
+            const bottom = Math.max(...segments.flatMap(line => [line[1], line[3]])) + 2;
+            svg.style.left = `${left - innerLeft}px`;
+            svg.style.top = `${top - innerTop}px`;
+            svg.setAttribute('width', String(right - left));
+            svg.setAttribute('height', String(bottom - top));
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', segments.map(line =>
+                `M${line[0] - left},${line[1] - top}L${line[2] - left},${line[3] - top}`).join(' '));
+            svg.replaceChildren(path);
+            svg.classList.add('cardboard-owner-bracket');
+            acceptedStrokes.push(...segments.map(strokeBounds));
         }
     }
 

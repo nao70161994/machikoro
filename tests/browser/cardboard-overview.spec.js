@@ -1581,6 +1581,27 @@ test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ pa
                 overlaps: obstacles.filter(box => rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top).length };
         });
     });
+    const brackets = await page.evaluate(() => {
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect());
+        return [...document.querySelectorAll('.cardboard-owner-bracket')].map(svg => {
+            const rect = svg.getBoundingClientRect();
+            const path = svg.querySelector('path');
+            const matrix = path.getScreenCTM();
+            const segments = [...path.getAttribute('d').matchAll(/M([\d.+-]+),([\d.+-]+)L([\d.+-]+),([\d.+-]+)/g)].map(match => {
+                const start = new DOMPoint(Number(match[1]), Number(match[2])).matrixTransform(matrix);
+                const end = new DOMPoint(Number(match[3]), Number(match[4])).matrixTransform(matrix);
+                return { left: Math.min(start.x, end.x) - 0.9, top: Math.min(start.y, end.y) - 0.9,
+                    right: Math.max(start.x, end.x) + 0.9, bottom: Math.max(start.y, end.y) + 0.9 };
+            });
+            return { owner: svg.dataset.playerIndex, rect: rect.toJSON(), segments,
+                clipped: rect.left < viewport.left || rect.right > viewport.right || rect.top < viewport.top || rect.bottom > viewport.bottom,
+                overlaps: segments.flatMap(line => obstacles.filter(box => line.left < box.right && line.right > box.left && line.top < box.bottom && line.bottom > box.top)).length };
+        });
+    });
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-brackets-390.json'), JSON.stringify(brackets, null, 2));
+    expect(brackets.length, '空いた外縁で所有施設群の範囲を示す').toBeGreaterThan(0);
+    expect(brackets.every(bracket => bracket.segments.length === 4 && !bracket.clipped && bracket.overlaps === 0), JSON.stringify(brackets)).toBe(true);
     require('node:fs').writeFileSync(testInfo.outputPath('owner-late-390.json'), JSON.stringify(geometry, null, 2));
     await page.screenshot({ path: testInfo.outputPath('owner-late-390.png') });
     expect(geometry.map(label => label.text)).toEqual(['プレイヤー1', 'CPU（弱）・2', 'CPU（弱）・3', 'CPU（弱）・4']);
