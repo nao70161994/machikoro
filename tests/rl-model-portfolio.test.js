@@ -116,7 +116,11 @@ runTest('RL model portfolio: 2人戦では2人用候補だけを選ぶ', () => {
     assert.ok(models.every(model => model.id !== 'self-only-4p-h256-lr1e5-5000-seed103'));
     assert.deepStrictEqual(
         Array.from(models, model => model.id),
-        ['self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3']
+        [
+            'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3',
+            'natural-selfplay-2p-seed73-20261101',
+            'natural-selfplay-2p-seed76-20261101',
+        ]
     );
 });
 
@@ -347,16 +351,14 @@ runTest('RL model portfolio: 未割当RL CPUは採用済み候補だけを配る
         { type: 'cpu', difficulty: 'rl' },
         { type: 'cpu', difficulty: 'rl' },
     ], 2);
-    assert.strictEqual(new Set(Array.from(assigned, setting => setting.rlModelId)).size, 1);
-    assert.ok(assigned.every(setting => (
-        setting.rlModelId === 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3'
-    )));
+    assert.strictEqual(new Set(Array.from(assigned, setting => setting.rlModelId)).size, 2);
+    assert.ok(assigned.every(setting => RLModelPortfolio.modelById(setting.rlModelId, 2)?.productionActive));
 
     const withReserved = RLModelPortfolio.assignModelIds([
         { type: 'cpu', difficulty: 'rl' },
         { type: 'cpu', difficulty: 'rl', rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' },
     ], 2);
-    assert.strictEqual(withReserved[0].rlModelId, withReserved[1].rlModelId);
+    assert.notStrictEqual(withReserved[0].rlModelId, withReserved[1].rlModelId);
 });
 
 runTest('RL model portfolio: 非採用候補は自動選択せず古い保存の明示参照だけ維持する', () => {
@@ -470,6 +472,7 @@ runTest('RL model portfolio: 4人だけ専用強化候補を加え、他人数�
         [
             'self-only-4p-h256-lr1e5-5000-seed103',
             'mp-mixed-34510-target-only-seed145-4p',
+            'natural-selfplay-4p-seed104-20261101',
         ]
     );
     assert.strictEqual(fourPlayerModels[1].label, 'RL（4人・目標判断強化）');
@@ -636,4 +639,22 @@ runTest('RL model portfolio: 未解決fetchはtimeout後にfailedとなり再試
     assert.strictEqual(data.stateDim, 145);
     assert.strictEqual(fetchCalls, 2);
     assert.strictEqual(RLModelPortfolio.modelLoadState(model).status, 'ready');
+});
+
+runTest('RL model portfolio: natural seeds eligible only in supported counts', () => {
+    const { RLModelPortfolio } = loadPortfolio();
+    const ids2 = RLModelPortfolio.eligibleModels(2).map(x => x.id);
+    assert.ok(ids2.includes('natural-selfplay-2p-seed73-20261101'));
+    assert.ok(ids2.includes('natural-selfplay-2p-seed76-20261101'));
+    const ids4 = RLModelPortfolio.eligibleModels(4).map(x => x.id);
+    assert.ok(ids4.includes('natural-selfplay-4p-seed104-20261101'));
+    assert.ok(!RLModelPortfolio.eligibleModels(3).some(x => x.id === 'natural-selfplay-4p-seed104-20261101'));
+    const settings = [
+        {type: 'cpu',difficulty: 'rl'}, {type: 'cpu',difficulty: 'rl'},
+        {type: 'cpu',difficulty: 'rl'}, {type: 'cpu',difficulty: 'rl'},
+    ];
+    for (let i = 0; i < 100; i++) {
+        const assigned = RLModelPortfolio.assignModelIds(settings, 4);
+        assert.ok(RLModelPortfolio.selectedMemoryBudget(4, assigned).withinBudget);
+    }
 });
