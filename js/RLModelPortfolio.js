@@ -63,13 +63,24 @@ const RLModelPortfolio = (() => {
             reserved.add(model.id);
         }
         let available = eligible.filter(model => !reserved.has(model.id));
+        const reservedModels = new Set(reserved);
+        const MAX_AUTO_MODEL_BYTES = 32 * 1024 * 1024;
+        let reservedBytes = eligible.reduce((sum, model) => (
+            reservedModels.has(model.id) ? sum + (Number(model.bytes) || 0) : sum
+        ), 0);
         return source.map(setting => {
             if (!setting) return setting;
             const assigned = Object.assign({}, setting);
             if (assigned.type !== 'cpu' || assigned.difficulty !== 'rl') return assigned;
+            const fittingModels = available.filter(model => (
+                reservedBytes + (Number(model.bytes) || 0) <= MAX_AUTO_MODEL_BYTES
+            ));
+            const reusableModels = eligible.filter(model => reservedModels.has(model.id));
             const model = assigned.rlModelId
                 ? modelById(assigned.rlModelId, playerCount)
-                : selectWeightedModel(available.length > 0 ? available : eligible);
+                : selectWeightedModel(fittingModels.length > 0 ? fittingModels : (
+                    reusableModels.length > 0 ? reusableModels : eligible
+                ));
             if (!model) {
                 throw new Error(`RL model is not available: ${assigned.rlModelId || 'none'}`);
             }
@@ -77,6 +88,10 @@ const RLModelPortfolio = (() => {
             assigned.rlModelSha256 = model.sha256;
             assigned.rlModelSelection = setting.rlModelSelection === 'manual' ? 'manual' : 'auto';
             if (!setting.rlModelId) {
+                if (!reservedModels.has(model.id)) {
+                    reservedModels.add(model.id);
+                    reservedBytes += Number(model.bytes) || 0;
+                }
                 available = available.filter(candidate => candidate.id !== model.id);
             }
             return assigned;
