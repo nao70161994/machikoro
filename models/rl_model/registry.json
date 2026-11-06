@@ -1,12 +1,13 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-13",
+  "updatedAt": "2026-11-07",
   "primaryMetric": "jsWinRateVsWeakNormalStrong",
   "notes": [
     "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
     "Promotion decisions should use post-training JS evaluations, not training-time top-k scores. 20-game checks are smoke tests only.",
     "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful.",
-    "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker."
+    "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker.",
+    "2026-11-07: Natural self-play seeds 73/76/104 promoted after paired-seat heldout and head-to-head audits; 4p seed104 is 4p-only."
   ],
   "evaluationPolicy": {
     "smokeGamesPerOpponent": 20,
@@ -86,6 +87,24 @@
         "role": "burger-warehouse-variant",
         "style": "burger-warehouse-wheat",
         "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines."
+      },
+      {
+        "id": "natural-selfplay-2p-seed73-20261101",
+        "role": "adopted-2p-main",
+        "style": "natural-wheat-vineyard-winery",
+        "reason": "勝利報酬を共通にした独立自己対戦。農業・ワイナリー中心の構成。seed71に直接300戦183勝117敗、seed76に400戦224勝176敗。"
+      },
+      {
+        "id": "natural-selfplay-2p-seed76-20261101",
+        "role": "adopted-2p-style",
+        "style": "natural-flowers-fishing",
+        "reason": "同一報酬・別シードの独立自己対戦。花畑・フラワーショップ・漁船の構成。現行AIとの直接300戦145勝155敗、強CPUに91.3%。"
+      },
+      {
+        "id": "natural-selfplay-4p-seed104-20261101",
+        "role": "adopted-4p-specialist",
+        "style": "natural-4p-vineyard-ranch-loan",
+        "reason": "4人戦2,000局の独立自己対戦。seed103/145両方に直接対決で勝ち越し、seed106にも600戦284勝182敗（残りはCPU勝利）。4人限定採用。"
       }
     ],
     "archiveGuidance": "Archive candidates only when both strength and strategy overlap with a better model. Keep weaker models if they provide clearly different build behavior."
@@ -2815,6 +2834,240 @@
           },
           "exhausted": 0,
           "note": "既存seed145との100戦/lineup比較は有意差なし。カード重複警告は維持し、自動選択ではなく明示候補とする。"
+        }
+      ]
+    },
+    {
+      "id": "natural-selfplay-2p-seed73-20261101",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/natural-seed73-top3.browser.json",
+      "sourceRun": "models/rl_model/runs/natural-2p-seed73-41281719490",
+      "training": {
+        "games": 5000,
+        "players": 2,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 73,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "imitation": false,
+        "warmStart": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointRank": 3,
+        "sourceWorkflowRun": 41281719490
+      },
+      "style": {
+        "label": "natural-wheat-vineyard-winery",
+        "summary": "勝利報酬を共通にした独立自己対戦。農業・ワイナリー中心の構成。seed71に直接300戦183勝117敗、seed76に400戦224勝176敗。",
+        "topCards": [
+          "麦畑",
+          "ブドウ園",
+          "ワイナリー",
+          "貸金業",
+          "ピザ屋"
+        ],
+        "primary": "資産エンジン型"
+      },
+      "evals": [
+        {
+          "date": "2026-11-01",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 95,
+              "losses": 5,
+              "draws": 0,
+              "winRate": 0.95,
+              "firstSeatWinRate": 0.92,
+              "secondSeatWinRate": 0.98,
+              "avgTurns": 49.67,
+              "passRate": 0.00037509377344336085
+            },
+            "normal": {
+              "wins": 63,
+              "losses": 37,
+              "draws": 0,
+              "winRate": 0.63,
+              "firstSeatWinRate": 0.68,
+              "secondSeatWinRate": 0.58,
+              "avgTurns": 50.63,
+              "passRate": 0.003711952487008166
+            },
+            "strong": {
+              "wins": 77,
+              "losses": 23,
+              "draws": 0,
+              "winRate": 0.77,
+              "firstSeatWinRate": 0.8,
+              "secondSeatWinRate": 0.74,
+              "avgTurns": 52.67,
+              "passRate": 0.014134275618374558
+            }
+          },
+          "checkpointRank": 3,
+          "pairedSeats": true,
+          "artifact": "GitHub Actions 41281719490"
+        }
+      ]
+    },
+    {
+      "id": "natural-selfplay-2p-seed76-20261101",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/natural-seed76-top2.browser.json",
+      "sourceRun": "models/rl_model/runs/natural-2p-seed76-41281719490",
+      "training": {
+        "games": 5000,
+        "players": 2,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 76,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "imitation": false,
+        "warmStart": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointRank": 2,
+        "sourceWorkflowRun": 41281719490
+      },
+      "style": {
+        "label": "natural-flowers-fishing",
+        "summary": "同一報酬・別シードの独立自己対戦。花畑・フラワーショップ・漁船の構成。現行AIとの直接300戦145勝155敗、強CPUに91.3%。",
+        "topCards": [
+          "花畑",
+          "フラワーショップ",
+          "マグロ漁船",
+          "食品倉庫",
+          "ピザ屋"
+        ],
+        "primary": "資産エンジン型"
+      },
+      "evals": [
+        {
+          "date": "2026-11-01",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 98,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.98,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.96,
+              "avgTurns": 53.38,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 48,
+              "losses": 52,
+              "draws": 0,
+              "winRate": 0.48,
+              "firstSeatWinRate": 0.5,
+              "secondSeatWinRate": 0.46,
+              "avgTurns": 49.98,
+              "passRate": 0
+            },
+            "strong": {
+              "wins": 90,
+              "losses": 10,
+              "draws": 0,
+              "winRate": 0.9,
+              "firstSeatWinRate": 0.94,
+              "secondSeatWinRate": 0.86,
+              "avgTurns": 51.36,
+              "passRate": 0
+            }
+          },
+          "checkpointRank": 2,
+          "pairedSeats": true,
+          "artifact": "GitHub Actions 41281719490"
+        }
+      ]
+    },
+    {
+      "id": "natural-selfplay-4p-seed104-20261101",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/natural-seed104-4p.browser.json",
+      "sourceRun": "models/rl_model/runs/natural-4p-seed104-41281719490",
+      "training": {
+        "games": 2000,
+        "players": 4,
+        "hidden": 256,
+        "lr": 0.00001,
+        "seed": 104,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "imitation": false,
+        "warmStart": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointRank": 1,
+        "sourceWorkflowRun": 41281719490
+      },
+      "style": {
+        "label": "natural-4p-vineyard-ranch-loan",
+        "summary": "4人戦2,000局の独立自己対戦。seed103/145両方に直接対決で勝ち越し、seed106にも600戦284勝182敗（残りはCPU勝利）。4人限定採用。",
+        "topCards": [
+          "ブドウ園",
+          "牧場",
+          "貸金業",
+          "出版社",
+          "税務署"
+        ],
+        "primary": "資産エンジン型"
+      },
+      "evals": [
+        {
+          "date": "2026-11-01",
+          "type": "js-lineup-stability",
+          "gamesPerLineup": 80,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "games": 80,
+              "wins": 42,
+              "losses": 38,
+              "draws": 0,
+              "winRate": 0.525,
+              "avgTurns": 78.2875,
+              "passRate": 0
+            },
+            "rl+normal+normal+strong": {
+              "games": 80,
+              "wins": 46,
+              "losses": 34,
+              "draws": 0,
+              "winRate": 0.575,
+              "avgTurns": 79.7,
+              "passRate": 0.0030303030303030303
+            },
+            "rl+weak+weak+normal": {
+              "games": 80,
+              "wins": 59,
+              "losses": 21,
+              "draws": 0,
+              "winRate": 0.7375,
+              "avgTurns": 81.9375,
+              "passRate": 0
+            }
+          },
+          "checkpointRank": 1,
+          "pairedSeats": true,
+          "artifact": "GitHub Actions 41281719490"
         }
       ]
     }
