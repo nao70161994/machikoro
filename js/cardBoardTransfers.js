@@ -217,11 +217,11 @@ const CardBoardTransfers = (() => {
                     const duration = route.facility ? 600 : 900;
                     if (route.facility) stepRoutes.set(route.facility.step, sameStep + 1);
                     const animation = coin.animate([
-                        { transform: 'translate(-50%, -50%) scale(.8)', opacity: 0 },
-                        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15 },
-                        { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85 },
+                        { transform: 'translate(-50%, -50%) scale(.8)', opacity: 0, easing: 'ease-out' },
+                        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15, easing: 'ease-in-out' },
+                        { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85, easing: 'ease-in' },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.8)`, opacity: 0 },
-                    ], { duration, delay, easing: 'ease-in-out', fill: 'both' });
+                    ], { duration, delay, easing: 'linear', fill: 'both' });
                     if (!route.facility) animationIndex++;
                     lastFlightEnd = Math.max(lastFlightEnd, delay + duration);
                     animation.finished?.catch(() => {});

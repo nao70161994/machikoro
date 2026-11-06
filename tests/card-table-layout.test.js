@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
-const { computePinwheelGeometry } = require('../js/cardTableLayout');
+const { computePinwheelGeometry, marketScaleWithinHole } = require('../js/cardTableLayout');
 
 runTest('風車配置は非対称な四席と中央市場を重なりなく正規化し入力を変更しない', () => {
     const fixture = {
@@ -43,4 +43,16 @@ runTest('風車配置は大きな市場と小さな席でも市場の中央穴�
     assert.deepStrictEqual(result.hole, { width: 1016, height: 600 });
     assert.strictEqual(result.rects.market.width, 1016);
     assert.strictEqual(result.rects.market.height, 600);
+});
+
+runTest('市場の拡大は既存の中央空間内だけで行い余白不足では縮小しない', () => {
+    const market = { width: 344, height: 380 };
+    assert.strictEqual(marketScaleWithinHole(market, { width: 688, height: 760 }), 1.5);
+    assert.strictEqual(marketScaleWithinHole(market, { width: 430, height: 760 }), 1.25);
+    assert.strictEqual(marketScaleWithinHole(market, { width: 688, height: 418 }), 1.1);
+    assert.strictEqual(marketScaleWithinHole(market, { width: 344, height: 760 }), 1);
+    assert.strictEqual(marketScaleWithinHole(market, { width: 200, height: 380 }), 1);
+    assert.strictEqual(marketScaleWithinHole({ width: 0, height: 380 }, market), 1);
+    assert.strictEqual(marketScaleWithinHole(market, { width: NaN, height: 380 }), 1);
+    assert.deepStrictEqual(market, { width: 344, height: 380 });
 });

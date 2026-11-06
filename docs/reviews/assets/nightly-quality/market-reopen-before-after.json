@@ -1,0 +1,21 @@
+{
+  "browser": "Termux Chromium (automated, physical device unverified)",
+  "viewport": {
+    "width": 1440,
+    "height": 936
+  },
+  "playerCount": 4,
+  "method": "Same-task open/close/open; await the actual queued native close event; presentation fixture, not a complete game",
+  "beforeRef": "eb289904",
+  "afterFileSha256": "580eb9645f275b3c1340dc480579664f1f1cccca087e0102b9d04bb482e57d72",
+  "before": {
+    "modal": true,
+    "inside": false,
+    "focused": false
+  },
+  "after": {
+    "modal": true,
+    "inside": true,
+    "focused": true
+  }
+}

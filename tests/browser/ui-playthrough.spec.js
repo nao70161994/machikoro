@@ -13,22 +13,112 @@ test.use({
 test('人間席の実UI操作とCPU弱で開始から結果まで進める', async ({ page }, testInfo) => {
     test.skip(process.env.RUN_UI_PLAYTHROUGH !== '1', '任意実行のUI対局');
     test.setTimeout(25 * 60 * 1000);
+    const playerCountInput = process.env.UI_PLAYTHROUGH_PLAYER_COUNT ?? '2';
+    if (!/^(?:[2-9]|10)$/.test(playerCountInput)) throw new Error('Invalid UI playthrough player count');
+    const playerCount = Number(playerCountInput);
     const stopAfter = Number(process.env.UI_PLAYTHROUGH_STOP_AFTER) || 0;
     if (!Number.isInteger(stopAfter) || stopAfter < 0) throw new Error('Invalid partial action limit');
-    const viewport = process.env.UI_PLAYTHROUGH_LANDSCAPE === '1'
-        ? { width: 844, height: 390 } : { width: 390, height: 844 };
+    const viewportWidth = Number(process.env.UI_PLAYTHROUGH_WIDTH ||
+        (process.env.UI_PLAYTHROUGH_LANDSCAPE === '1' ? 844 : 390));
+    const viewports = { 320: { width: 320, height: 568 }, 390: { width: 390, height: 844 },
+        844: { width: 844, height: 390 }, 1440: { width: 1440, height: 900 } };
+    if (!Object.hasOwn(viewports, viewportWidth)) throw new Error('Invalid UI playthrough viewport');
+    const viewport = viewports[viewportWidth];
     const cpuSpeedMs = Number(process.env.UI_PLAYTHROUGH_CPU_SPEED || 1500);
     if (!Number.isInteger(cpuSpeedMs) || cpuSpeedMs < 100 || cpuSpeedMs > 3000 || cpuSpeedMs % 100 !== 0) {
         throw new Error('Invalid CPU speed');
     }
     const started = Date.now();
     const report = { mode: stopAfter ? 'partial-ui-smoke' : 'automated-human-seat-ui',
-        viewport, cpuSpeedMs, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
+        viewport, playerCount, cpuSpeedMs, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
     const stages = new Set();
     page.on('pageerror', error => report.pageErrors.push(error.message));
     const capture = async stage => {
         if (stages.has(stage)) return;
         stages.add(stage);
+        const captureGeometry = stage === 'midgame' || stage === 'late-game';
+        if (captureGeometry) {
+            await page.evaluate(metadata => {
+                const frames = [];
+                window.playthroughGeometrySample = (label, timestamp = performance.now()) => {
+                    const viewport = document.getElementById('cardboardTableViewport');
+                    const world = document.getElementById('cardboardSeats');
+                    const game = GameRuntimeState.runtime.snapshot().game;
+                    const rect = element => element?.getBoundingClientRect().toJSON() || null;
+                    const viewportRect = viewport.getBoundingClientRect();
+                    const clip = { left:viewportRect.left + viewport.clientLeft, top:viewportRect.top + viewport.clientTop };
+                    clip.right = clip.left + viewport.clientWidth;
+                    clip.bottom = clip.top + viewport.clientHeight;
+                    const entries = [...world.querySelectorAll('.cardboard-player, .cardboard-landmark-built')].map(element => {
+                        const bounds = element.getBoundingClientRect();
+                        const outside = [bounds.left < clip.left - 1 && 'left', bounds.top < clip.top - 1 && 'top',
+                            bounds.right > clip.right + 1 && 'right', bounds.bottom > clip.bottom + 1 && 'bottom'].filter(Boolean);
+                        return { kind:element.classList.contains('cardboard-player') ? 'owner' : 'landmark',
+                            owner:element.closest('.cardboard-player')?.dataset.playerIndex,
+                            name:element.dataset.landmarkName || element.querySelector('.cardboard-player-heading-name')?.textContent || element.textContent.trim(),
+                            angle:element.closest('.cardboard-player')?.dataset.tableAngle,
+                            rect:bounds.toJSON(), native:{left:element.offsetLeft,top:element.offsetTop,width:element.offsetWidth,height:element.offsetHeight},
+                            visible:element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden', outside };
+                    });
+                    // Record actual DOM rectangles alongside the placement model;
+                    // transient card transforms can differ from the last label pass.
+                    const labels = [...viewport.querySelectorAll('.cardboard-owner-label')].map(element => ({
+                        owner: element.dataset.playerIndex, text: element.textContent,
+                        rect: rect(element), className: element.className,
+                        visible: element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden',
+                    }));
+                    const cards = [...world.querySelectorAll('.cardboard-card')].map(element => ({
+                        owner: element.closest('.cardboard-player')?.dataset.playerIndex,
+                        name: element.dataset.cardName, rect: rect(element), className: element.className,
+                        transform: getComputedStyle(element).transform,
+                        visible: element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden',
+                        animations: element.getAnimations().map(animation => ({
+                            name: animation.animationName || null, currentTime: animation.currentTime,
+                            playState: animation.playState, startTime: animation.startTime,
+                            timing: animation.effect?.getComputedTiming(),
+                        })),
+                    }));
+                    const labelCardOverlaps = labels.filter(label => label.visible).flatMap(label =>
+                        cards.filter(card => card.visible).flatMap(card => {
+                            const width = Math.min(label.rect.right, card.rect.right) - Math.max(label.rect.left, card.rect.left);
+                            const height = Math.min(label.rect.bottom, card.rect.bottom) - Math.max(label.rect.top, card.rect.top);
+                            return width > 0 && height > 0 ? [{ labelOwner: label.owner, labelText: label.text,
+                                cardOwner: card.owner, cardName: card.name, width, height }] : [];
+                        }));
+                    const angle = Number(viewport.dataset.tableAngle || 0);
+                    const quarterTurn = Math.abs(angle % 180) === 90;
+                    const fit = (width, height) => Math.max(0.04, Math.min(1.8, viewport.clientWidth / Math.max(1,width), viewport.clientHeight / Math.max(1,height)));
+                    return { label, timestamp, metadata,
+                        game:{turn:game.turnCount,phase:game.phase,actor:game.currentPlayerIndex},
+                        viewport:{rect:viewportRect.toJSON(),clip,clientWidth:viewport.clientWidth,clientHeight:viewport.clientHeight,
+                            scrollLeft:viewport.scrollLeft,scrollTop:viewport.scrollTop,scrollWidth:viewport.scrollWidth,scrollHeight:viewport.scrollHeight,
+                            mode:viewport.dataset.tableMode,scale:viewport.dataset.tableScale,angle:viewport.dataset.tableAngle,
+                            focusPlayer:viewport.dataset.tableFocusPlayer},
+                        world:{width:world.offsetWidth,height:world.offsetHeight,rect:rect(world),transform:getComputedStyle(world).transform,
+                            packing:world.dataset.tablePacking,layoutKey:world.dataset.tableLayoutKey,readingSeat:world.dataset.tableReadingSeat},
+                        expectedFit:fit(world.offsetWidth,world.offsetHeight),
+                        expectedFitAtCurrentAngle:fit(quarterTurn ? world.offsetHeight : world.offsetWidth,quarterTurn ? world.offsetWidth : world.offsetHeight),
+                        panels:Object.fromEntries(['cardboardActionSlot','gameConnectivityPanel','gameActivityStatus','cardboardRoster','cardboardCameraTools'].map(id => {
+                            const element = document.getElementById(id);
+                            return [id,{rect:rect(element),display:element ? getComputedStyle(element).display : null,text:element?.textContent.trim()}];
+                        })),
+                        market:rect(document.getElementById('cardboardCenter')), entries, labels, cards, labelCardOverlaps,
+                        outside:entries.filter(entry => entry.visible && entry.outside.length) };
+                };
+                // RAF callbacks run before paint. These samples diagnose timing;
+                // one transient RAF alone does not prove a visible clipping bug.
+                // Start without awaiting eight frames, so the original screenshot
+                // timing is not delayed until a resize/fit has recovered.
+                window.playthroughGeometryFrames = new Promise(resolve => {
+                    const sample = timestamp => {
+                        frames.push(window.playthroughGeometrySample(`raf-${frames.length + 1}`, timestamp));
+                        if (frames.length === 8) resolve(frames);
+                        else requestAnimationFrame(sample);
+                    };
+                    requestAnimationFrame(sample);
+                });
+            }, { humanActions:report.humanActions, actionCount:report.actions.length, lastAction:report.actions.slice(-1) });
+        }
         const hud = await page.evaluate(() => {
             if (document.querySelector('.winner-screen')) return { overviewVisible: true, activityOverlapsRoster: false };
             const overview = document.querySelector('[data-cardboard-camera="overview"]').getBoundingClientRect();
@@ -46,7 +136,25 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         expect(hud.overviewVisible, `${stage}: 全体への入口を隠さない`).toBe(true);
         expect(hud.activityOverlapsRoster, `${stage}: 処理通知で所有者を覆わない`).toBe(false);
         const file = testInfo.outputPath(`ui-playthrough-${stage}.png`);
+        const beforeScreenshot = captureGeometry ? await page.evaluate(() => ({
+            ...window.playthroughGeometrySample('before-screenshot'),
+            snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+        })) : null;
         await page.screenshot({ path: file, fullPage: false });
+        if (captureGeometry) {
+            const geometry = await page.evaluate(async before => {
+                const afterScreenshot = {
+                    ...window.playthroughGeometrySample('after-screenshot'),
+                    snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+                };
+                // Read all eight diagnostic frames only after the original
+                // screenshot has been captured; never wait to make it fit.
+                return { beforeScreenshot:before, afterScreenshot, frames:await window.playthroughGeometryFrames };
+            }, beforeScreenshot);
+            const diagnosticFile = testInfo.outputPath(`ui-playthrough-${stage}-geometry.json`);
+            await fs.writeFile(diagnosticFile, JSON.stringify(geometry, null, 2));
+            await testInfo.attach(`${stage}-geometry`, { path:diagnosticFile, contentType:'application/json' });
+        }
         await testInfo.attach(stage, { path: file, contentType: 'image/png' });
         report.screenshots.push(stage);
     };
@@ -173,8 +281,15 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         await page.locator('#designThemeSelect').selectOption('cardboard');
         await click(page.locator('#tabLocal'), 'ローカル対局設定へ');
         await click(page.locator('#customGameSetup > summary'), '対局設定');
+        await expect(page.locator('#playerCount')).toHaveText('2人');
+        for (let count = 2; count < playerCount; count++) {
+            await click(page.locator('[data-ui-action="changeCount"][data-delta="1"][aria-controls="playerCount"]'), 'プレイ人数を増やす');
+            await expect(page.locator('#playerCount')).toHaveText(`${count + 1}人`);
+        }
         await page.locator('[data-ui-change="localPlayerType"][data-player-index="0"]').selectOption('human');
-        await page.locator('[data-ui-change="localPlayerType"][data-player-index="1"]').selectOption('weak');
+        for (let index = 1; index < playerCount; index++) {
+            await page.locator(`[data-ui-change="localPlayerType"][data-player-index="${index}"]`).selectOption('weak');
+        }
         if (cpuSpeedMs !== 1500) {
             const flow = page.locator('#customGameSetup .play-flow-settings > summary');
             await click(flow, 'CPU速度の設定');
@@ -196,8 +311,9 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         lastState = await read();
         expect(lastState.humanIndex).toBeGreaterThanOrEqual(0);
         const lineup = await page.evaluate(() => GameRuntimeState.runtime.snapshot().cpuPlayers.map(cpu => cpu ? cpu.difficulty : 'human'));
+        expect(lineup).toHaveLength(playerCount);
         expect(lineup.filter(kind => kind === 'human')).toHaveLength(1);
-        expect(lineup.filter(kind => kind === 'weak')).toHaveLength(1);
+        expect(lineup.filter(kind => kind === 'weak')).toHaveLength(playerCount - 1);
         await capture('start');
         for (let step = 0; step < 1200; step++) {
             lastState = await read();

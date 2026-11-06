@@ -4,6 +4,7 @@ const path = require('path');
 
 const TEST_GROUPS = {
     unit: [
+        'nightly-browser-coverage.test.js',
         'gamemanager.test.js',
         'pending-action-queue.test.js',
         'game-turn-policy.test.js',

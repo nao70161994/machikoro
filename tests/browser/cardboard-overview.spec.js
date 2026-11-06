@@ -10,10 +10,9 @@ async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(({ count, controlledCards }) => {
-        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}` })));
+        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
-        // This fixture replaces the shuffled CPU session with controlled human
-        // seats. Give presentation controllers the new session identity too.
+        // Keep both settings and runtime roster consistent with controlled human seats.
         GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: count }, () => null));
         cancelCpuSchedule('cardboard-view');
         state.game.currentPlayerIndex = 0;
@@ -289,7 +288,14 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     const clip = viewport.getBoundingClientRect();
                     return labels.every(label => {
                         const bounds = label.getBoundingClientRect();
-                        return bounds.left >= clip.left + viewport.clientLeft &&
+                        const distance = rect => Math.hypot(Math.max(rect.left - bounds.right, bounds.left - rect.right, 0),
+                            Math.max(rect.top - bounds.bottom, bounds.top - rect.bottom, 0));
+                        const owners = [...document.querySelectorAll('#cardboardSeats > .cardboard-player')];
+                        const groupDistance = owner => Math.min(...[...owner.querySelectorAll('.cardboard-card')].map(card => distance(card.getBoundingClientRect())));
+                        const own = owners.find(owner => owner.dataset.playerIndex === label.dataset.playerIndex);
+                        const ownDistance = own ? groupDistance(own) : Infinity;
+                        const otherDistance = Math.min(...owners.filter(owner => owner !== own).map(groupDistance));
+                        return Number.isFinite(ownDistance) && ownDistance <= otherDistance + 0.5 && bounds.left >= clip.left + viewport.clientLeft &&
                             bounds.top >= clip.top + viewport.clientTop &&
                             bounds.right <= clip.left + viewport.clientLeft + viewport.clientWidth &&
                             bounds.bottom <= clip.top + viewport.clientTop + viewport.clientHeight && !obstacles.some(rect => Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
@@ -330,6 +336,64 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         });
     });
 }
+
+test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も全景へ戻る', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const enabled = getEnabledCardSelection();
+        const names = ['麦畑', 'パン屋', ...CARDS.filter(card => enabled.has(card.name) &&
+            !['麦畑', 'パン屋'].includes(card.name)).map(card => card.name)].slice(0, 5);
+        const landmarks = Player.landmarkNames().filter(name => getEnabledLandmarkSelection().has(name)).slice(0, 2);
+        game.players.forEach(player => {
+            player.cards = names.map(name => createCardByName(name));
+            Object.keys(player.landmarks).forEach(name => { player.landmarks[name] = landmarks.includes(name); });
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+        });
+        render();
+    });
+    const rails = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
+    await expect(rails).toHaveCount(2);
+    await expectWholeTable(page, 4);
+    await expectOwnedCards(page);
+    await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(8);
+    await expect.poll(() => page.locator('#cardboardTableViewport').evaluate(viewport => {
+        const clip = viewport.getBoundingClientRect();
+        const contains = (outer, rect) => rect.width > 0 && rect.height > 0 &&
+            rect.left >= outer.left - 1 && rect.right <= outer.right + 1 &&
+            rect.top >= outer.top - 1 && rect.bottom <= outer.bottom + 1;
+        return [...viewport.querySelectorAll('.cardboard-player')].every(owner => {
+            const landmarks = [...owner.querySelectorAll('.cardboard-landmark-built')];
+            const bounds = owner.getBoundingClientRect();
+            return landmarks.length === 2 && landmarks.every(landmark => {
+                const rect = landmark.getBoundingClientRect();
+                return contains(bounds, rect) && contains(clip, rect);
+            });
+        });
+    })).toBe(true);
+    expect(await rails.evaluateAll(owners => owners.map(owner => Number(owner.dataset.tableAngle)).sort((a, b) => a - b))).toEqual([0, 180]);
+    await expect.poll(() => page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+        Math.min(...cards.map(card => Math.max(card.getBoundingClientRect().width, card.getBoundingClientRect().height))))).toBeGreaterThanOrEqual(40);
+    const before = await snapshot(page);
+    const table = page.locator('#cardboardTableViewport');
+    const scale = await table.getAttribute('data-table-scale');
+    const layout = await page.locator('#cardboardSeats').getAttribute('data-table-layout-key');
+    await page.screenshot({ path: testInfo.outputPath('four-seat-middle-landmarks-beside.png') });
+    await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+    await expect(rails).toHaveCount(0);
+    await page.locator('[data-cardboard-camera="back"]').click();
+    await expect(rails).toHaveCount(2);
+    await page.locator('[data-cardboard-camera="market"]').click();
+    await page.locator('#cardboardMarket .compact-market-expand').click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+    await expect(rails).toHaveCount(2);
+    await page.locator('#cardboardMarketClose').click();
+    await page.locator('[data-cardboard-camera="back"]').click();
+    await expectWholeTable(page, 4);
+    await expect(table).toHaveAttribute('data-table-scale', scale);
+    await expect(page.locator('#cardboardSeats')).toHaveAttribute('data-table-layout-key', layout);
+    expect(await snapshot(page)).toEqual(before);
+});
 
 for (const count of [2,3,5,10]) {
     test(`共通カード卓の人数適応 ${count}`, async ({page},testInfo)=>{
@@ -433,7 +497,7 @@ test('10人の320px縦持ちでも全員の所有カードと市場を俯瞰で�
 });
 
 for (const viewport of [{width:390,height:844},{width:844,height:390}]) {
-    test(`共通カード卓の市場から建設して全員のカードへ戻れる ${viewport.width}`,async({page})=>{
+    test(`共通カード卓の市場から建設して全員のカードへ戻れる ${viewport.width}`,async({page},testInfo)=>{
         await prepare(page,viewport,4);
         await page.evaluate(()=>{const game=GameRuntimeState.runtime.snapshot().game;game.phase=GAME_PHASES.BUILD;game.builtThisTurn=false;render();});
         await page.locator('[data-cardboard-camera="market"]').click();
@@ -449,6 +513,23 @@ for (const viewport of [{width:390,height:844},{width:844,height:390}]) {
         await page.locator('[data-cardboard-camera="overview"]').click();
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
+        const title = page.locator('#cardboardMarket .compact-market-header h2');
+        expect(await title.evaluate(element => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            const text = range.getBoundingClientRect();
+            const bounds = element.getBoundingClientRect();
+            const scale = Number(document.getElementById('cardboardTableViewport').dataset.tableScale);
+            return text.width <= bounds.width + 1 && text.height <= 32 * scale;
+        }), '購入後も中央市場の全文を一行で読める').toBe(true);
+        await page.screenshot({path:testInfo.outputPath(`market-after-purchase-${viewport.width}.png`)});
+        await page.locator('#cardboardMarket [data-action="undoBuild"]').click();
+        await page.locator('#confirmOkBtn').click();
+        await expect.poll(()=>page.evaluate(()=>{
+            const player=GameRuntimeState.runtime.snapshot().game.players[0];
+            return {count:player.cards.length,coins:player.coins};
+        })).toEqual(before);
+        await expectWholeTable(page,4);
         expect(name).toBeTruthy();
     });
 }
@@ -622,47 +703,80 @@ test(`市場の絞り込みはカード数に応じて棚高を縮め全体復�
 
 // Only a deliberate inspection dismisses the brief greeting. Automatic layout
 // and camera refreshes retain it, and the persistent turn HUD stays available.
-test('明示的な正面閲覧だけが手番挨拶を閉じて手番と対局状態を維持する', async ({ page }) => {
-    await prepare(page, { width: 844, height: 390 }, 4);
-    await page.evaluate(() => {
-        // The table displays completed landmarks; make an actual built station
-        // available before recording the immutable inspection baseline.
-        GameRuntimeState.runtime.snapshot().game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
-        render();
-    });
-    const before = await snapshot(page);
-    const greeting = page.locator('#turnAnnouncer');
-    for (const action of ['roster', 'self', 'readable', 'card', 'landmark']) {
-        if (action === 'card' || action === 'landmark') await cameraCommand(page, 'self');
-        const status = await page.evaluate(async () => {
-            const game = GameRuntimeState.runtime.snapshot().game;
-            // render queues the same automatic geometry work as a normal UI
-            // refresh. It must not be interpreted as deliberate inspection.
+for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
+    { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+    test(`明示的な正面閲覧だけがHUD手番通知を閉じて手番と対局状態を維持する ${viewport.width}px`, async ({ page }, testInfo) => {
+        await prepare(page, viewport, 4);
+        await page.evaluate(() => {
+            // The table displays completed landmarks; make an actual built station
+            // available before recording the immutable inspection baseline.
+            GameRuntimeState.runtime.snapshot().game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
             render();
-            showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
-            for (let frame = 0; frame < 3; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
-            return { display: document.getElementById('turnAnnouncer').style.display,
-                status: document.getElementById('turnStatusAnnouncer').textContent,
-                current: document.querySelector('#cardboardRoster [aria-current="true"]').textContent };
         });
-        expect(status.display, `${action}: 自動配置で挨拶を消さない`).toBe('flex');
-        if (action === 'roster') await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
-        else if (action === 'self' || action === 'readable') await cameraCommand(page, action);
-        else {
-            const owner = page.locator('#cardboardSeats > [data-player-index="0"]');
-            await owner.locator(action === 'card' ? '.cardboard-card' : '.cardboard-landmark-built').first().click();
-            await expect(page.locator('#cardDetailModal')).toBeVisible();
+        const before = await snapshot(page);
+        const greeting = page.locator('#turnAnnouncer');
+        for (const action of ['roster', 'self', 'readable', 'card', 'landmark']) {
+            if (action === 'card' || action === 'landmark') await cameraCommand(page, 'self');
+            const status = await page.evaluate(async () => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                // render queues the same automatic geometry work as a normal UI
+                // refresh. It must not be interpreted as deliberate inspection.
+                render();
+                const startedAt = performance.now();
+                showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
+                const hasCue = () => document.getElementById('cardboardBoard').classList.contains('cardboard-turn-cue');
+                const initialHudCue = hasCue();
+                const automaticFrames = [];
+                for (let frame = 0; frame < 3; frame++) {
+                    await new Promise(resolve => requestAnimationFrame(resolve));
+                    automaticFrames.push({ elapsed:performance.now()-startedAt, hudCue:hasCue() });
+                }
+                // A busy renderer can spend the full 1300ms lifetime in three
+                // frames. Test early dismissal separately from natural expiry,
+                // then start a fresh cue for the explicit inspection below.
+                showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
+                return { display: document.getElementById('turnAnnouncer').style.display,
+                    initialHudCue, automaticFrames, showDurationMs:UiTurnAnnouncer.showDurationMs,
+                    hudCue:hasCue(),
+                    status: document.getElementById('turnStatusAnnouncer').textContent,
+                    current: document.querySelector('#cardboardRoster [aria-current="true"]').textContent };
+            });
+            expect(status.display, `${action}: 中央通知でカード卓を隠さない`).toBe('none');
+            expect(status.initialHudCue, `${action}: HUDの手番強調を開始する`).toBe(true);
+            expect(status.automaticFrames.filter(frame => frame.elapsed < status.showDurationMs && !frame.hudCue),
+                `${action}: 1300msの自然終了前に自動配置が通知を消さない ${JSON.stringify(status.automaticFrames)}`).toEqual([]);
+            expect(status.hudCue, `${action}: 明示的な閲覧の前に新しい通知が存在する`).toBe(true);
+            if (action === 'roster') await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+            else if (action === 'self' || action === 'readable') await cameraCommand(page, action);
+            else {
+                const owner = page.locator('#cardboardSeats > [data-player-index="0"]');
+                await owner.locator(action === 'card' ? '.cardboard-card' : '.cardboard-landmark-built').first().click();
+                await expect(page.locator('#cardDetailModal')).toBeVisible();
+            }
+            await expect(greeting).toBeHidden();
+            await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-turn-cue/);
+            expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached), `${action}: 明示的な閲覧で通知timerも解除する`).toBe(false);
+            await expect(page.locator('#turnStatusAnnouncer')).toHaveText(status.status);
+            const turnSeat = page.locator('#cardboardRoster [aria-current="true"]');
+            await expect(turnSeat).toBeVisible();
+            await expect(turnSeat).toHaveText(status.current);
+            expect(await snapshot(page)).toEqual(before);
+            if (action === 'card' || action === 'landmark') await page.keyboard.press('Escape');
         }
-        await expect(greeting).toBeHidden();
-        expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
-        await expect(page.locator('#turnStatusAnnouncer')).toHaveText(status.status);
-        const turnSeat = page.locator('#cardboardRoster [aria-current="true"]');
-        await expect(turnSeat).toBeVisible();
-        await expect(turnSeat).toHaveText(status.current);
-        expect(await snapshot(page)).toEqual(before);
-        if (action === 'card' || action === 'landmark') await page.keyboard.press('Escape');
-    }
-});
+        await cameraCommand(page, 'overview');
+        await expectWholeTable(page, 4);
+        // Capture separately so screenshot I/O cannot consume the transient cue
+        // before the inspection action being tested.
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
+        });
+        await page.screenshot({ path: testInfo.outputPath(`hud-turn-cue-${viewport.width}.png`) });
+        await page.evaluate(() => dismissTurnGreeting());
+
+    });
+
+}
 
 
 test('正面の全38施設はカードと原画を縮めず経済効果を表示し戻ると俯瞰へ戻る', async ({ page }, testInfo) => {
@@ -813,4 +927,663 @@ test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると�
     expect(minimumWidth).toBeGreaterThanOrEqual(31);
     expect(await snapshot(page)).toEqual(grown);
     await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-overview.png') });
+});
+
+test('CPU処理通知で盤面が縮む最初の描画から施設とランドマークを俯瞰できる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const cards = ['麦畑', 'パン屋', 'カフェ', 'コンビニ', '貸金業', '出版社', 'ピザ屋', '家具工場', 'ITベンチャー'];
+        game.players.forEach((player, index) => {
+            player.cards = cards.slice(0, index ? 6 : 9).map(createCardByName);
+            Object.keys(player.landmarks).slice(0, index + 2).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+        acceptHotseatHandoff();
+    });
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    // Stage the real station choice before rendering it, so the next UI
+    // update grows both the choice row and the processing notification.
+    await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.rollDice());
+    const before = await snapshot(page);
+    expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase === GAME_PHASES.SELECT_DICE)).toBe(true);
+    const frames = [];
+    for (const visible of [true]) {
+        const frame = await page.evaluate(visible => new Promise(resolve => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const previousHeight = viewport.clientHeight;
+            const measure = () => {
+                const clip = viewport.getBoundingClientRect();
+                const items = [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter, .cardboard-card, .cardboard-landmark-built')];
+                const obstacles = [...viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter')]
+                    .map(element => element.getBoundingClientRect());
+                const labelFailures = [...viewport.querySelectorAll('.cardboard-owner-label')].flatMap(label => {
+                    const bounds = label.getBoundingClientRect();
+                    return obstacles.some(rect => Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                        Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top))
+                        ? [{ owner:label.dataset.playerIndex, bounds:bounds.toJSON() }] : [];
+                });
+                return { visible, previousHeight, height:viewport.clientHeight, labelFailures,
+                    count:items.length, builtCount:viewport.querySelectorAll('.cardboard-landmark-built').length, failures:items.flatMap(element => {
+                        const bounds = element.getBoundingClientRect();
+                        return bounds.width <= 0 || bounds.height <= 0 || bounds.left < clip.left - 2 || bounds.top < clip.top - 2 ||
+                            bounds.right > clip.right + 2 || bounds.bottom > clip.bottom + 2
+                            ? [{ name:element.dataset.cardName || element.dataset.landmarkName || element.id,
+                                bounds:bounds.toJSON(), clip:clip.toJSON() }] : [];
+                    }) };
+            };
+            let synchronous;
+            const observer = new ResizeObserver(() => {
+                if (viewport.clientHeight === previousHeight) return;
+                observer.disconnect();
+                // The product observer refits before paint. Inspect the first
+                // frame, rather than polling until a delayed refit masks a clip.
+                requestAnimationFrame(() => resolve({ ...measure(), synchronous }));
+            });
+            observer.observe(viewport);
+            render();
+            UiGameStatusEffects.applyActivityStatus({ visible, kind:'checking', announceLabel:'CPUが処理中', detail:'次の行動を検討しています' }, {
+                container:document.getElementById('gameActivityStatus'), label:document.getElementById('gameActivityStatusLabel'),
+                elapsed:document.getElementById('gameActivityStatusElapsed'), detail:document.getElementById('gameActivityStatusDetail'),
+            });
+            // updateGameActivityStatus applies both the effect and this parent
+            // visibility. Reproduce that presentation change without running CPU actions.
+            document.getElementById('gameConnectivityPanel').style.display = visible ? 'grid' : 'none';
+            const synced = CardBoardField.syncViewport();
+            // Same JavaScript task: RO has not yet delivered this size change.
+            synchronous = { ...measure(), synced };
+        }), visible);
+        expect(frame.synchronous.count).toBeGreaterThan(15);
+        expect(frame.synchronous.builtCount).toBe(5);
+        expect(frame.synchronous.height).not.toBe(frame.synchronous.previousHeight);
+        expect(frame.synchronous.failures, JSON.stringify(frame.synchronous)).toEqual([]);
+        expect(frame.synchronous.labelFailures, JSON.stringify(frame.synchronous)).toEqual([]);
+        expect(frame.count).toBeGreaterThan(15);
+        expect(frame.builtCount).toBe(5);
+        expect(frame.height).not.toBe(frame.previousHeight);
+        expect(frame.failures, JSON.stringify(frame)).toEqual([]);
+        expect(frame.labelFailures, JSON.stringify(frame)).toEqual([]);
+        expect(await snapshot(page)).toEqual(before);
+        frames.push(frame);
+    }
+    await page.evaluate(() => {
+        UiGameStatusEffects.applyActivityStatus({ visible:false }, { container:document.getElementById('gameActivityStatus') });
+        document.getElementById('gameConnectivityPanel').style.display = 'none';
+    });
+    await expectWholeTable(page, 2);
+    await testInfo.attach('cpu-notice-first-frames', { body:JSON.stringify(frames, null, 2), contentType:'application/json' });
+    await page.screenshot({ path:testInfo.outputPath('cpu-notice-overview.png') });
+    await cameraCommand(page, 'readable');
+    const reading = await page.evaluate(() => {
+        const viewport = document.getElementById('cardboardTableViewport');
+        const view = () => ({ mode:viewport.dataset.tableMode, scale:viewport.dataset.tableScale,
+            angle:viewport.dataset.tableAngle, focus:viewport.dataset.tableFocusPlayer,
+            transform:document.getElementById('cardboardSeats').style.transform });
+        const before = view();
+        const previousHeight = viewport.clientHeight;
+        const panel = document.getElementById('gameConnectivityPanel');
+        const activity = document.getElementById('gameActivityStatus');
+        const panelDisplay = panel.style.display, activityDisplay = activity.style.display;
+        activity.style.display = 'flex';
+        panel.style.display = 'grid';
+        const height = viewport.clientHeight;
+        const synced = CardBoardField.syncViewport();
+        const after = view();
+        panel.style.display = panelDisplay;
+        activity.style.display = activityDisplay;
+        return { before, after, previousHeight, height, synced };
+    });
+    expect(reading.before.mode).toBe('free');
+    expect(reading.height).not.toBe(reading.previousHeight);
+    expect(reading.synced).toBe(false);
+    expect(reading.after).toEqual(reading.before);
+    expect(await snapshot(page)).toEqual(before);
+});
+
+
+test('横持ちの通常CPU通知は無効な操作欄を使い復旧通知と有効操作を隠さない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await expect(page.locator('#btnRoll')).toBeEnabled();
+    await expect(page.locator('#btnRoll')).toBeVisible();
+    await page.evaluate(() => {
+        GameSetupState.runtime.setCpuSpeed(3000);
+        document.getElementById('cpuSpeed').value = '3000';
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
+            type: 'cpu', difficulty: 'weak', name: `にぎわう街の市長にぎわう街${index + 1}`,
+        })));
+        updateGameActivityStatus();
+    });
+    const panel = page.locator('#gameConnectivityPanel');
+    await expect(panel).toHaveClass(/is-local-cpu-activity/);
+    const geometry = await page.evaluate(() => {
+        const panel = document.getElementById('gameConnectivityPanel');
+        const viewport = document.getElementById('cardboardTableViewport');
+        const status = document.getElementById('status');
+        const buttons = document.querySelector('#cardboardActionSlot .buttons');
+        const phase = status.querySelector('.cardboard-phase-indicator');
+        const before = GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+        const height = viewport.clientHeight;
+        const statusBounds = status.getBoundingClientRect();
+        const panelBounds = panel.getBoundingClientRect();
+        const phaseBounds = phase.getBoundingClientRect();
+        const hidden = getComputedStyle(buttons).visibility;
+        // Compare both arrangements in one task; CPU actions cannot run
+        // between these presentation-only measurements.
+        panel.classList.remove('is-local-cpu-activity');
+        CardBoardField.syncViewport();
+        const previousHeight = viewport.clientHeight;
+        panel.classList.add('is-local-cpu-activity');
+        CardBoardField.syncViewport();
+        // Even a stale CPU status must never cover an enabled action.
+        const roll = document.getElementById('btnRoll');
+        const disabled = roll.disabled;
+        roll.disabled = false;
+        const enabledVisibility = getComputedStyle(buttons).visibility;
+        roll.disabled = disabled;
+        CardBoardField.syncViewport();
+        return { height, previousHeight, hidden, enabledVisibility,
+            aligned: Math.abs(panelBounds.top - statusBounds.top) <= 1,
+            phaseVisible: phaseBounds.top >= statusBounds.top && phaseBounds.bottom <= statusBounds.bottom,
+            panelHeight: panelBounds.height,
+            stateUnchanged: JSON.stringify(before) === JSON.stringify(GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER)) };
+    });
+    expect(geometry.height - geometry.previousHeight, JSON.stringify(geometry)).toBeGreaterThanOrEqual(20);
+    expect(geometry).toMatchObject({ hidden: 'hidden', enabledVisibility: 'visible', aligned: true, phaseVisible: true, panelHeight: 44, stateUnchanged: true });
+    await expectWholeTable(page, 4);
+    await page.screenshot({ path: testInfo.outputPath('cpu-inline-844.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('#cardboardActionSlot .buttons')).toHaveCSS('visibility', 'visible');
+    await page.setViewportSize({ width: 844, height: 390 });
+    const recovery = await page.evaluate(() => {
+        updateGameActivityWatchdogStatus({ stage: 'recovering' });
+        const panel = document.getElementById('gameConnectivityPanel');
+        return { compact: panel.classList.contains('is-local-cpu-activity'),
+            below: panel.getBoundingClientRect().top >= document.getElementById('status').getBoundingClientRect().bottom,
+            buttons: getComputedStyle(document.querySelector('#cardboardActionSlot .buttons')).visibility };
+    });
+    expect(recovery).toEqual({ compact: false, below: true, buttons: 'visible' });
+    await expect(page.locator('#gameActivityStatusLabel')).toContainText('自動復旧中');
+    await testInfo.attach('cpu-inline-geometry', { body: JSON.stringify({ geometry, recovery }), contentType: 'application/json' });
+});
+
+test('狭幅でも収支操作は視点移動のスクロールに隠れない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 }, 2, false);
+    await page.evaluate(() => setTutorialEnabled(true));
+    await expect(page.locator('#tutorialBox .plaza-guide-disclosure > summary')).toBeVisible();
+    const summary = page.locator('#cardboardEventDetails > summary');
+    const readable = () => summary.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        const nav = document.getElementById('cardboardCameraTools').getBoundingClientRect();
+        return bounds.width >= 44 && bounds.height >= 44 && bounds.left >= nav.left && bounds.right <= nav.right &&
+            [0.15, 0.5, 0.85].every(fraction => {
+                const top = document.elementFromPoint(bounds.left + bounds.width * fraction, bounds.top + bounds.height / 2);
+                return top === element || element.contains(top);
+            });
+    });
+    await expect.poll(readable, '出目確定前にも収支を操作できる').toBe(true);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.rollDice([1]);
+        render();
+    });
+    await expect(page.locator('#cardboardEventDetails')).toHaveAttribute('data-has-result', 'true');
+    const before = await snapshot(page);
+    for (const width of [320, 390, 844, 1440]) {
+        await page.setViewportSize({ width, height: width === 844 ? 390 : width === 1440 ? 900 : 568 });
+        await cameraCommand(page, 'overview');
+        await expect.poll(readable, `収支は${width}pxの初期位置で全文操作できる`).toBe(true);
+        if (width <= 999) await expect(summary).toHaveCSS('width', '44px');
+        if (width === 320) {
+            expect(await page.locator('[data-cardboard-camera="self"]').evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                const clip = document.getElementById('cardboardCameraButtons').getBoundingClientRect();
+                return bounds.left >= clip.left && bounds.right <= clip.right;
+            }), '出目確定後の全体表示でも自分ボタンを全文表示する').toBe(true);
+        }
+        await cameraCommand(page, 'market');
+        await expect.poll(readable, '戻る操作が有効でも収支を隠さない').toBe(true);
+        if (width === 320) {
+            const market = page.locator('[data-cardboard-camera="market"]');
+            const self = page.locator('[data-cardboard-camera="self"]');
+            expect(await self.evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                const clip = document.getElementById('cardboardCameraButtons').getBoundingClientRect();
+                return bounds.left >= clip.left && bounds.right <= clip.right &&
+                    [0.15, 0.5, 0.85].every(fraction =>
+                        document.elementFromPoint(bounds.left + bounds.width * fraction, bounds.top + bounds.height / 2) === element);
+            }), '戻るが有効でも自分ボタンを横スクロールなしで全文表示する').toBe(true);
+            await expect(page.locator('#cardboardMoreMenu > summary')).toHaveAccessibleName('メニュー');
+            await page.screenshot({ path: testInfo.outputPath('receipt-controls-320-market.png') });
+            await market.focus();
+            await market.press('Tab');
+            await expect(self).toBeFocused();
+            expect(await self.evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                return document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === element;
+            }), 'スクロール後のfocus対象を固定の全体ボタンで覆わない').toBe(true);
+        }
+        await summary.click();
+        await expect(page.locator('#cardboardEventDetails')).toHaveAttribute('open', '');
+        await summary.click();
+        await cameraCommand(page, 'back');
+        if (width === 320) await page.screenshot({ path: testInfo.outputPath('receipt-controls-320.png') });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});
+
+test('縦持ち2人戦の終盤は所有者名を市場と施設群の境界で読める', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach((player, index) => {
+            player.name = `プレイヤー${index + 1}`;
+            player.cards = CARDS.slice(0, index ? 16 : 14).map(card => createCardByName(card.name));
+            Object.keys(player.landmarks).forEach((name, landmarkIndex) => { player.landmarks[name] = landmarkIndex < (index ? 2 : 5); });
+        });
+        render();
+    });
+    const before = await snapshot(page);
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await cameraCommand(page, 'overview');
+        await expectWholeTable(page, 2);
+        await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('#cardboardSeats > .cardboard-player')].every(panel => {
+            const label = document.querySelector(`.cardboard-owner-label[data-player-index="${panel.dataset.playerIndex}"]`);
+            if (!label || label.scrollWidth > label.clientWidth) return false;
+            const bounds = label.getBoundingClientRect();
+            const cards = [...panel.querySelectorAll('.cardboard-card')].map(card => card.getBoundingClientRect());
+            return panel.dataset.seatPosition === 'bottom'
+                ? bounds.bottom <= Math.min(...cards.map(card => card.top))
+                : bounds.top >= Math.max(...cards.map(card => card.bottom));
+        })), `所有者名は${width}pxでも施設群の市場側に置く`).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`owner-boundary-${width}.png`) });
+    }
+    // A shorter viewport may place labels beside a ragged card row. Preserve
+    // the complete ordinary names there without demanding an absent header gap.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await cameraCommand(page, 'overview');
+    const labels = page.locator('#cardboardOwnerLabels .cardboard-owner-label');
+    await expect(labels).toHaveText(['プレイヤー1', 'プレイヤー2']);
+    await expect.poll(() => labels.evaluateAll(elements => elements.every(label => {
+        const index = Number(label.dataset.playerIndex);
+        const bounds = label.getBoundingClientRect();
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')];
+        return label.scrollWidth <= label.clientWidth && label.title === `席${index + 1} · プレイヤー${index + 1}` &&
+            label.getAttribute('aria-label') === label.title && bounds.left >= viewport.left && bounds.right <= viewport.right &&
+            bounds.top >= viewport.top && bounds.bottom <= viewport.bottom && !obstacles.some(element => {
+                const rect = element.getBoundingClientRect();
+                return Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                    Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top);
+            });
+    })), '320×568でも名前を全文表示し所有施設と市場を覆わない').toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('owner-name-320-568.png') });
+    expect(await snapshot(page)).toEqual(before);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.players.forEach(player => { player.name = '街'; });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const duplicateBefore = await snapshot(page);
+    await expect(labels).toHaveText(['席1 · 街', '席2 · 街']);
+    expect(await snapshot(page)).toEqual(duplicateBefore);
+});
+
+for (const width of [390, 844]) test(`終盤の所属ラベルで通常の名前を全文読める ${width}px`, async ({ page }) => {
+    await prepare(page, { width, height: width === 844 ? 390 : 844 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach((player, index) => {
+            player.name = `プレイヤー${index + 1}`;
+            player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name));
+            Object.keys(player.landmarks).forEach((name, landmarkIndex) => { player.landmarks[name] = landmarkIndex < 5; });
+        });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const labels = page.locator('#cardboardOwnerLabels .cardboard-owner-label');
+    await expect(labels).toHaveCount(4);
+    await expect.poll(() => labels.evaluateAll(elements => elements.every(label => {
+        const bounds = label.getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')];
+        return label.scrollWidth <= label.clientWidth && !obstacles.some(element => {
+            const rect = element.getBoundingClientRect();
+            return Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top);
+        });
+    })), '通常名は全文表示し施設と市場を覆わない').toBe(true);
+});
+
+// The DOM can grow a second card row before its queued ResizeObserver runs.
+// The same render must update world geometry, not briefly clip an opponent.
+test('所有施設が一行から増えた描画で相手のカードを卓上端に切らない', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.slice(0, 5).map(card => createCardByName(card.name));
+        game.players[1].cards = CARDS.slice(0, 7).map(card => createCardByName(card.name));
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    const result = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[1].cards.push(createCardByName(CARDS[7].name));
+        const before = GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+        render();
+        const viewport = document.getElementById('cardboardTableViewport');
+        const clip = viewport.getBoundingClientRect();
+        const outside = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark')]
+            .filter(element => {
+                const rect = element.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0 && (rect.left < clip.left + viewport.clientLeft ||
+                    rect.top < clip.top + viewport.clientTop || rect.right > clip.left + viewport.clientLeft + viewport.clientWidth ||
+                    rect.bottom > clip.top + viewport.clientTop + viewport.clientHeight);
+            }).map(element => ({ name: element.getAttribute('data-card-name') || element.getAttribute('data-landmark-name'),
+                bounds: element.getBoundingClientRect().toJSON() }));
+        return { outside, before, after: GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER) };
+    });
+    expect(result.outside, '次のRAFを待たず全実カードを新しい盤面へ収める').toEqual([]);
+    expect(result.after).toEqual(result.before);
+});
+
+
+test('終盤の所属名は端の空白を使いカードを覆わず全文を表示する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].name = 'プレイヤー1';
+        game.players[1].name = 'CPU（弱）・1';
+        const cards = [
+            ['寿司屋', 'パン屋', 'フラワーショップ', 'ビジネスセンター', 'ブドウ園', 'ピザ屋', '清掃業', 'バーガーショップ', 'サンマ漁船', 'ワイナリー', '引越し屋'],
+            ['麦畑', '牧場', 'コンビニ', '森林', '家具工場', '鉱山', 'リンゴ園', 'パン屋', 'カフェ', 'フラワーショップ', '雑貨屋', 'ファミレス', 'ピザ屋', 'バーガーショップ', 'ビジネスセンター', '清掃業', '税務署', '貸金業', '引越し屋'],
+        ];
+        game.players.forEach((player, index) => {
+            player.cards = cards[index].map(createCardByName);
+            Array.from(getEnabledLandmarkSelection()).slice(0, index ? 2 : 5).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+    });
+    const before = await snapshot(page);
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    await expect.poll(() => page.locator('#cardboardOwnerLabels > .cardboard-owner-label').count()).toBe(2);
+    const geometry = await page.locator('#cardboardOwnerLabels > .cardboard-owner-label').evaluateAll(labels => {
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardTableViewport .cardboard-card, #cardboardTableViewport .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect());
+        return labels.map(label => {
+            const bounds = label.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(label);
+            const text = range.getBoundingClientRect();
+            return { name: label.textContent,
+                complete: text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom,
+                contained: bounds.left >= viewport.left && bounds.right <= viewport.right && bounds.top >= viewport.top && bounds.bottom <= viewport.bottom,
+                overlaps: obstacles.some(rect => bounds.left < rect.right && bounds.right > rect.left && bounds.top < rect.bottom && bounds.bottom > rect.top) };
+        });
+    });
+    expect(geometry.map(label => label.name).sort()).toEqual(['CPU（弱）・1', 'プレイヤー1'].sort());
+    expect(geometry.every(label => label.complete && label.contained && !label.overlaps), JSON.stringify(geometry)).toBe(true);
+    expect(await snapshot(page)).toEqual(before);
+    await page.screenshot({ path: testInfo.outputPath('owner-edge-320.png') });
+});
+
+test('4人の共通CPU名の番号は縦持ちHUDでも省略しない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.players.forEach((player, index) => {
+            player.name = `CPU（弱）・${index + 1}`;
+        });
+        render();
+        acceptHotseatHandoff();
+    });
+    const before = await snapshot(page);
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (let index = 0; index < 4; index++) {
+            const seat = page.locator(`#cardboardRoster [data-cardboard-player-index="${index}"]`);
+            await expect(seat.locator('.cardboard-roster-name')).toHaveText(`CPU（弱）・${index + 1}`);
+            await expect(seat).toHaveAccessibleName(new RegExp(`席${index + 1}・CPU（弱）・${index + 1}`));
+            await expect(seat.locator('.cardboard-roster-name-id')).toHaveText(`・${index + 1}`);
+            expect(await seat.locator('.cardboard-roster-name-id').evaluate(element => {
+                const range = document.createRange();
+                range.selectNodeContents(element);
+                const text = range.getBoundingClientRect();
+                const clip = element.parentElement.getBoundingClientRect();
+                const bounds = element.closest('button').getBoundingClientRect();
+                return text.width > 0 && text.left >= clip.left && text.right <= clip.right &&
+                    text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom &&
+                    text.left >= 0 && text.right <= innerWidth &&
+                    document.elementFromPoint((text.left + text.right) / 2, (text.top + text.bottom) / 2) === element;
+            }), `${width}pxの席${index + 1}の末尾番号を隠さない`).toBe(true);
+        }
+        await page.screenshot({ path: testInfo.outputPath(`roster-identifiers-${width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});
+
+// Presentation fixture: exercise long dice totals and a three-digit stack
+// without claiming these controlled counts came from a played match.
+test('卓の出目と枚数は長い出目でも重ならず施設アートを保つ', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = ['森林', '引越し屋', '会員制BAR', 'マグロ漁船'].flatMap(name =>
+            Array.from({ length: name === '森林' ? 100 : name === '引越し屋' ? 12 : 1 }, () => createCardByName(name)));
+        render();
+    });
+    const before = await snapshot(page);
+    const cards = page.locator('#cardboardSeats > [data-player-index="0"] .cardboard-card');
+    await expect(cards).toHaveCount(4);
+    await expect(cards.filter({ has: page.locator('[data-dice-count="3"]') })).toHaveCount(2);
+    await expect(cards.locator('.cardboard-count').filter({ hasText: '所有 ×100' })).toHaveCount(1);
+    await expect(cards.locator('.cardboard-count').filter({ hasText: '所有 ×12' })).toHaveCount(1);
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+        await page.setViewportSize(viewport);
+        await page.evaluate(async () => {
+            await document.fonts.ready;
+            let previous = '', stable = 0;
+            for (let frame = 0; frame < 90; frame++) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                const world = document.getElementById('cardboardSeats');
+                const viewport = document.getElementById('cardboardTableViewport');
+                const key = JSON.stringify([world.dataset.tableLayoutKey, viewport.dataset.tableScale,
+                    viewport.clientWidth, viewport.clientHeight]);
+                stable = key === previous ? stable + 1 : 0;
+                previous = key;
+                if (stable >= 4 && world.dataset.tableLayoutKey) return;
+            }
+            throw new Error('Card face review geometry did not settle');
+        });
+        await expectWholeTable(page, 4);
+        await expectOwnedCards(page);
+        await expect.poll(() => cards.evaluateAll(elements => elements.map(card => {
+            const dice = card.querySelector('.cardboard-dice');
+            const value = card.querySelector('.cardboard-count-value');
+            const badge = value.parentElement;
+            const range = document.createRange();
+            range.selectNodeContents(dice);
+            const diceText = range.getBoundingClientRect();
+            const diceLines = range.getClientRects().length;
+            range.selectNodeContents(value);
+            const countText = range.getBoundingClientRect();
+            const contains = (outer, inner) => inner.left >= outer.left && inner.right <= outer.right &&
+                inner.top >= outer.top && inner.bottom <= outer.bottom;
+            // Unrotated seat 0 allows direct text separation checks in screen coordinates.
+            const checks = {
+                width: card.offsetWidth === 160, height: card.offsetHeight === 128,
+                diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px'),
+                countFont: getComputedStyle(badge).fontSize === '16px', countHeight: badge.offsetHeight === 22,
+                separated: diceText.right <= badge.getBoundingClientRect().left,
+                oneLine: diceLines === 1, diceBand: contains(dice.getBoundingClientRect(), diceText),
+                card: contains(card.getBoundingClientRect(), diceText), count: contains(badge.getBoundingClientRect(), countText),
+            };
+            return Object.values(checks).every(Boolean) ? null : { name: card.dataset.cardName, checks,
+                diceText: diceText.toJSON(), diceBand: dice.getBoundingClientRect().toJSON(),
+                countText: countText.toJSON(), badge: badge.getBoundingClientRect().toJSON() };
+        }).filter(Boolean))).toEqual([]);
+        await page.screenshot({ path: testInfo.outputPath(`card-face-dice-count-${viewport.width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});
+
+
+test('4人の短い所有者名は狭い中盤でも全員の施設につながる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const names = ['麦畑', 'パン屋', '牧場', '森林', 'コンビニ'];
+        game.players.forEach(player => {
+            player.cards = names.map(createCardByName);
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+            for (const name of Array.from(getEnabledLandmarkSelection()).slice(0, 2)) player.landmarks[name] = true;
+        });
+        render();
+    });
+    const before = await snapshot(page);
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport);
+        await cameraCommand(page, 'overview');
+        await expectWholeTable(page, 4);
+        const labels = page.locator('#cardboardOwnerLabels .cardboard-owner-label');
+        await expect(labels).toHaveText(['街1', '街2', '街3', '街4']);
+        await expect.poll(() => labels.evaluateAll(elements => elements.every(label => {
+            const rect = label.getBoundingClientRect();
+            const clip = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+            const cards = [...document.querySelectorAll('#cardboardSeats .cardboard-card')];
+            const obstacles = [...cards, ...document.querySelectorAll('#cardboardSeats .cardboard-landmark, #cardboardCenter')];
+            const distance = node => {
+                const box = node.getBoundingClientRect();
+                return Math.hypot(Math.max(box.left - rect.right, rect.left - box.right, 0),
+                    Math.max(box.top - rect.bottom, rect.top - box.bottom, 0));
+            };
+            const owned = cards.filter(card => card.closest('.cardboard-player').dataset.playerIndex === label.dataset.playerIndex);
+            const others = cards.filter(card => !owned.includes(card));
+            return label.scrollWidth <= label.clientWidth && rect.left >= clip.left && rect.right <= clip.right &&
+                rect.top >= clip.top && rect.bottom <= clip.bottom &&
+                Math.min(...owned.map(distance)) <= Math.min(...others.map(distance)) + 0.5 &&
+                !obstacles.some(node => {
+                    const box = node.getBoundingClientRect();
+                    return rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top;
+                });
+        })), '全員の名前を省略せず、自分の施設群の近くへ重なりなく配置する').toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`owner-short-middle-${viewport.width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});
+
+// Controlled reconstruction of the 323 real-play midgame, not a completed match.
+test('844中盤の所有者ラベルは発動と視点復帰の採取フレームで施設を覆わない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const names = ['CPU（弱）・1', 'CPU（弱）・2', 'プレイヤー1', 'CPU（弱）・4'];
+        const cards = [
+            ['麦畑', 'パン屋', 'コンビニ', '牧場'],
+            ['麦畑', 'パン屋', 'コンビニ', 'バーガーショップ', 'ワイナリー', '青果市場', '出版社'],
+            ['麦畑', '牧場', 'パン屋', 'コーン畑', '青果市場'],
+            ['麦畑', 'パン屋', '出版社', 'テレビ局', '青果市場'],
+        ];
+        game.players.forEach((player, index) => {
+            player.name = names[index];
+            player.cards = cards[index].map(name => createCardByName(name));
+            if (index !== 1) {
+                player.cards.push(createCardByName('麦畑'));
+                SHOP_STOCK['麦畑']--;
+                player.landmarks[LANDMARK_NAMES.STATION] = true;
+            }
+            if (index === 0) player.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+            for (const name of cards[index]) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+        });
+        game.currentPlayerIndex = 0;
+        game.turnCount = 20;
+        game.log = [];
+        game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+        render();
+    });
+    const samples = [];
+    const sampleFrames = async stage => samples.push(...await page.evaluate(stage => new Promise(resolve => {
+        const frames = [];
+        const started = performance.now();
+        const collect = timestamp => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const labels = [...viewport.querySelectorAll('.cardboard-owner-label')].map(element => ({
+                owner: element.dataset.playerIndex, text: element.textContent, rect: element.getBoundingClientRect().toJSON(),
+            }));
+            const cards = [...viewport.querySelectorAll('.cardboard-card')].map(element => ({
+                owner: element.closest('.cardboard-player').dataset.playerIndex, name: element.dataset.cardName,
+                rect: element.getBoundingClientRect().toJSON(), className: element.className,
+                transform: getComputedStyle(element).transform,
+                animations: element.getAnimations().map(animation => ({ currentTime: animation.currentTime, playState: animation.playState })),
+            }));
+            const overlaps = labels.flatMap(label => cards.flatMap(card => {
+                const width = Math.min(label.rect.right, card.rect.right) - Math.max(label.rect.left, card.rect.left);
+                const height = Math.min(label.rect.bottom, card.rect.bottom) - Math.max(label.rect.top, card.rect.top);
+                return width > 0 && height > 0 ? [{ labelOwner: label.owner, cardOwner: card.owner, cardName: card.name, width, height }] : [];
+            }));
+            frames.push({ stage, timestamp, labels, cards, overlaps });
+            if ((frames.length >= 9 && performance.now() - started >= 900) || frames.length >= 120) resolve(frames);
+            else requestAnimationFrame(collect);
+        };
+        collect(performance.now());
+    }), stage));
+    await sampleFrames('initial');
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.rollDice(3);
+        if (game.phase === GAME_PHASES.SELECT_DICE) game.selectDiceCount(false, 3);
+        if (game.lastDiceResult !== 3 || game.phase !== GAME_PHASES.BUILD) {
+            throw new Error(`Expected resolved dice 3/build, got ${game.lastDiceResult}/${game.phase}`);
+        }
+        render();
+    });
+    await sampleFrames('roll');
+    const afterRoll = await snapshot(page);
+    await cameraCommand(page, 'self');
+    await cameraCommand(page, 'overview');
+    await sampleFrames('camera-return');
+    // Save evidence before assertions, including when the original defect recurs.
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-midgame-frames.json'), JSON.stringify(samples, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-midgame-844.png') });
+    expect(samples.every(sample => sample.labels.length === 4), JSON.stringify(samples.map(({ stage, labels }) => ({ stage, owners: labels.map(label => label.owner) })))).toBe(true);
+    expect(samples.flatMap(sample => sample.overlaps.map(overlap => ({ stage: sample.stage, timestamp: sample.timestamp, ...overlap })))).toEqual([]);
+    expect(await snapshot(page)).toEqual(afterRoll);
+});
+
+// Ragged late-game ownership reconstructed from the full UI review.
+test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const counts = [12, 13, 14, 12];
+        const landmarks = [5, 2, 2, 3];
+        const facilities = CARDS.map(card => card.name).filter(name => !['麦畑', 'パン屋'].includes(name));
+        game.players.forEach((player, index) => {
+            player.name = index ? `CPU（弱）・${index + 1}` : 'プレイヤー1';
+            const names = ['麦畑', 'パン屋', ...facilities.slice(index, index + counts[index] - 2)];
+            player.cards = names.map(createCardByName);
+            for (const name of names) if (!['麦畑', 'パン屋'].includes(name)) SHOP_STOCK[name]--;
+            Array.from(getEnabledLandmarkSelection()).slice(0, landmarks[index]).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const before = await snapshot(page);
+    const geometry = await page.evaluate(() => {
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')]
+            .map(element => element.getBoundingClientRect());
+        return [...document.querySelectorAll('.cardboard-owner-label')].map(label => {
+            const rect = label.getBoundingClientRect();
+            return { owner: label.dataset.playerIndex, text: label.textContent, rect: rect.toJSON(),
+                font: getComputedStyle(label).fontSize, complete: label.scrollWidth <= label.clientWidth && label.scrollHeight <= label.clientHeight,
+                overlaps: obstacles.filter(box => rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top).length };
+        });
+    });
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-late-390.json'), JSON.stringify(geometry, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-late-390.png') });
+    expect(geometry.map(label => label.text)).toEqual(['プレイヤー1', 'CPU（弱）・2', 'CPU（弱）・3', 'CPU（弱）・4']);
+    expect(geometry.every(label => label.font === '12px' && label.complete && label.overlaps === 0), JSON.stringify(geometry)).toBe(true);
+    expect(await snapshot(page)).toEqual(before);
 });

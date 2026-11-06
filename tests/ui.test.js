@@ -1,6 +1,7 @@
 const assert = require('assert');
 const vm = require('vm');
-const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+const { createStorage, makeElement, runTest } = require('./helpers/test-utils');
+const { loadScriptsWithStringMarket } = require('./helpers/string-market-runtime');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function loadUiRuntime(options = {}) {
@@ -139,7 +140,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
+    loadScriptsWithStringMarket(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -338,6 +339,28 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
     context.onChangeTutorialLevel('invalid');
     assert.strictEqual(elements.tutorialLevel.value, 'beginner');
     assert.strictEqual(elements.btnTutorialLevel.getAttribute('aria-label'), 'チュートリアルの詳しさ、現在 初心者向け');
+});
+
+runTest('cardboard手番通知は市場を覆わずHUDを強調し1300msと明示取消で解除する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'cardboard' } };
+    context.showTurnAnnouncer('街1', false, 0);
+    const board = elements.cardboardBoard;
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), true);
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'プレイヤー1、人間、街1 のターン');
+    assert.deepStrictEqual(context.timeoutDelays, [1300]);
+    context.lastTimeout();
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), false);
+    assert.deepStrictEqual(context.timeoutDelays, [1300, 400]);
+    context.lastTimeout();
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    context.showTurnAnnouncer('街2', true, 1);
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), true);
+    context.dismissTurnGreeting();
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), false);
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'プレイヤー2、CPU、街2 のターン');
 });
 
 runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {
@@ -1449,6 +1472,8 @@ runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedAction
     context.enabledLandmarks = new Set(['駅']);
 
     context.renderBuildMenu();
+    assert.deepStrictEqual(context.__stringMarketDomCalls.bindings, [elements.buildMenu]);
+    assert.strictEqual(context.__stringMarketDomCalls.updates.at(-1).html, elements.buildMenu.innerHTML);
     assert.ok(/data-action="buildCard"[^>]+disabled/.test(elements.buildMenu.innerHTML));
     assert.ok(/data-action="buildLandmark"[^>]+disabled/.test(elements.buildMenu.innerHTML));
 
@@ -2436,6 +2461,11 @@ runTest('UiBuildMenu 建設shortcut effectは表示同期と既存menuへのfocu
     assert.strictEqual(button.style.display, 'none');
     assert.strictEqual(button.disabled, true);
     assert.strictEqual(button['aria-hidden'], 'true');
+    assert.strictEqual(button.hidden, true);
+    helper.applyBuildShortcutView(button, { display: 'block', disabled: false, ariaHidden: 'false' });
+    assert.strictEqual(button.hidden, false);
+    assert.strictEqual(button.style.display, 'block');
+    assert.strictEqual(button.disabled, false);
 
     const calls = [];
     const target = {

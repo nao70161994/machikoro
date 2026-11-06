@@ -1,0 +1,105 @@
+{
+  "fixture": "Same controlled two-human late table, 14/16 facility types and five/two landmarks, 320x568. Before 743a9b5c field, after working tree. Sequential Termux Chromium; not natural match or physical phone.",
+  "records": [
+    {
+      "version": "before",
+      "table": {
+        "x": 4,
+        "y": 116,
+        "width": 312,
+        "height": 392,
+        "top": 116,
+        "right": 316,
+        "bottom": 508,
+        "left": 4
+      },
+      "scale": "0.205",
+      "minimumCardWidth": 32.78547668457031,
+      "labels": [
+        {
+          "text": "席1 · プレイヤー1",
+          "complete": false,
+          "font": "12px",
+          "title": "席1 · プレイヤー1",
+          "bounds": {
+            "x": 195.234375,
+            "y": 449.390625,
+            "width": 96,
+            "height": 22,
+            "top": 449.390625,
+            "right": 291.234375,
+            "bottom": 471.390625,
+            "left": 195.234375
+          }
+        },
+        {
+          "text": "席2 · プレイヤー2",
+          "complete": true,
+          "font": "12px",
+          "title": "席2 · プレイヤー2",
+          "bounds": {
+            "x": 41.171875,
+            "y": 125.546875,
+            "width": 118,
+            "height": 22,
+            "top": 125.546875,
+            "right": 159.171875,
+            "bottom": 147.546875,
+            "left": 41.171875
+          }
+        }
+      ],
+      "canonicalUnchanged": true
+    },
+    {
+      "version": "after",
+      "table": {
+        "x": 4,
+        "y": 116,
+        "width": 312,
+        "height": 392,
+        "top": 116,
+        "right": 316,
+        "bottom": 508,
+        "left": 4
+      },
+      "scale": "0.205",
+      "minimumCardWidth": 32.78547668457031,
+      "labels": [
+        {
+          "text": "プレイヤー1",
+          "complete": true,
+          "font": "12px",
+          "title": "席1 · プレイヤー1",
+          "bounds": {
+            "x": 195.234375,
+            "y": 449.390625,
+            "width": 96,
+            "height": 22,
+            "top": 449.390625,
+            "right": 291.234375,
+            "bottom": 471.390625,
+            "left": 195.234375
+          }
+        },
+        {
+          "text": "プレイヤー2",
+          "complete": true,
+          "font": "12px",
+          "title": "席2 · プレイヤー2",
+          "bounds": {
+            "x": 91.96875,
+            "y": 125.546875,
+            "width": 96,
+            "height": 22,
+            "top": 125.546875,
+            "right": 187.96875,
+            "bottom": 147.546875,
+            "left": 91.96875
+          }
+        }
+      ],
+      "canonicalUnchanged": true
+    }
+  ]
+}
