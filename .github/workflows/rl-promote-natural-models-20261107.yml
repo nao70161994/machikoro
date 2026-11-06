@@ -1,0 +1,74 @@
+name: Promote Verified Natural RL Models
+# One-shot import. The resulting code and model files are reviewed via PR.
+on:
+  push:
+    branches: [feature/rl-natural-promoted-20261107]
+    paths: ['.github/workflows/rl-promote-natural-models-20261107.yml']
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  import-and-check:
+    name: Import three verified checkpoints, validate and commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install test dependencies
+        run: npm ci
+      - name: Download original seed73 checkpoint and evaluation
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          run-id: '41281719490'
+          name: natural-2p-seed73-41281719490
+          github-token: ${{ github.token }}
+          path: artifacts/rl-natural-promotion/seed73
+      - name: Download original seed76 checkpoint and evaluation
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          run-id: '41281719490'
+          name: natural-2p-seed76-41281719490
+          github-token: ${{ github.token }}
+          path: artifacts/rl-natural-promotion/seed76
+      - name: Download original seed104 checkpoint and evaluation
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          run-id: '41281719490'
+          name: natural-4p-seed104-41281719490
+          github-token: ${{ github.token }}
+          path: artifacts/rl-natural-promotion/seed104
+      - name: Import and verify model checkpoint hashes
+        run: node scripts/promote-rl-natural-seeds-20261107.js
+      - name: Test portfolio, rules, schema and CI safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/validate-rl-registry.js
+          npm run test:rl
+          npm run test:static
+      - name: Check committed artifact size and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          for p in models/rl_model/portfolio/natural-*.browser.json; do
+            test -s "$p"
+            echo "$p $(wc -c < "$p") bytes"
+          done
+          git status --short
+      - name: Commit into review branch (do not merge automatically)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/rlModelCatalog.js js/RLModelPortfolio.js tests/rl-model-portfolio.test.js models/rl_model/registry.json models/rl_model/portfolio/natural-*.browser.json
+          git diff --cached --check
+          git commit -m "feat(rl): add verified natural seed73, seed76 and seed104 to AI portfolio"
+          git push origin HEAD:feature/rl-natural-promoted-20261107
