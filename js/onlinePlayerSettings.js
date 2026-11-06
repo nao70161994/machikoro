@@ -74,15 +74,22 @@ const OnlinePlayerSettings = (() => {
             .replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    function modelOptionText(model) {
+        const alias = Array.isArray(model.aliases) ? model.aliases.find(name => /^seed\\d+$/.test(name)) : '';
+        const label = String(model.label || model.id);
+        return alias ? alias + '｜' + label : label;
+    }
+
     function buildModelSelectHtml(setting, index, models) {
         if (!setting || setting.type !== 'cpu' || setting.difficulty !== 'rl') return '';
         const manual = setting.rlModelSelection === 'manual';
         const options = (models || []).map(model => `
-                <option value="${escapeAttribute(model.id)}" ${manual && setting.rlModelId === model.id ? 'selected' : ''}>${escapeAttribute(model.label || model.id)}</option>`).join('');
+                <option value="${escapeAttribute(model.id)}" ${manual && setting.rlModelId === model.id ? 'selected' : ''}>${escapeAttribute(modelOptionText(model))}</option>`).join('');
         return `<label class="rl-model-setting">モデル
             <select data-ui-change="onlineRlModel" data-player-index="${index}" class="player-setting-select" aria-label="プレイヤー${index + 1}の深層学習モデル">
                 <option value="auto" ${manual ? '' : 'selected'}>自動（おすすめ）</option>${options}
             </select>
+            <small class="rl-model-hint">戦略を固定する場合はモデルを選択。自動は対戦ごとに選びます。</small>
         </label>`;
     }
 
