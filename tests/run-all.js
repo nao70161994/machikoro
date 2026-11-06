@@ -322,6 +322,7 @@ const TEST_GROUPS = {
         'review-rl-adoptions.test.js',
         'refresh-rl-ops-reports.test.js',
         'report-rl-diversity.test.js',
+        'report-rl-league.test.js',
         'report-rl-model-cards.test.js',
         'report-rl-compression.test.js',
         'plan-rl-strategy-runs.test.js',
