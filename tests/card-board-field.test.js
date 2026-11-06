@@ -403,8 +403,9 @@ runTest('所有施設群の括弧は空いた外縁だけを使い市場と名�
     assert.ok(build(cards, [], bounds, { left: 54, top: 40, right: 110, bottom: 62 }), '既存4px間隔でもカードと名前の間へ線を収める');
     const lines = build();
     assert.strictEqual(lines.length, 4);
-    assert.deepStrictEqual(Array.from(lines[0]), [52, 20, 52, 110], '全施設群の始端と終端を示す');
-    assert.deepStrictEqual(Array.from(lines[3]), [65, 51, 52, 51], '名前札を範囲へ接続する');
+    assert.strictEqual(lines[1][2] - 1 - cards[0].right, 0.25, '折返しは実際の半線幅と配置丸めを含めてもカードを覆わない');
+    assert.deepStrictEqual(Array.from(lines[0]), [52.25, 20, 52.25, 110], '全施設群の始端と終端を示す');
+    assert.deepStrictEqual(Array.from(lines[3]), [65, 51, 52.25, 51], '名前札を範囲へ接続する');
     assert.strictEqual(build([...cards, { left: 52, top: 80, right: 70, bottom: 100 }]), null, '市場が外縁をふさぐ場合は元のリンクを保つ');
     assert.strictEqual(build(cards, [label, { left: 52, top: 80, right: 70, bottom: 100 }]), null, '後から配置した名前も覆わない');
     assert.strictEqual(build(cards, [label], { ...bounds, top: 19 }), null, '線の太さを含めてviewport内に収める');
@@ -412,6 +413,6 @@ runTest('所有施設群の括弧は空いた外縁だけを使い市場と名�
     const leftCards = cards.map(rect => ({ ...rect, left: rect.left + 70, right: rect.right + 70 }));
     const leftLabel = { left: 0, top: 40, right: 65, bottom: 62 };
     const leftLines = context.ownerGroupBracket(leftCards, leftLabel, leftCards, [leftLabel], bounds);
-    assert.deepStrictEqual(Array.from(leftLines[0]), [78, 20, 78, 110]);
-    assert.deepStrictEqual(Array.from(leftLines[3]), [65, 51, 78, 51], '左側の名前も外縁へ接続する');
+    assert.deepStrictEqual(Array.from(leftLines[0]), [77.75, 20, 77.75, 110]);
+    assert.deepStrictEqual(Array.from(leftLines[3]), [65, 51, 77.75, 51], '左側の名前も外縁へ接続する');
 });

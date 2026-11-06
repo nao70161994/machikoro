@@ -165,14 +165,16 @@ const CardBoardField = (() => {
         const side = center < left ? -1 : center > right ? 1 : 0;
         if (!side) return null;
         const edge = side < 0 ? left : right;
-        const x = edge + side * 2;
+        // Leave a quarter-pixel gap after the 1px stroke radius. CSS
+        // positions may round to a layout unit before SVG paints.
+        const x = edge + side * 2.25;
         const y = Math.max(top, Math.min((label.top + label.bottom) / 2, bottom));
         if (y < label.top || y > label.bottom) return null;
         const start = side < 0 ? label.right : label.left;
         if ((start - x) * side < 1.5 || Math.abs(start - x) > 64) return null;
         const spine = [x, top, x, bottom];
-        const capTop = [x, top, edge + side, top];
-        const capBottom = [x, bottom, edge + side, bottom];
+        const capTop = [x, top, edge + side * 1.25, top];
+        const capBottom = [x, bottom, edge + side * 1.25, bottom];
         const connector = [start, y, x, y];
         const intersects = (segment, rect) =>
             Math.min(segment[0], segment[2]) - 1 < rect.right &&
