@@ -1581,6 +1581,37 @@ test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ pa
                 overlaps: obstacles.filter(box => rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top).length };
         });
     });
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-late-390.json'), JSON.stringify(geometry, null, 2));
+    await page.screenshot({ path: testInfo.outputPath('owner-late-390.png') });
+    expect(geometry.map(label => label.text)).toEqual(['プレイヤー1', 'CPU（弱）・2', 'CPU（弱）・3', 'CPU（弱）・4']);
+    expect(geometry.every(label => label.font === '12px' && label.complete && label.overlaps === 0), JSON.stringify(geometry)).toBe(true);
+    expect(await snapshot(page)).toEqual(before);
+});
+
+// Actual late-game cards reconstructed for repeatable ownership geometry.
+// This does not replace a naturally completed UI match.
+test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    const record = require('../fixtures/owner-late-390-natural.json');
+    await page.evaluate(record => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const state = record.snapshot;
+        game.currentPlayerIndex = record.game.actor;
+        game.turnCount = record.game.turn;
+        game.phase = GAME_PHASES.BUILD;
+        game.players.forEach((player, index) => {
+            player.name = record.names[index];
+            player.cards = state.playerCardNames[index].map(createCardByName);
+            player.coins = state.playerCoins[index];
+            Object.assign(player.landmarks, state.playerLandmarks[index]);
+        });
+        Object.assign(SHOP_STOCK, state.shopStock);
+        render();
+        acceptHotseatHandoff();
+    }, record);
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 4);
+    const before = await snapshot(page);
     const bracketInputs = await page.evaluate(() => ({
         cards: [...document.querySelectorAll('#cardboardSeats .cardboard-card')].map(card => ({ owner: card.closest('.cardboard-player').dataset.playerIndex, rect: card.getBoundingClientRect().toJSON() })),
         labels: [...document.querySelectorAll('.cardboard-owner-label')].map(label => ({ owner: label.dataset.playerIndex, rect: label.getBoundingClientRect().toJSON() })),
@@ -1608,9 +1639,7 @@ test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ pa
     require('node:fs').writeFileSync(testInfo.outputPath('owner-brackets-390.json'), JSON.stringify(brackets, null, 2));
     expect(brackets.length, '空いた外縁で所有施設群の範囲を示す').toBeGreaterThan(0);
     expect(brackets.every(bracket => bracket.segments.length === 4 && !bracket.clipped && bracket.overlaps === 0), JSON.stringify(brackets)).toBe(true);
-    require('node:fs').writeFileSync(testInfo.outputPath('owner-late-390.json'), JSON.stringify(geometry, null, 2));
-    await page.screenshot({ path: testInfo.outputPath('owner-late-390.png') });
-    expect(geometry.map(label => label.text)).toEqual(['プレイヤー1', 'CPU（弱）・2', 'CPU（弱）・3', 'CPU（弱）・4']);
-    expect(geometry.every(label => label.font === '12px' && label.complete && label.overlaps === 0), JSON.stringify(geometry)).toBe(true);
+    await expect(page.locator('.cardboard-owner-label')).toHaveText(record.names);
+    await page.screenshot({ path: testInfo.outputPath('owner-natural-390.png') });
     expect(await snapshot(page)).toEqual(before);
 });
