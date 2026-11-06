@@ -64,9 +64,9 @@ const OnlinePlayerSettings = (() => {
 
     function rlSettingNote(playerCount) {
         if (playerCount >= 3) {
-            return 'AI（深層学習・ランダム）は多人数用の深層学習モデルから選び、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。';
+            return '深層学習AIはモデル欄で戦略を固定できます。自動なら多人数用モデルを選択し、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。';
         }
-        return 'AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。';
+        return '深層学習AIはモデル欄で戦略を固定できます。自動なら2人用の複数モデルから選びます。CPU（最強）は安定したルールベースの基準CPUです。';
     }
 
     function escapeAttribute(value) {
@@ -89,7 +89,7 @@ const OnlinePlayerSettings = (() => {
             <select data-ui-change="onlineRlModel" data-player-index="${index}" class="player-setting-select" aria-label="プレイヤー${index + 1}の深層学習モデル">
                 <option value="auto" ${manual ? '' : 'selected'}>自動（おすすめ）</option>${options}
             </select>
-            <small class="rl-model-hint">戦略を固定する場合はモデルを選択。自動は対戦ごとに選びます。</small>
+
         </label>`;
     }
 
