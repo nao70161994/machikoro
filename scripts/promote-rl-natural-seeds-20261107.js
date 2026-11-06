@@ -123,7 +123,7 @@ function main() {
         assert(json.stateSchema === expectedSchema && json.actionSchema === 'action-flat-v1', 'unsupported action schema');
         assert(json.hiddenSize === 256 && json.numActions === 1580 && json.numCards === 38, 'model shape mismatch');
         assert(json.numTargetSlots === (spec.playerCount === 2 ? 0 : 3), 'target head mismatch');
-        assert(json.vocabularyFingerprint && Array.isArray(json.layers), 'missing vocabulary or weights');
+        assert(json.vocabularyFingerprint && json.layers && typeof json.layers === 'object', 'missing vocabulary or weights');
         const evals = readJson(path.join(spec.artifactDir, 'independent-evaluation.json'));
         const record = evals.find(e => e.modelSha256 === sha);
         assert(record, 'evaluated checkpoint not found: ' + spec.seed);
