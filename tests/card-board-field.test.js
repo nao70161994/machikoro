@@ -164,22 +164,25 @@ runTest('建設通知の1200msは最初の描画更新から数え取消後に�
     assert.strictEqual(timers.size, 0, '手番の状況が変わったら過去の通知を始めない');
 });
 
-runTest('購入後の市場closeは復帰geometryを同期してから同taskで建設を示す', () => {
+runTest('市場closeは保存視点の有効性に応じて同taskで復帰と建設を示す', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
     const start = source.indexOf('    function finishMarketClose()');
     const end = source.indexOf('    function isMarketExpanded()', start);
     assert.ok(start >= 0 && end > start);
-    const order = [], frames = [];
+    const order = [], frames = [], presented = [];
+    const game = { turnCount: 2, currentPlayerIndex: 0 };
     const context = {
         restoreMarketNode: () => order.push('restore'),
         setMarketExpanded: expanded => order.push(`expanded:${expanded}`),
         marketLauncher: { isConnected: true, getClientRects: () => [1], focus: () => order.push('focus') },
-        marketLauncherSelector: null, restoreMarketFocus: true,
+        marketLauncherSelector: null, restoreMarketFocus: true, marketReturnView: null,
+        facts: { game }, session: 1,
         enabled: () => true, node: () => ({ style: { display: '' }, querySelector: () => null }),
         pendingBuildCues: [{}],
+        pendingBuildTarget: () => true,
         tableLayout: { syncLayout: () => order.push('table'), refresh: () => order.push('refresh') },
         tableCamera: { syncLayout: () => order.push('camera'), preserveReadingPosition: active => order.push(`preserve:${active}`) },
-        presentPendingBuildCues: () => order.push('cue'),
+        presentPendingBuildCues: view => { order.push('cue'); presented.push(view); },
         requestAnimationFrame: callback => frames.push(callback),
     };
     require('vm').runInNewContext(source.slice(start, end), context);
@@ -191,6 +194,30 @@ runTest('購入後の市場closeは復帰geometryを同期してから同taskで
     context.finishMarketClose();
     assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
     assert.strictEqual(frames.length, 0, '購入しないcloseも位置を同期復元してから保持方針を解除する');
+    const view = { scale: 0.8, angle: 180 };
+    const captured = { view, session: 1, game, turn: 2, actor: 0 };
+    context.pendingBuildCues = [{}];
+    context.marketReturnView = captured;
+    order.length = 0;
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'cue', 'preserve:false']);
+    assert.strictEqual(presented.at(-1), view, '有効な購入前視点を正面閲覧の復帰先へ渡す');
+    assert.strictEqual(context.marketReturnView, null, '閉じた市場の保存視点を再利用しない');
+    assert.strictEqual(frames.length, 0, '有効な購入も同taskで最終視点へ移る');
+    for (const invalid of [{ session: 2 }, { game: {} }, { turn: 3 }, { actor: 1 }, { view: null }]) {
+        context.marketReturnView = { ...captured, ...invalid };
+        order.length = 0;
+        context.finishMarketClose();
+        assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
+        assert.strictEqual(presented.at(-1), null, '文脈の違う保存視点は従来経路へ戻す');
+        assert.strictEqual(context.marketReturnView, null);
+    }
+    context.marketReturnView = captured;
+    context.pendingBuildTarget = () => null;
+    order.length = 0;
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
+    assert.strictEqual(presented.at(-1), null, '有効な購入先がなければ保存視点を適用しない');
     order.length = 0;
     context.tableLayout = null;
     context.tableCamera = null;
