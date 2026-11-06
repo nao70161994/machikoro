@@ -1581,6 +1581,12 @@ test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ pa
                 overlaps: obstacles.filter(box => rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top).length };
         });
     });
+    const bracketInputs = await page.evaluate(() => ({
+        cards: [...document.querySelectorAll('#cardboardSeats .cardboard-card')].map(card => ({ owner: card.closest('.cardboard-player').dataset.playerIndex, rect: card.getBoundingClientRect().toJSON() })),
+        labels: [...document.querySelectorAll('.cardboard-owner-label')].map(label => ({ owner: label.dataset.playerIndex, rect: label.getBoundingClientRect().toJSON() })),
+        obstacles: [...document.querySelectorAll('#cardboardSeats .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect().toJSON()),
+    }));
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-bracket-inputs-390.json'), JSON.stringify(bracketInputs, null, 2));
     const brackets = await page.evaluate(() => {
         const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
         const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect());
