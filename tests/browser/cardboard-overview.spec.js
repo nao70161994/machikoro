@@ -1599,6 +1599,7 @@ test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, 
         game.currentPlayerIndex = record.game.actor;
         game.turnCount = record.game.turn;
         game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = state.builtThisTurn;
         game.players.forEach((player, index) => {
             player.name = record.names[index];
             player.cards = state.playerCardNames[index].map(createCardByName);
@@ -1628,14 +1629,41 @@ test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, 
             const segments = [...path.getAttribute('d').matchAll(/M([\d.+-]+),([\d.+-]+)L([\d.+-]+),([\d.+-]+)/g)].map(match => {
                 const start = new DOMPoint(Number(match[1]), Number(match[2])).matrixTransform(matrix);
                 const end = new DOMPoint(Number(match[3]), Number(match[4])).matrixTransform(matrix);
-                return { left: Math.min(start.x, end.x) - 0.9, top: Math.min(start.y, end.y) - 0.9,
-                    right: Math.max(start.x, end.x) + 0.9, bottom: Math.max(start.y, end.y) + 0.9 };
+                return { left: Math.min(start.x, end.x) - 1, top: Math.min(start.y, end.y) - 1,
+                    right: Math.max(start.x, end.x) + 1, bottom: Math.max(start.y, end.y) + 1 };
             });
             return { owner: svg.dataset.playerIndex, rect: rect.toJSON(), segments,
                 clipped: rect.left < viewport.left || rect.right > viewport.right || rect.top < viewport.top || rect.bottom > viewport.bottom,
-                overlaps: segments.flatMap(line => obstacles.filter(box => line.left < box.right && line.right > box.left && line.top < box.bottom && line.bottom > box.top)).length };
+                overlaps: segments.flatMap((line, index) => [...obstacles,
+                    ...[...document.querySelectorAll('.cardboard-owner-label')]
+                        .filter(label => index !== 3 || label.dataset.playerIndex !== svg.dataset.playerIndex)
+                        .map(label => label.getBoundingClientRect()),
+                ].filter(box => line.left < box.right && line.right > box.left && line.top < box.bottom && line.bottom > box.top)).length };
+
         });
     });
+    const crossedOwners = await page.evaluate(() => {
+        const links = [...document.querySelectorAll('.cardboard-owner-link')].map(svg => ({
+            owner: svg.dataset.playerIndex,
+            shape: svg.querySelector('path, line'),
+        }));
+        const lines = links.flatMap(({ owner, shape }) => {
+            const matrix = shape.getScreenCTM();
+            const coordinates = shape.tagName.toLowerCase() === 'line'
+                ? [[...['x1', 'y1', 'x2', 'y2'].map(name => Number(shape.getAttribute(name)))]]
+                : [...shape.getAttribute('d').matchAll(/M([\d.+-]+),([\d.+-]+)L([\d.+-]+),([\d.+-]+)/g)].map(match => match.slice(1).map(Number));
+            return coordinates.map(([x1, y1, x2, y2]) => {
+                const a = new DOMPoint(x1, y1).matrixTransform(matrix);
+                const b = new DOMPoint(x2, y2).matrixTransform(matrix);
+                return { owner, left: Math.min(a.x, b.x) - 1, right: Math.max(a.x, b.x) + 1,
+                    top: Math.min(a.y, b.y) - 1, bottom: Math.max(a.y, b.y) + 1 };
+            });
+        });
+        return lines.flatMap((line, index) => lines.slice(index + 1).filter(other => line.owner !== other.owner &&
+            line.left < other.right && line.right > other.left && line.top < other.bottom && line.bottom > other.top)
+            .map(other => [line.owner, other.owner]));
+    });
+    expect(crossedOwners).toEqual([]);
     require('node:fs').writeFileSync(testInfo.outputPath('owner-brackets-390.json'), JSON.stringify(brackets, null, 2));
     expect(brackets.length, '空いた外縁で所有施設群の範囲を示す').toBeGreaterThan(0);
     expect(brackets.every(bracket => bracket.segments.length === 4 && !bracket.clipped && bracket.overlaps === 0), JSON.stringify(brackets)).toBe(true);
