@@ -1,0 +1,64 @@
+{
+  "before": {
+    "source": "361d930e",
+    "run": 42304593268,
+    "kind": "actual automated UI match late game"
+  },
+  "after": {
+    "source": "f8e10723",
+    "run": 42310455306,
+    "kind": "controlled reconstruction of recorded actual late game"
+  },
+  "cardCount": 48,
+  "cardRectMaximumDeltaPx": 0,
+  "labelCount": 4,
+  "labelRectMaximumDeltaPx": 0,
+  "brackets": [
+    {
+      "owner": "0",
+      "rect": {
+        "x": 125.859375,
+        "y": 362.71875,
+        "width": 6.75,
+        "height": 383.09375,
+        "top": 362.71875,
+        "right": 132.609375,
+        "bottom": 745.8125,
+        "left": 125.859375
+      },
+      "segments": [
+        {
+          "left": 127.859375,
+          "top": 363.71875,
+          "right": 129.859375,
+          "bottom": 744.8264770507812
+        },
+        {
+          "left": 126.859375,
+          "top": 363.71875,
+          "right": 129.859375,
+          "bottom": 365.71875
+        },
+        {
+          "left": 126.859375,
+          "top": 742.8264770507812,
+          "right": 129.859375,
+          "bottom": 744.8264770507812
+        },
+        {
+          "left": 127.859375,
+          "top": 374.71875,
+          "right": 131.609375,
+          "bottom": 376.71875
+        }
+      ],
+      "clipped": false,
+      "overlaps": 0
+    }
+  ],
+  "limits": [
+    "Market filter, guide and dice presentation differ: this is not a pixel-perfect UI comparison.",
+    "All card and owner-label rectangles match; canonical-state invariance verified in browser test.",
+    "Safety and legibility throughout natural progression require full CI/UI playthrough."
+  ]
+}

@@ -13882,6 +13882,12 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     border-top-color: #ffe387;
 }
 
+/* The screen-space bracket replaces the faint owner rule, not the turn cue.
+   Keep the transparent border's geometry and restore it during inspection. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-owner-bracketed:not(.cardboard-player-current) {
+    border-top-color: transparent;
+}
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-seat-position="top"] {
     grid-column: 1 / 4;
     grid-row: 1;

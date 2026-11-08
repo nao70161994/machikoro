@@ -1587,3 +1587,90 @@ test('390終盤のCPU所有者名は空白へ全文で配置する', async ({ pa
     expect(geometry.every(label => label.font === '12px' && label.complete && label.overlaps === 0), JSON.stringify(geometry)).toBe(true);
     expect(await snapshot(page)).toEqual(before);
 });
+
+// Actual late-game cards reconstructed for repeatable ownership geometry.
+// This does not replace a naturally completed UI match.
+test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    const record = require('../fixtures/owner-late-390-natural.json');
+    await page.evaluate(record => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const state = record.snapshot;
+        game.currentPlayerIndex = record.game.actor;
+        game.turnCount = record.game.turn;
+        game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = state.builtThisTurn;
+        game.players.forEach((player, index) => {
+            player.name = record.names[index];
+            player.cards = state.playerCardNames[index].map(createCardByName);
+            player.coins = state.playerCoins[index];
+            Object.assign(player.landmarks, state.playerLandmarks[index]);
+        });
+        Object.assign(SHOP_STOCK, state.shopStock);
+        render();
+        acceptHotseatHandoff();
+    }, record);
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 4);
+    const before = await snapshot(page);
+    const bracketInputs = await page.evaluate(() => ({
+        cards: [...document.querySelectorAll('#cardboardSeats .cardboard-card')].map(card => ({ owner: card.closest('.cardboard-player').dataset.playerIndex, rect: card.getBoundingClientRect().toJSON() })),
+        labels: [...document.querySelectorAll('.cardboard-owner-label')].map(label => ({ owner: label.dataset.playerIndex, rect: label.getBoundingClientRect().toJSON() })),
+        obstacles: [...document.querySelectorAll('#cardboardSeats .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect().toJSON()),
+    }));
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-bracket-inputs-390.json'), JSON.stringify(bracketInputs, null, 2));
+    const brackets = await page.evaluate(() => {
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect());
+        return [...document.querySelectorAll('.cardboard-owner-bracket')].map(svg => {
+            const rect = svg.getBoundingClientRect();
+            const path = svg.querySelector('path');
+            const matrix = path.getScreenCTM();
+            const segments = [...path.getAttribute('d').matchAll(/M([\d.+-]+),([\d.+-]+)L([\d.+-]+),([\d.+-]+)/g)].map(match => {
+                const start = new DOMPoint(Number(match[1]), Number(match[2])).matrixTransform(matrix);
+                const end = new DOMPoint(Number(match[3]), Number(match[4])).matrixTransform(matrix);
+                return { left: Math.min(start.x, end.x) - 1, top: Math.min(start.y, end.y) - 1,
+                    right: Math.max(start.x, end.x) + 1, bottom: Math.max(start.y, end.y) + 1 };
+            });
+            return { owner: svg.dataset.playerIndex, rect: rect.toJSON(), segments,
+                clipped: rect.left < viewport.left || rect.right > viewport.right || rect.top < viewport.top || rect.bottom > viewport.bottom,
+                overlaps: segments.flatMap((line, index) => [...obstacles,
+                    ...[...document.querySelectorAll('.cardboard-owner-label')]
+                        .filter(label => index !== 3 || label.dataset.playerIndex !== svg.dataset.playerIndex)
+                        .map(label => label.getBoundingClientRect()),
+                ].filter(box => line.left < box.right && line.right > box.left && line.top < box.bottom && line.bottom > box.top)).length };
+
+        });
+    });
+    const crossedOwners = await page.evaluate(() => {
+        const links = [...document.querySelectorAll('.cardboard-owner-link')].map(svg => ({
+            owner: svg.dataset.playerIndex,
+            shape: svg.querySelector('path, line'),
+        }));
+        const lines = links.flatMap(({ owner, shape }) => {
+            const matrix = shape.getScreenCTM();
+            const coordinates = shape.tagName.toLowerCase() === 'line'
+                ? [[...['x1', 'y1', 'x2', 'y2'].map(name => Number(shape.getAttribute(name)))]]
+                : [...shape.getAttribute('d').matchAll(/M([\d.+-]+),([\d.+-]+)L([\d.+-]+),([\d.+-]+)/g)].map(match => match.slice(1).map(Number));
+            return coordinates.map(([x1, y1, x2, y2]) => {
+                const a = new DOMPoint(x1, y1).matrixTransform(matrix);
+                const b = new DOMPoint(x2, y2).matrixTransform(matrix);
+                return { owner, left: Math.min(a.x, b.x) - 1, right: Math.max(a.x, b.x) + 1,
+                    top: Math.min(a.y, b.y) - 1, bottom: Math.max(a.y, b.y) + 1 };
+            });
+        });
+        return lines.flatMap((line, index) => lines.slice(index + 1).filter(other => line.owner !== other.owner &&
+            line.left < other.right && line.right > other.left && line.top < other.bottom && line.bottom > other.top)
+            .map(other => [line.owner, other.owner]));
+    });
+    expect(crossedOwners).toEqual([]);
+    require('node:fs').writeFileSync(testInfo.outputPath('owner-brackets-390.json'), JSON.stringify(brackets, null, 2));
+    expect(brackets.length, '空いた外縁で所有施設群の範囲を示す').toBeGreaterThan(0);
+    expect(brackets.every(bracket => bracket.segments.length === 4 && !bracket.clipped && bracket.overlaps === 0), JSON.stringify(brackets)).toBe(true);
+    await expect(page.locator('.cardboard-owner-label')).toHaveText(record.names);
+    expect(await page.locator('.cardboard-owner-bracketed:not(.cardboard-player-current)').evaluateAll(panels =>
+        panels.length > 0 && panels.every(panel => getComputedStyle(panel).borderTopColor === 'rgba(0, 0, 0, 0)'))).toBe(true);
+
+    await page.screenshot({ path: testInfo.outputPath('owner-natural-390.png') });
+    expect(await snapshot(page)).toEqual(before);
+});
