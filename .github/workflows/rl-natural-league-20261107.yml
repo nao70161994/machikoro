@@ -1,0 +1,103 @@
+name: RL Diversity League - all production and legacy peers
+on:
+  push:
+    branches: [feature/rl-portfolio-next-phase-20261107]
+    paths: ['.github/workflows/rl-natural-league-20261107.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  matches:
+    name: ${{ matrix.id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - {group: "2p", id: "2p-seed69-vs-seed70", a: "seed69.browser.json", b: "seed70.browser.json"}
+          - {group: "2p", id: "2p-seed69-vs-seed71", a: "seed69.browser.json", b: "seed71-top3.browser.json"}
+          - {group: "2p", id: "2p-seed69-vs-seed73", a: "seed69.browser.json", b: "natural-seed73-top3.browser.json"}
+          - {group: "2p", id: "2p-seed69-vs-seed76", a: "seed69.browser.json", b: "natural-seed76-top2.browser.json"}
+          - {group: "2p", id: "2p-seed70-vs-seed71", a: "seed70.browser.json", b: "seed71-top3.browser.json"}
+          - {group: "2p", id: "2p-seed70-vs-seed73", a: "seed70.browser.json", b: "natural-seed73-top3.browser.json"}
+          - {group: "2p", id: "2p-seed70-vs-seed76", a: "seed70.browser.json", b: "natural-seed76-top2.browser.json"}
+          - {group: "2p", id: "2p-seed71-vs-seed73", a: "seed71-top3.browser.json", b: "natural-seed73-top3.browser.json"}
+          - {group: "2p", id: "2p-seed71-vs-seed76", a: "seed71-top3.browser.json", b: "natural-seed76-top2.browser.json"}
+          - {group: "2p", id: "2p-seed73-vs-seed76", a: "natural-seed73-top3.browser.json", b: "natural-seed76-top2.browser.json"}
+          - {group: "4p", id: "4p-seed103-vs-seed145", a: "seed103-4p.browser.json", b: "seed145-4p-target-specialist.browser.json"}
+          - {group: "4p", id: "4p-seed103-vs-seed104", a: "seed103-4p.browser.json", b: "natural-seed104-4p.browser.json"}
+          - {group: "4p", id: "4p-seed145-vs-seed104", a: "seed145-4p-target-specialist.browser.json", b: "natural-seed104-4p.browser.json"}
+    env:
+      MATCH_ID: ${{ matrix.id }}
+      GROUP: ${{ matrix.group }}
+      CANDIDATE_FILE: ${{ matrix.a }}
+      BASELINE_FILE: ${{ matrix.b }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Evaluate head-to-head with paired seat rotation and independent seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="artifacts/rl-league/raw/$MATCH_ID.json"
+          mkdir -p "$(dirname "$out")"
+          a="models/rl_model/portfolio/$CANDIDATE_FILE"
+          b="models/rl_model/portfolio/$BASELINE_FILE"
+          test -s "$a" && test -s "$b"
+          if [[ "$GROUP" == "2p" ]]; then
+            node scripts/eval-rl-head-to-head.js \
+              --candidate "$a" --baseline "$b" --games 120 \
+              --seed 20261107 --max-steps 1500 --bootstrap-iterations 250 \
+              --format json --output "$out" --abort-on-exhaustion
+          else
+            node scripts/eval-rl-head-to-head.js \
+              --candidate "$a" --baseline "$b" --games 80 \
+              --seed 20261107 --max-steps 1500 --bootstrap-iterations 250 \
+              --lineups 'candidate,baseline,normal,strong;candidate,baseline,normal,normal' \
+              --format json --output "$out" --abort-on-exhaustion
+          fi
+      - name: Preserve per-match full evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-league-match-${{ matrix.id }}-${{ github.run_id }}
+          path: artifacts/rl-league/raw/
+          retention-days: 30
+          if-no-files-found: warn
+  summary:
+    name: Aggregate rankings and strategy distances
+    needs: matches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Unit test the report generator
+        run: node tests/report-rl-league.test.js
+      - name: Download all match artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: rl-league-match-*-${{ github.run_id }}
+          merge-multiple: true
+          path: artifacts/rl-league/raw
+      - name: Calculate win shares and purchasing strategy divergence
+        run: |
+          node scripts/report-rl-league.js artifacts/rl-league/raw artifacts/rl-league/summary
+          cat artifacts/rl-league/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish auditable league report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-league-summary-${{ github.run_id }}
+          path: |
+            artifacts/rl-league/summary.json
+            artifacts/rl-league/summary.md
+          retention-days: 30

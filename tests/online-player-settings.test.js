@@ -149,3 +149,18 @@ runTest('online player settingsはRL状態とpendingからロビー表示だけ�
     assert.deepStrictEqual(OnlinePlayerSettings.joinButtonView(true), { disabled: true, textContent: '参加中' });
     assert.deepStrictEqual(OnlinePlayerSettings.joinButtonView(false), { disabled: false, textContent: '参加する' });
 });
+
+runTest('online RL model dropdown displays actual strategy seed labels and preserves a manual choice', () => {
+    const models = [
+        {id: 'natural-selfplay-2p-seed73-20261101', label: 'RL（自然学習・農業ワイナリー）', aliases: ['seed73']},
+        {id: 'natural-selfplay-2p-seed76-20261101', label: 'RL（自然学習・花と漁業）', aliases: ['seed76']},
+    ];
+    const html = OnlinePlayerSettings.buildSettingsHtml([
+        {type: 'cpu', difficulty: 'rl', rlModelId: models[1].id, rlModelSelection: 'manual'},
+    ], 2, models);
+    assert.ok(html.includes('data-ui-change="onlineRlModel"'));
+    assert.ok(html.includes('seed73｜RL（自然学習・農業ワイナリー）'));
+    assert.ok(html.includes('seed76｜RL（自然学習・花と漁業）'));
+    assert.ok(html.includes('value="' + models[1].id + '" selected'));
+    assert.ok(html.includes('モデル欄で戦略を固定できます'));
+});

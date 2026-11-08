@@ -1,0 +1,110 @@
+name: RL Naturally Diverse Multi-player Self Play
+on:
+  push:
+    branches: [feature/rl-portfolio-next-phase-20261107]
+    paths: ['.github/workflows/rl-multiplayer-natural-training-20261107.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  train:
+    name: ${{ matrix.group }} independent seed ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 320
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {group: "fixed-3p", counts: "3", seed: 401, games: 1600}
+          - {group: "fixed-5p", counts: "5", seed: 402, games: 1600}
+          - {group: "mixed-34510", counts: "3,4,5,10", seed: 403, games: 2000}
+          - {group: "mixed-34510", counts: "3,4,5,10", seed: 404, games: 2000}
+    env:
+      GROUP: ${{ matrix.group }}
+      COUNTS: ${{ matrix.counts }}
+      SEED: ${{ matrix.seed }}
+      GAMES: ${{ matrix.games }}
+      LABEL: natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with: {node-version: '20', cache: npm}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/rl/requirements-ci.txt
+      - run: |
+          npm ci
+          python -m pip install -r scripts/rl/requirements-ci.txt
+      - name: Train self-play with common win objective across player counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="models/rl_model/runs/$LABEL"
+          mkdir -p "$dir"
+          printf 'experiment=natural-multiplayer-v1\nplayer_counts=%s\nseed=%s\ngames=%s\nobjective=terminal-win-and-asset-shaping\n' "$COUNTS" "$SEED" "$GAMES" > "$dir/experiment.txt"
+          if [[ "$GROUP" == fixed-3p ]]; then
+            lineups='rl,normal,strong;rl,weak,normal;rl,weak,strong'
+            weights='rl+normal+strong=4,rl+weak+normal=1,rl+weak+strong=3'
+          elif [[ "$GROUP" == fixed-5p ]]; then
+            lineups='rl,weak,normal,strong,expert;rl,normal,normal,strong,strong'
+            weights='rl+weak+normal+strong+expert=4,rl+normal+normal+strong+strong=3'
+          else
+            lineups='rl,normal,strong;rl,normal,normal,strong;rl,weak,normal,strong,expert;rl,weak,weak,normal,normal,normal,normal,normal,normal,normal'
+            weights='rl+normal+strong=3,rl+normal+normal+strong=4,rl+weak+normal+strong+expert=3,rl+weak+weak+normal+normal+normal+normal+normal+normal+normal=2'
+          fi
+          timeout --signal=TERM --kill-after=45s 260m \
+            sh scripts/rl/run-baseline.sh \
+              --run-label "$LABEL" --seed "$SEED" --games "$GAMES" \
+              --hidden 256 --lr 0.00002 --player-counts "$COUNTS" \
+              --cpu-opponent-impl js-oracle --train-opponents self=1 --self-learn-both-sides \
+              --eval-every 250 --checkpoint-every 50 --progress-every 50 \
+              --best-checkpoint-top-k 3 --restore-best-at-end \
+              --js-eval-games 2 --js-eval-lineups "$lineups" --summary-weights "$weights" \
+              --initial-eval-games 0 --eval-random-games 4 --eval-heuristic-games 2 --eval-pool-games 0 \
+              --final-eval-random-games 8 --final-eval-heuristic-games 4 --final-eval-pool-games 0 \
+              --pool-update-every 0 --max-steps 1200 --eval-max-steps 1200 \
+              --imitation-games 0 --imitation-refresh-games 0 \
+              --reward-coin 0 --reward-opp-coin 0 --reward-asset 0 --reward-opp-asset 0 \
+              --reward-landmark 0 --reward-opp-landmark 0 \
+              --reward-interaction-build 0 --reward-engine-build 0 --reward-harbor-build 0 \
+              --reward-clip 0 --terminal-win 1 --terminal-loss -1 --terminal-draw -0.2 \
+              --terminal-landmark-diff 0 --terminal-landmark-value-diff 0.004 \
+              --terminal-asset-diff 0.002 --terminal-coin-diff 0.001 --terminal-diff-clip 20 \
+              > "$dir/train.log" 2>&1
+          tail -n 12 "$dir/train.log"
+      - name: Smoke evaluation on heldout seat-balanced 3p / 4p / 5p / 10p lineups
+        shell: bash
+        timeout-minutes: 80
+        run: |
+          set -euo pipefail
+          dir="models/rl_model/runs/$LABEL"
+          if [[ "$GROUP" == fixed-3p ]]; then
+            lineups='rl,normal,strong;rl,weak,normal'
+          elif [[ "$GROUP" == fixed-5p ]]; then
+            lineups='rl,weak,normal,strong,expert;rl,normal,normal,strong,strong'
+          else
+            lineups='rl,normal,strong;rl,normal,normal,strong;rl,weak,normal,strong,expert;rl,weak,weak,normal,normal,normal,normal,normal,normal,normal'
+          fi
+          paths="$dir/best_model.browser.json"
+          if [[ -s "$dir/best_model.top2.browser.json" ]]; then paths="$paths,$dir/best_model.top2.browser.json"; fi
+          node scripts/eval-rl-models.js \
+            --model-paths "$paths" --games 60 --allow-smoke --paired-seats \
+            --seed 20261107 --max-steps 1500 --lineups "$lineups" \
+            --format json --output "$dir/heldout-lineups.json"
+      - name: Preserve models, training metrics and multiplayer evaluation
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: natural-multiplayer-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}
+          path: |
+            models/rl_model/runs/natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/experiment.txt
+            models/rl_model/runs/natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/train.log
+            models/rl_model/runs/natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/train_metrics.csv
+            models/rl_model/runs/natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/summary.json
+            models/rl_model/runs/natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/best_model*.browser.json
+            models/rl_model/runs/natural-mp-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/heldout-lineups.json
+          retention-days: 30
+          if-no-files-found: warn
