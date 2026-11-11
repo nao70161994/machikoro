@@ -228,7 +228,7 @@ runTest('市場closeは保存視点の有効性に応じて同taskで復帰と�
 runTest('閲覧位置の復元は最近傍pixelを使いWebKitの切捨て偏りを避ける', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
     const start = source.indexOf('        function alignPoint(point, anchor,');
-    const end = source.indexOf('        function paint()', start);
+    const end = source.indexOf('        function paint(', start);
     assert.ok(start >= 0 && end > start);
     let destination;
     const context = { worldToCanvas: point => point, scroll: (left, top) => { destination = { left, top }; } };
