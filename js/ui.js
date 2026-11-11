@@ -1651,7 +1651,8 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction,
         landmarks: current.landmarks, enabledLandmarks: getEnabledLandmarkSelection(),
         currentCoins: current.coins, landmarkCost: Player.landmarkCost,
         filterBtnsHtml, undoBtn: buildUndoBuildButtonHtml(), escapeHtml, getEffectText, getLandmarkEffectText,
-        renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        renderFacilityArt: document.documentElement?.dataset?.design === 'cardboard'
+            ? UiBuildMenu.renderTableFacilityArt : UiBuildMenu.renderFacilityArt,
         marketStatusHtml: UiBuildMenu.buildMarketStatusHtml(currentGame?.marketSupply, SHOP_STOCK, currentGame?.players),
     });
     const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction, highlightedCardNames) ||

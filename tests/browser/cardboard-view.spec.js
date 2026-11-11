@@ -2023,6 +2023,18 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         const moving = await page.evaluate(() => window.constructionMovingFrame);
         const flightDiagnostic = await page.evaluate(() => ({ ...window.constructionTrace, current:window.constructionGuardSnapshot() }));
         await fs.writeFile(testInfo.outputPath(`facility-flight-diagnostic-${viewport.width}.json`), JSON.stringify({moving,flightDiagnostic}, null, 2));
+        if (process.env.ART_CACHE_EXPECT_IMAGES === '1') {
+            const imageEvidence = await page.locator('#cardboardSeats .sunset-facility-art image').evaluateAll(async nodes =>
+                Promise.all([...new Set(nodes.map(node => node.getAttribute('href')))].map(async href => {
+                    const image = new Image();
+                    image.src = href;
+                    await image.decode();
+                    return { href, width: image.naturalWidth, height: image.naturalHeight };
+                })));
+            await fs.writeFile(testInfo.outputPath('facility-image-evidence.json'), JSON.stringify(imageEvidence, null, 2));
+            expect(imageEvidence.length).toBeGreaterThan(0);
+            expect(imageEvidence.every(image => image.width > 0 && image.height > 0)).toBe(true);
+        }
         expect(moving.name, JSON.stringify({moving,flightDiagnostic})).toBe('麦畑');
         expect(flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight')
             .every(change => change.sameScrollRetained === true)).toBe(true);
