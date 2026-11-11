@@ -15444,7 +15444,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-buy {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 24px 50px 28px 28px;
+    grid-template-rows: 24px 50px 24px 32px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name {
     min-height: 0;
@@ -15456,7 +15456,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     min-height: 0;
     padding: 0 4px;
     font-size: 10px;
-    line-height: 12px;
+    line-height: 14px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price-full {
     display: flex;
@@ -15467,7 +15467,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     order: -1;
     padding-right: 52px;
     font-size: 14px;
-    line-height: 16px;
+    line-height: 18px;
     white-space: nowrap;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) :is(.compact-market-price-short, .compact-market-price-separator) {
@@ -15476,10 +15476,10 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-stock {
     position: absolute;
     right: 4px;
-    bottom: 12px;
+    bottom: 14px;
     padding: 0;
     font-size: 0;
-    line-height: 16px;
+    line-height: 18px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-stock::before {
     display: inline;
