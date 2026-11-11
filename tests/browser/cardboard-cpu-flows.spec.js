@@ -56,6 +56,7 @@ test('標準CPUの8施設結果は7収支routeを手番内に完走する', asyn
         window.cpuEventTurnChanged = new Promise(resolve => { resolveTurn = resolve; });
         let rollRecorded = false, turnRecorded = false;
         const added = new WeakSet(), removed = new WeakSet();
+        const sampledTransfers = [];
         const stopAtTurnChange = () => {
             const current = GameRuntimeState.runtime.snapshot().game;
             if (turnRecorded) return true;
@@ -103,6 +104,7 @@ test('標準CPUの8施設結果は7収支routeを手番内に完走する', asyn
                     } else {
                         const animation = element.getAnimations()[0];
                         const timing = animation?.effect?.getTiming();
+                        sampledTransfers.push({ element, animation });
                         const data = { owner: element.dataset.owner, name: element.dataset.facility,
                             step: element.dataset.step, route: element.dataset.route,
                             from: element.dataset.from, to: element.dataset.to,
@@ -132,10 +134,23 @@ test('標準CPUの8施設結果は7収支routeを手番内に完走する', asyn
         observer.observe(document.getElementById('cardboardBoard'), { childList: true, subtree: true, characterData: true });
         window.stopCpuEventObservation = () => observer.disconnect();
         trace.geometry = [];
+        trace.animationFrames = [];
+        let previousFrameAt = null;
         window.cpuFirstActiveFlow = new Promise(resolve => {
             let captured = false;
-            const sample = () => {
+            const sample = timestamp => {
                 if (stopAtTurnChange()) return;
+                const now = performance.now();
+                if (sampledTransfers.length && trace.animationFrames.length < 200) {
+                    trace.animationFrames.push({ at: now - trace.startedAt, timestamp,
+                        gapMs: previousFrameAt === null ? null : now - previousFrameAt,
+                        actors: sampledTransfers.map(({ element, animation }) => ({
+                            from: element.dataset.from, to: element.dataset.to,
+                            connected: element.isConnected, currentTime: animation?.currentTime ?? null,
+                            startTime: animation?.startTime ?? null, playState: animation?.playState ?? null,
+                        })) });
+                }
+                previousFrameAt = now;
                 const actors = [...document.querySelectorAll('.cardboard-transfer')].map(element => {
                     const animation = element.getAnimations()[0];
                     return { from: element.dataset.from, to: element.dataset.to,

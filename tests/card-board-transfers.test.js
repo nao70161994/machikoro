@@ -12,9 +12,13 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
 function fixture() {
     let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null, endpointShift = 0;
     const animated = [];
+    const frameQueue = new Map();
+    let nextFrame = 0;
     const motion = { matches: false, addEventListener(type, callback) { this.callback = callback; },
         removeEventListener() { this.callback = null; } };
     const documentRef = { defaultView: { matchMedia: () => motion,
+        requestAnimationFrame(callback) { const handle = ++nextFrame; frameQueue.set(handle, callback); return handle; },
+        cancelAnimationFrame(handle) { frameQueue.delete(handle); },
         MutationObserver: class {
             constructor(callback) { observerCallback = callback; }
             observe() {}
@@ -32,6 +36,8 @@ function fixture() {
             const record = { frames, options, updates: 0, animation: null };
             const animation = { currentTime: 125, startTime: 1000, playState: 'running',
                 effect: { setKeyframes(next) { record.frames = next; record.updates++; } },
+                pause() { this.playState = 'paused'; },
+                play() { this.playState = 'running'; record.plays = (record.plays || 0) + 1; },
                 cancel() { cancelled++; this.playState = 'idle'; }, finished: Promise.resolve() };
             record.animation = animation;
             animated.push(record);
@@ -44,6 +50,8 @@ function fixture() {
         }
     }
     return { container: new Element(), animated, timer: () => timer, timerDelay: () => timerDelay, cancelled: () => cancelled,
+        frameQueue,
+        flushFrame() { const pending = [...frameQueue.values()]; frameQueue.clear(); pending.forEach(callback => callback()); },
         setEndpointShift(value) { endpointShift = value; },
         setAppReducedMotion(value) { appReducedMotion = value; },
         notifyPreferenceChanged() { observerCallback?.(); }, motion };
@@ -409,4 +417,47 @@ runTest('manualとReduced Motionはretarget対象外で設定変更時もmotion�
     assert.strictEqual(controller.retarget(), false);
     assert.ok(animated.every(record => record.animation.playState === 'idle'));
     controller.clear();
+});
+
+runTest('自動送金bundleは共有2RAF後に一度だけ開始し待機中retargetでも時計を変えない', () => {
+    const { container, animated, frameQueue, flushFrame, setEndpointShift, timer } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    const cleanup = timer();
+    assert.strictEqual(frameQueue.size, 1, '全routeが1本の開始予約を共有');
+    assert.ok(animated.every(({ animation }) => animation.playState === 'paused' && animation.currentTime === 0));
+    setEndpointShift(30);
+    controller.retarget();
+    assert.ok(animated.every(({ animation }) => animation.currentTime === 0 && animation.startTime === 1000));
+    flushFrame();
+    assert.strictEqual(frameQueue.size, 1);
+    assert.ok(animated.every(({ animation }) => animation.playState === 'paused'));
+    flushFrame();
+    assert.strictEqual(frameQueue.size, 0);
+    assert.ok(animated.every(record => record.animation.playState === 'running' && record.plays === 1));
+    controller.retarget();
+    flushFrame();
+    assert.ok(animated.every(record => record.plays === 1));
+    assert.strictEqual(timer(), cleanup, '準備待ちでcleanupを延期しない');
+    controller.clear();
+});
+
+runTest('待機中clearや新bundleやReduced Motionは古いnative RAFの開始を無効にする', () => {
+    for (const reason of ['clear', 'replace', 'reduced', 'hidden']) {
+        const { container, animated, frameQueue, flushFrame, motion } = fixture();
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        flushFrame();
+        const [staleHandle, staleCallback] = [...frameQueue.entries()][0];
+        const old = [...animated];
+        if (reason === 'clear') controller.clear();
+        if (reason === 'replace') controller.play({ container, events, simultaneous: true });
+        if (reason === 'reduced') motion.callback({ matches: true });
+        if (reason === 'hidden') container.ownerDocument.hidden = true;
+        frameQueue.delete(staleHandle);
+        staleCallback(); // Native delivery can race cancellation; identity still guards it.
+        assert.ok(old.every(record => !record.plays), reason);
+        if (reason !== 'replace') assert.strictEqual(frameQueue.size, 0);
+        controller.clear();
+    }
 });
