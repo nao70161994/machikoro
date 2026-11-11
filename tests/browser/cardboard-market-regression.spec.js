@@ -298,8 +298,9 @@ test('市場の全38施設は4画面で価格と在庫と建設不可理由を�
                 const stockRect = stock.getBoundingClientRect();
                 if (item.offsetWidth !== 160 || item.offsetHeight !== 132) errors.push(`${name}: outer dimensions`);
                 if (getComputedStyle(cost).fontSize !== '14px' || getComputedStyle(stock, '::before').fontSize !== '10px') errors.push(`${name}: footer font`);
+                if (item.querySelector('.compact-market-art').offsetWidth !== item.querySelector('.compact-market-buy').clientWidth) errors.push(`${name}: art lost full card width`);
                 if (item.querySelector('.compact-market-art').offsetHeight !== 50 || getComputedStyle(item.querySelector('.compact-market-name')).fontSize !== '13px') errors.push(`${name}: art/name changed`);
-                if (!contains(bounds, nameRect) || nameRect.bottom > costRect.top) errors.push(`${name}: name clipped or overlaps cost`);
+                if (!contains(bounds, nameRect) || nameRect.bottom > costRect.top) errors.push(`${name}: name clipped or overlaps cost ${JSON.stringify({ name: nameRect.toJSON(), cost: costRect.toJSON(), card: bounds.toJSON() })}`);
                 if (!contains(bounds, costRect) || !contains(bounds, stockRect)) errors.push(`${name}: cost/stock clipped`);
                 if (costRect.right > stockRect.left && costRect.left < stockRect.right && costRect.bottom > stockRect.top && costRect.top < stockRect.bottom) errors.push(`${name}: price overlaps stock`);
                 if (reason && (getComputedStyle(reason).fontSize !== '10px' || !contains(bounds, textRect(reason)) || textRect(reason).top < costRect.bottom)) errors.push(`${name}: reason clipped or overlaps cost ${JSON.stringify({ font: getComputedStyle(reason).fontSize, lineHeight: getComputedStyle(reason).lineHeight, cost: costRect.toJSON(), reason: textRect(reason).toJSON(), card: bounds.toJSON() })}`);

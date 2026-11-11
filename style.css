@@ -15446,13 +15446,20 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 24px 50px 24px 32px;
 }
+/* Reset the legacy horizontal market's child grid areas as well as its
+   columns: the table face uses the same vertical grammar at every width. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-dice { grid-area: 1 / 1; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-art { grid-area: 2 / 1; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name {
+    grid-area: 3 / 1;
+    align-self: stretch;
     min-height: 0;
     padding: 1px 4px;
     font-size: 13px;
     line-height: 1;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price {
+    grid-area: 4 / 1;
     min-height: 0;
     padding: 0 4px;
     font-size: 10px;
