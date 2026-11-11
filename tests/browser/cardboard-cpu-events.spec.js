@@ -33,9 +33,20 @@ test('標準CPUの1手番で8施設すべての発動紹介が実際に開始す
         game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
         setTutorialEnabled(false);
         render();
-        // Fix the normal RNG input, not rollDice/action/scheduler implementations.
-        // floor(.4 * 6) + 1 = 3; there is no station or reroll landmark.
-        Math.random = () => 0.4;
+        // The browser's dice source uses crypto, with Math.random only as its
+        // fallback. Control that input without replacing actions or scheduling.
+        const nativeRandomValues = crypto.getRandomValues.bind(crypto);
+        let diceRngCalls = 0;
+        crypto.getRandomValues = buffer => {
+            if (buffer instanceof Uint8Array && buffer.length === 1) {
+                diceRngCalls++;
+                buffer[0] = 2; // (2 % 6) + 1 = 3; no station or reroll landmark.
+                return buffer;
+            }
+            return nativeRandomValues(buffer);
+        };
+        Math.random = () => 0.4; // Reproducible weak CPU tie-breaking.
+        window.cpuDiagnosticDiceCalls = () => diceRngCalls;
         const initialTurn = game.turnCount;
         const initialActor = game.currentPlayerIndex;
         const trace = window.cpuEventTimeline = { startedAt: performance.now(), initialTurn, initialActor,
@@ -109,7 +120,7 @@ test('標準CPUの1手番で8施設すべての発動紹介が実際に開始す
         const evidence = await page.evaluate(() => {
             window.stopCpuEventObservation();
             const game = GameRuntimeState.runtime.snapshot().game;
-            return { ...window.cpuEventTimeline, final: { turn: game.turnCount, actor: game.currentPlayerIndex,
+            return { ...window.cpuEventTimeline, diceRngCalls: window.cpuDiagnosticDiceCalls(), final: { turn: game.turnCount, actor: game.currentPlayerIndex,
                 phase: game.phase, log: game.log },
                 snapshot: GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER) };
         });
