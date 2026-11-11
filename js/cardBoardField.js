@@ -539,7 +539,6 @@ const CardBoardField = (() => {
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
             tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
                 onPaint: syncOwnerLabels,
-                onSettled: () => transfers?.retarget(),
                 onReadingChange: (index, minScale) => tableLayout?.setReadingSeat(index, minScale),
                 onContextChange: ({ label, pan, playerIndex, canReturn }) => {
                     ownerLabelsInspecting = playerIndex !== null;
@@ -559,14 +558,14 @@ const CardBoardField = (() => {
                     const title = `${label} · ${text}`;
                     if (hint.title !== title) hint.title = title;
                 },
-                onViewChange: ({ reason }) => {
+                onViewChange: () => {
                     scheduleOwnerLabels();
                     if (buildFlight) clearBuildFlight();
                     activationTags?.clear();
-                    // Automatic same-view reflow keeps live coin routes at their
-                    // original animation time. Explicit navigation clears them;
-                    // queued fresh results retain their session/turn guards.
-                    if (reason !== 'layout' || !transfers?.retarget()) transfers?.clear();
+                    // Clear effects anchored to the old geometry, but preserve
+                    // a fresh result queued after layout. Its frame reads the
+                    // new bounds and still checks session/turn/replay guards.
+                    transfers?.clear();
                 } });
         }
     }
@@ -2033,7 +2032,7 @@ const CardBoardField = (() => {
                     session === capturedSession && facts?.game?.turnCount === capturedTurn &&
                     facts?.game?.currentPlayerIndex === capturedActor && (facts?.game?.usedReroll === true) === capturedReroll });
                 transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'),
-                    events: freshEvents, simultaneous: true, delayMs: 0 });
+                    events: freshEvents, delayMs: newRoll && freshDiceResolution ? 500 : 0 });
             });
         }
         if (newRoll) {

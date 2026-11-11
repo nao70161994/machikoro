@@ -2,7 +2,7 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world, onViewChange = /** @type {(change: { reason: string }) => void} */ (() => {}), onPaint = () => {}, onSettled = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
+    function create({ viewport, canvas, world, onViewChange = () => {}, onPaint = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
         let angle = 0;
@@ -81,7 +81,7 @@ const CardTableCamera = (() => {
             // restores otherwise accumulate a one-direction rounding bias.
             scroll(snapToPixel ? Math.round(left) : left, snapToPixel ? Math.round(top) : top);
         }
-        function paint(reason = 'navigation') {
+        function paint() {
             const size = measure();
             const { cosine, sine } = rotation();
             const corners = [[0, 0], [size.width, 0], [0, size.height], [size.width, size.height]]
@@ -101,7 +101,7 @@ const CardTableCamera = (() => {
             matrix = { a: scale * cosine, b: scale * sine, c: -scale * sine, d: scale * cosine,
                 e: offsetX - minX * scale, f: offsetY - minY * scale };
             const nextView = `${scale}:${angle}:${width}:${height}:${matrix.e}:${matrix.f}`;
-            if (paintedView && paintedView !== nextView) onViewChange({ reason });
+            if (paintedView && paintedView !== nextView) onViewChange();
             paintedView = nextView;
             canvas.style.width = `${width}px`;
             canvas.style.height = `${height}px`;
@@ -416,7 +416,7 @@ const CardTableCamera = (() => {
             alignPoint(clientToWorld(wide ? marketBounds.left : marketBounds.left + marketBounds.width / 2, bounds.top),
                 { x: wide ? 8 : viewport.clientWidth / 2, y: 8 });
         }
-        function fit(reason = 'navigation') {
+        function fit() {
             if (destroyed) return;
             applyReading(null);
             overviewMode = true;
@@ -426,9 +426,8 @@ const CardTableCamera = (() => {
             angle = 0;
             const size = measure();
             scale = clamp(Math.min(viewport.clientWidth / size.width, viewport.clientHeight / size.height));
-            paint(reason);
+            paint();
             scroll(0, 0);
-            onSettled();
         }
         function readable() {
             if (destroyed) return;
@@ -466,15 +465,13 @@ const CardTableCamera = (() => {
             lastLayoutKey = layoutKey;
             session = state.session;
             mounted = true;
-            const reason = changedSession ? 'session' : changedViewport ? 'resize' : 'layout';
-            if (changedSession || overviewMode) fit(reason);
+            if (changedSession || overviewMode) fit();
             else {
-                paint(reason);
+                paint();
                 if (retainedCard) retainInspectionOnResize(retainedCard);
                 else if ((changedViewport || changedLayout) && retainedCenter) alignPoint(retainedCenter,
                     { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
                 if (!resizeAnchorFrame) cacheInspectionAnchor();
-                onSettled();
             }
         }
         function refresh(nextState = {}) {
@@ -632,7 +629,7 @@ const CardTableCamera = (() => {
                 observedScrollTop = viewport.scrollTop;
                 updateFocus(true);
                 cacheInspectionAnchor();
-                if (moved) onViewChange({ reason: 'navigation' });
+                if (moved) onViewChange();
             }, { passive: true }],
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
             ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
