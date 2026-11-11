@@ -222,15 +222,16 @@ jobs:
               run: |
                   git fetch --depth=1 origin 98addf35b4b123fa33e907700f5f2d0271bef95b
                   node scripts/diagnostics/profile-cardboard-landmark-rails.js --output=test-results/landmark-rail-comparison --scene=${{ inputs.layout_review_scene || 'all' }}
-            - name: Observe market lifecycle and real construction flights
+            - name: Compare SVG image cache with identical construction guards
               if: ${{ inputs.layout_comparison_only != true }}
               env:
                   RENDER_PROFILE_ONLY: ${{ inputs.render_profile_only }}
               run: |
                   mkdir -p test-results
+                  git -c safe.directory="$GITHUB_WORKSPACE" fetch --depth=1 origin ceb2693ffd3d5d5dc66554290d70a6b94bf8143a
                   for name in uiBuildMenu.js ui.js cardBoardField.js; do
                       cp "js/$name" "$RUNNER_TEMP/cache-$name"
-                      git -c safe.directory="$GITHUB_WORKSPACE" show "ceb2693f:js/$name" > "js/$name"
+                      git -c safe.directory="$GITHUB_WORKSPACE" show "ceb2693ffd3d5d5dc66554290d70a6b94bf8143a:js/$name" > "js/$name"
                   done
                   before_status=0
                   npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --repeat-each=3 --retries=0 --reporter=json --output=test-results/cache-before > test-results/cache-before-report.json || before_status=$?
