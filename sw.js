@@ -2,7 +2,7 @@
  * Service Worker - オフラインキャッシュ
  * バージョンを上げるとキャッシュが更新される
  */
-const CACHE_NAME = 'machikoro-v356';
+const CACHE_NAME = 'machikoro-v357';
 
 const STATIC_ASSETS = [
   '/',

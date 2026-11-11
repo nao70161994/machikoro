@@ -810,6 +810,38 @@ const CardBoardField = (() => {
         node('cardboardBuildNotice')?.remove();
     }
 
+    function buildNoticePosition(width, height, bounds, occupied, protectedRects, market) {
+        const inset = 8;
+        const left = bounds.left + inset;
+        const right = bounds.right - inset - width;
+        const top = bounds.top + inset;
+        const bottom = bounds.bottom - inset - height;
+        const clamp = (value, low, high) => Math.max(low, Math.min(value, high));
+        /** @type {[number, number][]} */
+        const candidates = [[right, bottom], [right, top], [left, top], [left, bottom]];
+        if (market && market.width > 0 && market.height > 0) {
+            const x = clamp((market.left + market.right - width) / 2, left, right);
+            for (const y of [(market.top + market.bottom - height) / 2, market.top + 4, market.bottom - height - 4]) {
+                candidates.push([x, clamp(y, top, bottom)]);
+            }
+        }
+        const fits = ([x, y]) => x >= left && x <= right && y >= top && y <= bottom;
+        const overlap = ([x, y], rect) => Math.max(0, Math.min(x + width + 2, rect.right) - Math.max(x - 2, rect.left)) *
+            Math.max(0, Math.min(y + height + 2, rect.bottom) - Math.max(y - 2, rect.top));
+        const available = candidates.filter(fits);
+        const clear = available.find(position => [...occupied, ...protectedRects].every(rect => overlap(position, rect) === 0));
+        if (clear) return { left: clear[0], top: clear[1] };
+        // When the table has no empty pocket, preserve the purchased facility,
+        // owner names and market controls before considering other card space.
+        const safe = available.filter(position => protectedRects.every(rect => overlap(position, rect) === 0));
+        const ranked = (safe.length ? safe : available).map(position => ({ position,
+            score: occupied.reduce((sum, rect) => sum + overlap(position, rect), 0) +
+                protectedRects.reduce((sum, rect) => sum + overlap(position, rect) * 100, 0) }));
+        ranked.sort((a, b) => a.score - b.score);
+        const position = ranked[0]?.position || [Math.max(left, right), Math.max(top, bottom)];
+        return { left: position[0], top: position[1] };
+    }
+
     function showBuildNotice(card) {
         clearBuildNotice();
         const board = node('cardboardBoard');
@@ -834,8 +866,16 @@ const CardBoardField = (() => {
         notice.innerHTML = html;
         board.appendChild(notice);
         const bounds = viewport.getBoundingClientRect();
-        notice.style.left = `${Math.max(bounds.left + 8, bounds.right - notice.offsetWidth - 8)}px`;
-        notice.style.top = `${Math.max(bounds.top + 8, bounds.bottom - notice.offsetHeight - 8)}px`;
+        const visibleRects = selector => Array.from(viewport.querySelectorAll(selector))
+            .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+        const occupied = visibleRects('.cardboard-card, .cardboard-landmark');
+        const protectedRects = [card.getBoundingClientRect(), ...visibleRects('.cardboard-owner-label, .cardboard-player-heading, .compact-market-header, .compact-market-header > button, .compact-market-filter-disclosure > summary, .compact-market-goal-disclosure > summary')];
+        const market = viewport.querySelector('.compact-market-facilities')?.getBoundingClientRect();
+        // Measure the full caption, including a wrapped maximum-length owner;
+        // neither the illustration nor text is clipped to force a vacant slot.
+        const position = buildNoticePosition(notice.offsetWidth, notice.offsetHeight, bounds, occupied, protectedRects, market);
+        notice.style.left = `${position.left}px`;
+        notice.style.top = `${position.top}px`;
         const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
         buildNoticeContext = context;
         // Start the readable lifetime at the rendering update, like the flight.

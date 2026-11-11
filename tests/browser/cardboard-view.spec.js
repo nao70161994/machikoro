@@ -2159,3 +2159,66 @@ test('施設結果の金額は強調し大きな数値も省略せず収める',
     await testInfo.attach('facility-result-amounts', { body: JSON.stringify(samples), contentType: 'application/json' });
     expect(await state(page)).toEqual(before);
 });
+
+// Start from the real two-card town and buy a third kind after an actual roll.
+// The 12-character name is the local setup input's supported maximum.
+test('320pxの初回貸金業建設通知は所有施設と名前と市場操作を覆わない', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    await page.evaluate(() => {
+        startGameNow(2, [{ type: 'human', name: 'あいうえおかきくけこさし' }, { type: 'human', name: 'たちつてとなにぬねのはひ' }]);
+        setTutorialEnabled(false);
+        acceptHotseatHandoff();
+    });
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const initial = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        return { owner: game.currentPlayerIndex, name: game.currentPlayer().name,
+            cards: game.currentPlayer().cards.map(card => card.name).sort() };
+    });
+    expect(initial.cards).toEqual(['パン屋', '麦畑'].sort());
+    expect(initial.name).toHaveLength(12);
+    await page.locator('#btnRoll').click();
+    await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase)).toBe('build');
+    await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-expand').click();
+    await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="貸金業"]').click();
+    const purchased = await state(page);
+    expect(await page.evaluate(() => new Set(GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.map(card => card.name)).size)).toBe(3);
+    await page.evaluate(owner => {
+        window.buildNoticeGeometry = new Promise(resolve => {
+            let samples = 0;
+            const inspect = () => {
+                const notice = document.getElementById('cardboardBuildNotice');
+                if (notice && Number(getComputedStyle(notice).opacity) >= 0.9) {
+                    const rect = notice.getBoundingClientRect();
+                    const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+                    const blockers = [...document.querySelectorAll('#cardboardTableViewport .cardboard-card, #cardboardTableViewport .cardboard-landmark, #cardboardTableViewport .cardboard-owner-label, #cardboardTableViewport .cardboard-player-heading, #cardboardTableViewport .compact-market-header, #cardboardTableViewport .compact-market-filter-disclosure > summary, #cardboardTableViewport .compact-market-goal-disclosure > summary')];
+                    resolve({ notice: rect.toJSON(), viewport: viewport.toJSON(), text: notice.textContent,
+                        owner, width: notice.offsetWidth, height: notice.offsetHeight,
+                        inside: rect.left >= viewport.left && rect.right <= viewport.right && rect.top >= viewport.top && rect.bottom <= viewport.bottom,
+                        overlaps: blockers.filter(element => {
+                            const box = element.getBoundingClientRect();
+                            return box.width > 0 && box.height > 0 && rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top;
+                        }).map(element => ({ className: element.className, text: element.textContent })) });
+                } else if (++samples >= 120) resolve({ error: 'No readable construction notice in sampled frames' });
+                else requestAnimationFrame(inspect);
+            };
+            requestAnimationFrame(inspect);
+        });
+    }, initial.owner);
+    await page.locator('#cardboardMarketClose').click();
+    const geometry = await page.evaluate(() => window.buildNoticeGeometry);
+    await fs.writeFile(testInfo.outputPath('first-loan-notice-320.json'), JSON.stringify(geometry, null, 2));
+    expect(geometry.error).toBeUndefined();
+    expect(geometry.text).toContain(initial.name);
+    expect(geometry.text).toContain('貸金業');
+    expect(geometry.inside, JSON.stringify(geometry)).toBe(true);
+    expect(geometry.overlaps, JSON.stringify(geometry)).toEqual([]);
+    expect(await state(page)).toEqual(purchased);
+    await page.screenshot({ path: testInfo.outputPath('first-loan-notice-320.png') });
+});

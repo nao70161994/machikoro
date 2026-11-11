@@ -416,3 +416,32 @@ runTest('所有施設群の括弧は空いた外縁だけを使い市場と名�
     assert.deepStrictEqual(Array.from(leftLines[0]), [77.75, 20, 77.75, 110]);
     assert.deepStrictEqual(Array.from(leftLines[3]), [65, 51, 77.75, 51], '左側の名前も外縁へ接続する');
 });
+
+runTest('建設通知は320pxの購入施設と名前を避け市場の空間を使う', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function buildNoticePosition(');
+    const end = source.indexOf('    function showBuildNotice(card)', start);
+    assert.ok(start >= 0 && end > start);
+    const context = {};
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const bounds = { left: 4, top: 120, right: 316, bottom: 500 };
+    const own = { left: 50, top: 434, right: 270, bottom: 496 };
+    const other = { left: 80, top: 133, right: 230, bottom: 190 };
+    const names = [{ left: 144, top: 195, right: 238, bottom: 215 }, { left: 125, top: 407, right: 210, bottom: 430 }];
+    const controls = { left: 50, top: 232, right: 270, bottom: 260 };
+    const market = { left: 50, top: 267, right: 270, bottom: 386, width: 220, height: 119 };
+    const position = context.buildNoticePosition(288, 76, bounds, [own, other], [own, ...names, controls], market);
+    assert.deepStrictEqual({ ...position }, { left: 16, top: 288.5 });
+    // A 12-character owner can wrap in the notice without requiring a smaller
+    // illustration or a clipped caption. Reserve the actual expanded height.
+    const wrapped = context.buildNoticePosition(288, 110, bounds, [own, other], [own, ...names, controls], market);
+    assert.ok(wrapped.left >= bounds.left + 8 && wrapped.left + 288 <= bounds.right - 8);
+    assert.ok(wrapped.top >= bounds.top + 8 && wrapped.top + 110 <= bounds.bottom - 8);
+    for (const rect of [own, other, ...names, controls]) {
+        assert.ok(wrapped.left + 288 <= rect.left || wrapped.left >= rect.right ||
+            wrapped.top + 110 <= rect.top || wrapped.top >= rect.bottom);
+    }
+
+    const pc = context.buildNoticePosition(290, 76, { left: 4, top: 68, right: 1436, bottom: 876 }, [own], [own], market);
+    assert.deepStrictEqual({ ...pc }, { left: 1138, top: 792 }, '空いているPC右下は従来位置を維持する');
+});
