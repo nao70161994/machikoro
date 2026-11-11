@@ -231,7 +231,16 @@ jobs:
                   if [ "$RENDER_PROFILE_ONLY" = "true" ]; then
                       render_diagnostic_grep='市場の全38施設は4画面|320pxの初回貸金業建設通知|発動カードの合成ヒント|390終盤のCPU所有者名|390終盤の自然対局配置|844中盤の所有者ラベル|施設結果の金額|新しいロールの発動帯|実ロール後の新規建設通知.*(390|1440)px|同じ対局で市場と表示モードを5連続往復|中央市場を拡大してカードを比較|購入とUndo|狭幅でも収支操作|4人の共通CPU名の番号|4人の短い所有者名|844の四方向卓は中盤ランドマーク|相手正面を移動してから市場で購入|市場の詳細ボタンは購入再描画|夕暮れのランドマーク詳細|卓の出目と枚数は長い出目|共通カード卓の市場から建設して全員のカードへ戻れる|共通カード卓で全員の施設と中央市場を見渡せる (320|390)'
                   fi
+                  git -c safe.directory="$GITHUB_WORKSPACE" fetch --depth=1 origin 2ca7e529ea89b8349f829bcd54c2635ad71f85da
+                  export MARKET_BEFORE_STYLE="$RUNNER_TEMP/market-before-style.css"
+                  export MARKET_BEFORE_JS="$RUNNER_TEMP/market-before-renderer.js"
+                  git -c safe.directory="$GITHUB_WORKSPACE" show 2ca7e529ea89b8349f829bcd54c2635ad71f85da:style.css > "$MARKET_BEFORE_STYLE"
+                  git -c safe.directory="$GITHUB_WORKSPACE" show 2ca7e529ea89b8349f829bcd54c2635ad71f85da:js/uiCompactMarket.js > "$MARKET_BEFORE_JS"
                   npx playwright test cardboard-market-regression.spec.js --grep '市場の全38施設は4画面' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/market-footer-fit
+                  npx playwright test market-footer-comparison.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/market-footer-comparison
+                  npx playwright test theme-visual-regression.spec.js --project=mobile-webkit --workers=1 --retries=0 --update-snapshots --output=test-results/footer-baselines
+                  mkdir -p test-results/candidate-baselines
+                  cp tests/browser/theme-visual-regression.spec.js-snapshots/*.png test-results/candidate-baselines/
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
