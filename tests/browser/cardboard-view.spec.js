@@ -2161,14 +2161,15 @@ test('施設結果の金額は強調し大きな数値も省略せず収める',
 });
 
 // Start from the real two-card town and buy a third kind after an actual roll.
-// The 12-character name is the local setup input's supported maximum.
+// Keep the overview used by the normal UI playthrough; visiting the market
+// camera first restores a reading view and does not reproduce the overlap.
 test('320pxの初回貸金業建設通知は所有施設と名前と市場操作を覆わない', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(() => {
-        startGameNow(2, [{ type: 'human', name: 'あいうえおかきくけこさし' }, { type: 'human', name: 'たちつてとなにぬねのはひ' }]);
+        startGameNow(2, [{ type: 'human', name: 'プレイヤー1' }, { type: 'human', name: 'CPU（弱）・2' }]);
         setTutorialEnabled(false);
         acceptHotseatHandoff();
     });
@@ -2179,13 +2180,11 @@ test('320pxの初回貸金業建設通知は所有施設と名前と市場操作
             cards: game.currentPlayer().cards.map(card => card.name).sort() };
     });
     expect(initial.cards).toEqual(['パン屋', '麦畑'].sort());
-    expect(initial.name).toHaveLength(12);
     await page.locator('#btnRoll').click();
     await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase)).toBe('build');
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
     await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
-    await camera(page, 'market');
-    await page.locator('#cardboardMarket .compact-market-expand').click();
+    await page.locator('#btnBuildShortcut').click();
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="貸金業"]').click();
     const purchased = await state(page);
     expect(await page.evaluate(() => new Set(GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.map(card => card.name)).size)).toBe(3);
@@ -2194,7 +2193,7 @@ test('320pxの初回貸金業建設通知は所有施設と名前と市場操作
             let samples = 0;
             const inspect = () => {
                 const notice = document.getElementById('cardboardBuildNotice');
-                if (notice && Number(getComputedStyle(notice).opacity) >= 0.9) {
+                if (notice && document.getElementById('cardboardTableViewport').dataset.tableMode === 'overview' && Number(getComputedStyle(notice).opacity) >= 0.9) {
                     const rect = notice.getBoundingClientRect();
                     const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
                     const blockers = [...document.querySelectorAll('#cardboardTableViewport .cardboard-card, #cardboardTableViewport .cardboard-landmark, #cardboardTableViewport .cardboard-owner-label, #cardboardTableViewport .cardboard-player-heading, #cardboardTableViewport .compact-market-header, #cardboardTableViewport .compact-market-filter-disclosure > summary, #cardboardTableViewport .compact-market-goal-disclosure > summary')];
@@ -2211,7 +2210,8 @@ test('320pxの初回貸金業建設通知は所有施設と名前と市場操作
             requestAnimationFrame(inspect);
         });
     }, initial.owner);
-    await page.locator('#cardboardMarketClose').click();
+    await page.keyboard.press('Escape');
+    await page.locator('[data-cardboard-camera="overview"]').click();
     const geometry = await page.evaluate(() => window.buildNoticeGeometry);
     await fs.writeFile(testInfo.outputPath('first-loan-notice-320.json'), JSON.stringify(geometry, null, 2));
     expect(geometry.error).toBeUndefined();

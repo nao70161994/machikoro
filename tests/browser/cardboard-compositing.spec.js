@@ -18,7 +18,7 @@ test('発動カードの合成ヒントは実演出条件だけで有効にな�
         setTutorialEnabled(false);
         render();
         acceptHotseatHandoff();
-        runtime.game.rollDice([3]);
+        runtime.game.rollDice(3);
         render();
     });
     await expect(page.locator('#cardboardSeats .cardboard-card-activated').first()).toBeVisible();

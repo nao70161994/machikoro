@@ -146,6 +146,7 @@ const CardBoardField = (() => {
             }
         }
         updateOwnerLabels();
+        positionBuildNotice(buildNoticeContext?.card);
     }
 
     function scheduleOwnerLabels() {
@@ -842,6 +843,23 @@ const CardBoardField = (() => {
         return { left: position[0], top: position[1] };
     }
 
+    function positionBuildNotice(card) {
+        const notice = node('cardboardBuildNotice');
+        const viewport = node('cardboardTableViewport');
+        if (!notice || !viewport || !card?.isConnected) return;
+        const bounds = viewport.getBoundingClientRect();
+        const visibleRects = selector => Array.from(viewport.querySelectorAll(selector))
+            .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+        const occupied = visibleRects('.cardboard-card, .cardboard-landmark');
+        const protectedRects = [card.getBoundingClientRect(), ...visibleRects('.cardboard-owner-label, .cardboard-player-heading, .compact-market-header, .compact-market-header > button, .compact-market-filter-disclosure > summary, .compact-market-goal-disclosure > summary')];
+        const market = viewport.querySelector('.compact-market-facilities')?.getBoundingClientRect();
+        // Measure the full caption, including a wrapped maximum-length owner;
+        // neither the illustration nor text is clipped to force a vacant slot.
+        const position = buildNoticePosition(notice.offsetWidth, notice.offsetHeight, bounds, occupied, protectedRects, market);
+        notice.style.left = `${position.left}px`;
+        notice.style.top = `${position.top}px`;
+    }
+
     function showBuildNotice(card) {
         clearBuildNotice();
         const board = node('cardboardBoard');
@@ -865,18 +883,8 @@ const CardBoardField = (() => {
         notice.setAttribute('aria-hidden', 'true');
         notice.innerHTML = html;
         board.appendChild(notice);
-        const bounds = viewport.getBoundingClientRect();
-        const visibleRects = selector => Array.from(viewport.querySelectorAll(selector))
-            .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
-        const occupied = visibleRects('.cardboard-card, .cardboard-landmark');
-        const protectedRects = [card.getBoundingClientRect(), ...visibleRects('.cardboard-owner-label, .cardboard-player-heading, .compact-market-header, .compact-market-header > button, .compact-market-filter-disclosure > summary, .compact-market-goal-disclosure > summary')];
-        const market = viewport.querySelector('.compact-market-facilities')?.getBoundingClientRect();
-        // Measure the full caption, including a wrapped maximum-length owner;
-        // neither the illustration nor text is clipped to force a vacant slot.
-        const position = buildNoticePosition(notice.offsetWidth, notice.offsetHeight, bounds, occupied, protectedRects, market);
-        notice.style.left = `${position.left}px`;
-        notice.style.top = `${position.top}px`;
-        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
+        positionBuildNotice(card);
+        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex, card };
         buildNoticeContext = context;
         // Start the readable lifetime at the rendering update, like the flight.
         // A busy first paint must not consume the whole notice before it appears.

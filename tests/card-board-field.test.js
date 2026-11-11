@@ -118,14 +118,14 @@ runTest('建設通知の1200msは最初の描画更新から数え取消後に�
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
     const clearStart = source.indexOf('    function clearBuildNotice()');
     const showStart = source.indexOf('    function showBuildNotice(card)', clearStart);
-    const scheduleStart = source.indexOf('        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };', showStart);
+    const scheduleStart = source.indexOf('        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex, card };', showStart);
     const scheduleEnd = source.indexOf('        return true;', scheduleStart);
     assert.ok(clearStart >= 0 && showStart > clearStart && scheduleStart > showStart && scheduleEnd > scheduleStart);
     const frames = new Map(), timers = new Map();
     let sequence = 0, removed = 0;
     const context = {
         buildNoticeFrame: null, buildNoticeTimer: null, buildNoticeContext: null,
-        notice: { isConnected: true }, session: 'game', mounted: true,
+        notice: { isConnected: true }, card: { isConnected: true }, session: 'game', mounted: true,
         facts: { game: { turnCount: 3, currentPlayerIndex: 0, phase: 'build' } },
         GAME_PHASES: { BUILD: 'build' }, document: { hidden: false }, enabled: () => true,
         node: () => ({ remove: () => { removed++; } }),
