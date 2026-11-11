@@ -15436,9 +15436,56 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-dice { flex: 0 0 24px; min-height: 24px; padding: 0 5px; font-size: 18px; line-height: 24px; white-space: nowrap; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-kind { position: absolute; top: 25px; left: 3px; z-index: 1; font-size: 8px; line-height: 1.2; background: #fff9e9c9; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-art { flex: 0 0 50px; height: 50px; min-height: 50px; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-name { min-height: 24px; padding: 1px 4px; font-size: 13px; line-height: 1.05; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-price { min-height: 14px; font-size: 10px; line-height: 14px; padding: 0 4px; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-stock { font-size: 9px; line-height: 12px; padding: 0 4px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-landmark .compact-market-name { min-height: 24px; padding: 1px 4px; font-size: 13px; line-height: 1.05; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-landmark .compact-market-price { min-height: 14px; font-size: 10px; line-height: 14px; padding: 0 4px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-landmark .compact-market-stock { font-size: 9px; line-height: 12px; padding: 0 4px; }
+/* Keep the measured 160 x 132 face: price and stock share the footer, while
+   the complete affordability text remains visible below the facility name. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-buy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 24px 50px 28px 28px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name {
+    min-height: 0;
+    padding: 1px 4px;
+    font-size: 13px;
+    line-height: 1;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price {
+    min-height: 0;
+    padding: 0 4px;
+    font-size: 10px;
+    line-height: 12px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price-full {
+    display: flex;
+    flex-direction: column;
+    font-size: 10px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price-cost {
+    order: -1;
+    padding-right: 52px;
+    font-size: 14px;
+    line-height: 16px;
+    white-space: nowrap;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) :is(.compact-market-price-short, .compact-market-price-separator) {
+    display: none;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-stock {
+    position: absolute;
+    right: 4px;
+    bottom: 12px;
+    padding: 0;
+    font-size: 0;
+    line-height: 16px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-stock::before {
+    display: inline;
+    content: attr(data-short-stock);
+    font-size: 10px;
+}
 /* Matching status belongs on the art, leaving long dice ranges intact. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-roll-match .compact-market-dice::after {
     position: absolute;

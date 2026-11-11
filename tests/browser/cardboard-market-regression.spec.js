@@ -256,3 +256,60 @@ test('横持ちの実出目と振り直し操作・市場・各席HUDが祖先�
     await testInfo.attach('振り直し選択中の卓', { path: screenshot, contentType: 'image/png' });
     await expect(page.locator('#crashScreen')).toBeHidden();
 });
+
+// One controlled market covers every printed facility and both unavailable
+// reasons. Refill captions exercise the longest stock label without changing
+// the rule used to decide whether a facility can be built.
+test('市場の全38施設は4画面で価格と在庫と建設不可理由をカード内に分けて表示する', async ({ page }, testInfo) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayer().coins = 3;
+        game.currentPlayer().cards.push(createCardByName('公園'));
+        SHOP_STOCK['公園']--;
+        setCardFilter('');
+        game.marketSupply.pendingHighlightNames = CARDS.map(card => card.name);
+        render();
+    });
+    const before = await state(page);
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+        await page.setViewportSize(viewport);
+        const facilities = page.locator('#cardboardMarket .compact-market-item:not(.compact-market-landmark)');
+        await expect(facilities).toHaveCount(38);
+        await expect.poll(() => facilities.evaluateAll(items => {
+            const errors = [];
+            const contains = (outer, inner) => inner.width > 0 && inner.height > 0 &&
+                inner.left >= outer.left && inner.right <= outer.right && inner.top >= outer.top && inner.bottom <= outer.bottom;
+            for (const item of items) {
+                const name = item.querySelector('.compact-market-buy').dataset.cardName;
+                const bounds = item.getBoundingClientRect();
+                const cost = item.querySelector('.compact-market-price-cost');
+                const reason = item.querySelector('.compact-market-price-reason');
+                const stock = item.querySelector('.compact-market-stock');
+                const textRect = element => {
+                    const range = document.createRange();
+                    range.selectNodeContents(element);
+                    return range.getBoundingClientRect();
+                };
+                if (!cost || !stock) { errors.push(`${name}: missing footer`); continue; }
+                const costRect = textRect(cost);
+                const stockRect = stock.getBoundingClientRect();
+                if (item.offsetWidth !== 160 || item.offsetHeight !== 132) errors.push(`${name}: outer dimensions`);
+                if (getComputedStyle(cost).fontSize !== '14px' || getComputedStyle(stock, '::before').fontSize !== '10px') errors.push(`${name}: footer font`);
+                if (item.querySelector('.compact-market-art').offsetHeight !== 50 || getComputedStyle(item.querySelector('.compact-market-name')).fontSize !== '13px') errors.push(`${name}: art/name changed`);
+                if (!contains(bounds, costRect) || !contains(bounds, stockRect)) errors.push(`${name}: cost/stock clipped`);
+                if (costRect.right > stockRect.left && costRect.left < stockRect.right && costRect.bottom > stockRect.top && costRect.top < stockRect.bottom) errors.push(`${name}: price overlaps stock`);
+                if (reason && (getComputedStyle(reason).fontSize !== '10px' || !contains(bounds, textRect(reason)) || textRect(reason).top < costRect.bottom)) errors.push(`${name}: reason clipped or overlaps cost`);
+                if (!stock.dataset.shortStock.includes('補充')) errors.push(`${name}: refill label missing`);
+            }
+            return errors;
+        }), `${viewport.width}pxの全施設footer`).toEqual([]);
+        const names = await facilities.locator('.compact-market-buy').evaluateAll(buttons => buttons.map(button => button.dataset.cardName).sort());
+        expect(names).toEqual(await page.evaluate(() => CARDS.map(card => card.name).sort()));
+        await expect(facilities.locator('.compact-market-price-reason').filter({ hasText: '所有済み' })).toHaveCount(1);
+        expect(await facilities.locator('.compact-market-price-reason').filter({ hasText: '不足' }).count()).toBeGreaterThan(0);
+        await page.screenshot({ path: testInfo.outputPath(`market-footer-${viewport.width}.png`) });
+    }
+    expect(await state(page)).toEqual(before);
+});
