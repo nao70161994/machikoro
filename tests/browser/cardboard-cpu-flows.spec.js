@@ -6,13 +6,23 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off', deviceScaleFactor: 1, isMobile: false, hasTouch: false,
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-test('標準CPUの8施設結果は7収支routeを手番内に完走する', async ({ page }, testInfo) => {
+for (const treatment of ['normal', 'static-cards', 'static-cards-no-caption']) {
+test(`標準CPUの描画分離診断 ${treatment}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 936 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
-    await page.evaluate(() => {
+    // Diagnostic interventions only: retain the actual actions, dice, scheduler
+    // and canonical game; isolate whole-card animation and caption painting.
+    if (treatment !== 'normal') await page.addStyleTag({ content: `
+        html[data-design="cardboard"] #cardboardBoard .cardboard-card {
+            animation: none !important;
+            will-change: auto !important;
+        }
+        ${treatment === 'static-cards-no-caption' ? '.cardboard-activation-tag { display: none !important; }' : ''}
+    ` });
+    await page.evaluate(treatment => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
         cancelCpuSchedule('eight-group-diagnostic-setup');
         GameSetupState.runtime.setCpuSpeed(1500);
@@ -50,7 +60,7 @@ test('標準CPUの8施設結果は7収支routeを手番内に完走する', asyn
         const initialTurn = game.turnCount;
         const initialActor = game.currentPlayerIndex;
         const trace = window.cpuEventTimeline = { startedAt: performance.now(), initialTurn, initialActor,
-            cpuSpeed: 1500, cpuDifficulties: runtime.cpuPlayers.map(cpu => cpu?.difficulty), events: [] };
+            treatment, cpuSpeed: 1500, cpuDifficulties: runtime.cpuPlayers.map(cpu => cpu?.difficulty), events: [] };
         let resolveFirstTransfer, resolveTurn;
         window.cpuEventFirstTransfer = new Promise(resolve => { resolveFirstTransfer = resolve; });
         window.cpuEventTurnChanged = new Promise(resolve => { resolveTurn = resolve; });
@@ -171,7 +181,7 @@ test('標準CPUの8施設結果は7収支routeを手番内に完走する', asyn
             };
             requestAnimationFrame(sample);
         });
-    });
+    }, treatment);
     await page.screenshot({ path: testInfo.outputPath('cpu-events-start.png') });
     await page.evaluate(() => scheduleCPU());
     try {
@@ -216,3 +226,5 @@ test('標準CPUの8施設結果は7収支routeを手番内に完走する', asyn
         expect(evidence.geometry.flatMap(sample => sample.overlaps), JSON.stringify(evidence.geometry)).toEqual([]);
     }
 });
+
+}
