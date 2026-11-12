@@ -93,7 +93,13 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                         const distance = (a, b) => Math.hypot(Math.max(b.left - a.right, a.left - b.right, 0),
                             Math.max(b.top - a.bottom, a.top - b.bottom, 0));
                         const cards = blockers.filter(element => element.matches('.cardboard-card'));
-                        return { sameGame: game === window.ownerNamesGame, expected: game.players.map((player, index) => ({ index, name: player.name,
+                        const roster = [...document.querySelectorAll('.cardboard-roster-seat')].map(seat => {
+                            const css = getComputedStyle(seat);
+                            return { owner: Number(seat.dataset.cardboardPlayerIndex), current: seat.getAttribute('aria-current') === 'true',
+                                activated: seat.classList.contains('cardboard-roster-activated'), border: css.borderTopColor,
+                                outline: css.outlineColor, outlineStyle: css.outlineStyle, outlineWidth: parseFloat(css.outlineWidth) };
+                        });
+                        return { sameGame: game === window.ownerNamesGame, roster, expected: game.players.map((player, index) => ({ index, name: player.name,
                             duplicate: game.players.some((other, otherIndex) => otherIndex !== index && other.name === player.name) })),
                             labels: labels.map(label => {
                                 const name = label;
@@ -135,6 +141,16 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                     evidence.measurements.push({ scene, stage, result });
                     await saveEvidence();
                     expect(result.sameGame).toBe(true);
+                    expect(result.roster.filter(seat => seat.current).map(seat => seat.owner)).toEqual([0]);
+                    expect(result.roster.every(seat => seat.activated)).toBe(true);
+                    const current = result.roster.find(seat => seat.current);
+                    expect(current.outlineStyle).toBe('solid');
+                    expect(current.outlineWidth).toBeGreaterThanOrEqual(2);
+                    expect(current.outline).toBe('rgb(189, 134, 20)');
+                    for (const seat of result.roster.filter(seat => !seat.current)) {
+                        expect(seat.border).toBe('rgb(73, 127, 145)');
+                        expect(seat.border).not.toBe(current.outline);
+                    }
                     expect(result.labels).toHaveLength(4);
                     for (const expected of result.expected) {
                         const label = result.labels.find(item => item.owner === expected.index);
