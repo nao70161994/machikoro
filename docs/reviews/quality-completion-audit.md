@@ -4,6 +4,16 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
 
+### v363一括検証の完了とv364追加改善（2026-11-12 JST）
+
+製品 `e110e048`（cache v363）の通常Release [43198631333](https://github.com/nao70161994/machikoro/actions/runs/43198631333)、16画面/操作 [43198631134](https://github.com/nao70161994/machikoro/actions/runs/43198631134)、Nightly [43198653424](https://github.com/nao70161994/machikoro/actions/runs/43198653424) はすべて成功。6分割の統合検証で373実行（WebKit371/Chromium2）、許可済skip1、retry0、欠落・重複なしを確認した：[実行網羅性の原本](assets/nightly-quality/v363/nightly-browser-coverage.json)。前回flakyだった390px建設も初回成功。ただし、冷間描画の不安定さが一度の成功で解消したとは判定しない。
+
+通常CPU1500msの実UI2人320/1440 [43198685257](https://github.com/nao70161994/machikoro/actions/runs/43198685257) と4人390/844 [43198708654](https://github.com/nao70161994/machikoro/actions/runs/43198708654) も全て開始から勝利まで成功。画像・詳細記録の追加レビューを続ける。以前の5/10人通常速度完走証拠と区別し、この小変更ごとに25分の10人対局を繰り返していない。
+
+v364追加改善は、購入後UI復旧の観測を必要なshell/skip/modal6の浅いsnapshotへ限定。従来の0/250/1500/3500ms復旧機会、ゲーム/online/pending/モーダル待機の判定と、通常診断の完全snapshotは維持する。施設子孫のgetComputedStyle重複・全HTML/全文取得を省く。建設close後の1.5秒gapの原因と断定しない。既存失敗traceにはnetworkもframe snapshotもなく、SVG読込時刻との因果を判定できなかった。保存は購入render内で同期実行され、close自体から呼ばれないため、close後background taskの原因とみなさない。
+
+浮動所属札は操作できず、実際の正面閲覧は上部HUD名ボタンのため、案内を「上の名前で正面へ」に具体化。4幅の既存操作caseに全文fitと復帰時の案内を追加。対象Node16件、編集JS構文、checkJs4構成が成功。独立ソースレビューで具体的な復旧漏れは見当たらないが、一部の可視modalでは既存fallbackによる完全再採取は残る。新案内のnative描画と基準画像候補は未確認であり、商用品質Goalは未達・PR #19マージ保留を継続する。
+
 ### v363候補の重点検証（2026-11-12 JST）
 
 補助7ef10784の43195631901は28件中27初回成功。採用Fieldの所属名4幅（序盤/終盤/購入/Undo）・森林要約4幅・10人全明細を含む成功を確認。原寸8画像の独立レビューでも、全名/意味単位CPU改行/カード・市場非被覆/他幅の重大退行なし。320の長名札は大きいが境界ケースとして許容との評価。旧320序盤の3札→新4札、所有カード全12面の矩形は厳密一致：[比較測定](assets/nightly-quality/v363/owner-names-320-comparison.json)・[前](assets/nightly-quality/v363/owner-names-before-early-320.png)・[後](assets/nightly-quality/v363/owner-names-after-early-320.png)。この画像は次のHUD色修正より前の証拠。
