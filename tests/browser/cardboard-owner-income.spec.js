@@ -11,7 +11,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
         test.setTimeout(180000);
         const beforeField = process.env.OWNER_INCOME_BEFORE_FIELD
             ? await fs.readFile(process.env.OWNER_INCOME_BEFORE_FIELD) : null;
-        const evidence = { viewport, controlled: true, physicalDevice: false, scenes: [] };
+        const evidence = { viewport, controlled: true, physicalDevice: false, scenes: [], measurements: [] };
         async function run(scene, variant) {
             const context = await browser.newContext({ ...devices['iPhone 13'], viewport,
                 baseURL: testInfo.project.use.baseURL || 'http://127.0.0.1:3210', serviceWorkers: 'block' });
@@ -131,13 +131,15 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                                 owner: card.closest('.cardboard-player').dataset.playerIndex, name: card.dataset.cardName, rect: rect(card) })),
                         };
                     });
-                    expect(result.labels).toHaveLength(4);
+                    evidence.measurements.push({ scene, variant, stage, resolvedNet, result });
+                    if (variant === 'after') expect(result.labels).toHaveLength(4);
                     for (const expected of result.expected) {
                         expect(expected.net).toBe(resolvedNet[expected.index]);
                         const label = result.labels.find(item => item.owner === expected.index);
+                        if (!label && variant === 'before') continue;
                         expect(label.name).toBe(expected.duplicate ? `席${expected.index + 1} · ${expected.name}` : expected.name);
                         expect(label.aria).toContain(expected.name);
-                        expect(label.complete, JSON.stringify(label)).toBe(true);
+                        if (variant === 'after') expect(label.complete, JSON.stringify(label)).toBe(true);
                         expect(label.insideViewport, JSON.stringify(label)).toBe(true);
                         expect(label.overlaps, JSON.stringify(label)).toEqual([]);
                         expect(label.animationCount).toBe(0);
@@ -195,8 +197,13 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                 if (before) {
                     expect(after.canonical).toEqual(before.canonical);
                     expect(after.initial.cards).toEqual(before.initial.cards);
-                    expect(after.initial.labels.map(label => ({ owner: label.owner, name: label.name })))
-                        .toEqual(before.initial.labels.map(label => ({ owner: label.owner, name: label.name })));
+                    for (const label of before.initial.labels) {
+                        expect(after.initial.labels.find(item => item.owner === label.owner)?.name).toBe(label.name);
+                    }
+                    if (viewport.width === 320 && scene === 'late') {
+                        expect(before.initial.labels.length < 4 || before.initial.labels.some(label => !label.complete),
+                            '旧版で再現した欠落/省略を新fixtureでも記録する').toBe(true);
+                    }
                 }
             }
         } finally {
