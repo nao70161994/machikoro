@@ -400,14 +400,47 @@ const UiBuildMenu = (() => {
         }
     }
 
-    function renderFacilityArt(name, landmark = false, category = '') {
+    function facilityArtPresentation(name, landmark, category) {
         const named = Object.prototype.hasOwnProperty.call(FACILITY_ART, name) ? FACILITY_ART[name] : null;
         const grouped = Object.prototype.hasOwnProperty.call(CATEGORY_ART, category) ? CATEGORY_ART[category] : null;
         const landmarkMotif = Object.prototype.hasOwnProperty.call(LANDMARK_ART, name) ? LANDMARK_ART[name] : 'landmark';
         const motif = landmark ? landmarkMotif : (named || grouped || 'shop');
         const scene = landmark ? 'landmark' : (CATEGORY_SCENE[category] || 'street');
         const viewBox = FACILITY_ART_FRAMING[name] || '0 0 160 80';
+        return { motif, scene, viewBox };
+    }
+
+    function renderFacilityArt(name, landmark = false, category = '') {
+        const { motif, scene, viewBox } = facilityArtPresentation(name, landmark, category);
         return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"><use href="${facilityArtReference(motif)}"></use></svg>`;
+    }
+
+    let tableArtFallbackBound = false;
+    const tableArtFailures = new Set();
+    function bindTableArtFallback() {
+        if (tableArtFallbackBound || typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+        tableArtFallbackBound = true;
+        document.addEventListener('error', event => {
+            const image = /** @type {SVGImageElement | null} */ (event.target);
+            if (!image || image.namespaceURI !== 'http://www.w3.org/2000/svg' || image.localName !== 'image') return;
+            const motif = image.getAttribute('data-facility-image-motif');
+            if (!motif || !/^[a-z][a-z0-9-]*$/.test(motif) || !image.parentElement?.matches('.sunset-facility-art')) return;
+            // A failed resource stays on the known working renderer until reload.
+            // Bound even unexpected DOM-supplied motifs; normal art has 50 ids.
+            if (tableArtFailures.size < 64) tableArtFailures.add(motif);
+            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+            use.setAttribute('href', facilityArtReference(motif));
+            image.replaceWith(use);
+        }, true);
+    }
+
+    // Same vector art, with one browser image resource per motif. The table
+    // does not inherit the detail view's CSS transforms on <use> elements.
+    function renderTableFacilityArt(name, landmark = false, category = '') {
+        bindTableArtFallback();
+        const { motif, scene, viewBox } = facilityArtPresentation(name, landmark, category);
+        if (tableArtFailures.has(motif)) return renderFacilityArt(name, landmark, category);
+        return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"><image href="icons/facility-art-images/${motif}.svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" data-facility-image-motif="${motif}"></image></svg>`;
     }
 
     function renderLandmarkBadgeIcon(name) {
@@ -845,7 +878,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ bindBuildMenuPointerCapture, patchPresentationChildren, updateBuildMenuHtml, prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ bindBuildMenuPointerCapture, patchPresentationChildren, updateBuildMenuHtml, prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderTableFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

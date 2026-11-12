@@ -1,0 +1,853 @@
+'use strict';
+/* global PlazaField */
+
+const UiBuildMenu = (() => {
+    // Retain buttons and loaded SVGs across income, inventory and turn updates.
+    // A pointer already held on a detail button must reach that same node on up.
+    const renderedMarketHtml = new WeakMap();
+    const pointerBoundMarkets = new WeakSet();
+
+    function bindBuildMenuPointerCapture(root) {
+        if (pointerBoundMarkets.has(root)) return;
+        pointerBoundMarkets.add(root);
+        let held = null;
+        let cancelledPointerId = null;
+        const release = (cancelClick = false) => {
+            const previous = held;
+            if (previous && cancelClick) cancelledPointerId = previous.id;
+            held = null;
+            try {
+                if (previous?.button.hasPointerCapture(previous.id)) previous.button.releasePointerCapture(previous.id);
+            } catch (_) { /* Removed nodes already lose native capture. */ }
+        };
+        root.addEventListener('pointerdown', event => {
+            if (!event.isPrimary || event.button !== 0) return;
+            release();
+            cancelledPointerId = null;
+            const button = event.target.closest?.('[data-action="showCardDetail"], [data-action="showLandmarkDetail"]');
+            if (!button || !root.contains(button) || typeof button.setPointerCapture !== 'function') return;
+            try {
+                button.setPointerCapture(event.pointerId);
+                held = { button, id: event.pointerId, x: event.clientX, y: event.clientY };
+            } catch (_) { /* Keyboard and unsupported capture retain ordinary clicks. */ }
+        });
+        root.addEventListener('pointermove', event => {
+            if (held && held.id === event.pointerId && Math.hypot(event.clientX - held.x, event.clientY - held.y) > 8) release(true);
+        });
+        root.addEventListener('pointerup', event => {
+            if (!held || held.id !== event.pointerId) return;
+            const button = held.button;
+            if (!button.isConnected || button.disabled || button.closest('[inert], [hidden]') ||
+                    button.getClientRects().length === 0 ||
+                    root.ownerDocument.defaultView.getComputedStyle(button).visibility === 'hidden') release(true);
+            // Native pointerup releases capture after dispatch and preserves
+            // the intended click target. Never synthesize/replay an action.
+            held = null;
+        });
+        root.addEventListener('pointercancel', event => {
+            if (held?.id === event.pointerId) release(true);
+        });
+        root.addEventListener('lostpointercapture', event => {
+            if (held && held.id === event.pointerId) held = null;
+        });
+        root.addEventListener('wheel', () => release(true), { passive: true });
+        root.addEventListener('click', event => {
+            // Keyboard activation must not consume a pending pointer cancel.
+            if (cancelledPointerId === null || event.detail === 0) return;
+            // Older WebKit exposes click as MouseEvent without pointerId.
+            if (typeof event.pointerId === 'number' && event.pointerId !== cancelledPointerId) return;
+            cancelledPointerId = null;
+            // WebKit can retain the former capture target after a drag. Cancel
+            // only that gesture; a new primary press resets this state above.
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+    }
+
+    function presentationNodeKey(node) {
+        if (node.nodeType !== 1) return null;
+        const element = /** @type {Element} */ (node);
+        if (element.id) return `id:${element.id}`;
+        if (element.matches('.build-section')) return element.classList.contains('build-card-section')
+            ? 'section:facilities' : 'section:landmarks';
+        const card = element.matches('.compact-market-item, .card-wrapper')
+            ? element.querySelector('[data-card-name], [data-landmark-name]') : element;
+        for (const attribute of ['data-card-name', 'data-landmark-name', 'data-player-index', 'data-cardboard-player-index']) {
+            if (card?.hasAttribute(attribute)) return JSON.stringify([element.tagName, attribute,
+                card.getAttribute(attribute), card.getAttribute('data-action')]);
+        }
+        return null;
+    }
+
+    function patchPresentationChildren(parent, nextParent) {
+        let cursor = parent.firstChild;
+        for (const next of Array.from(nextParent.childNodes)) {
+            const key = presentationNodeKey(next);
+            let current = cursor;
+            if (key && presentationNodeKey(current || nextParent) !== key) {
+                current = null;
+                for (let candidate = cursor; candidate; candidate = candidate.nextSibling) {
+                    if (presentationNodeKey(candidate) === key) { current = candidate; break; }
+                }
+            }
+            const compatible = current && current.nodeType === next.nodeType && current.nodeName === next.nodeName &&
+                presentationNodeKey(current) === key;
+            if (!compatible) {
+                parent.insertBefore(next.cloneNode(true), cursor);
+                continue;
+            }
+            if (current !== cursor) parent.insertBefore(current, cursor);
+            if (current.nodeType === 1) {
+                const target = /** @type {Element} */ (current);
+                const source = /** @type {Element} */ (next);
+                if (target.outerHTML !== source.outerHTML) {
+                    for (const attribute of Array.from(target.attributes)) {
+                        if (!source.hasAttribute(attribute.name)) target.removeAttribute(attribute.name);
+                    }
+                    for (const attribute of Array.from(source.attributes)) {
+                        if (target.getAttribute(attribute.name) !== attribute.value) target.setAttribute(attribute.name, attribute.value);
+                    }
+                    patchPresentationChildren(target, source);
+                }
+            } else if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+            cursor = current.nextSibling;
+        }
+        while (cursor) {
+            const obsolete = cursor;
+            cursor = cursor.nextSibling;
+            parent.removeChild(obsolete);
+        }
+    }
+
+    function updateBuildMenuHtml(element, html) {
+        const previous = renderedMarketHtml.get(element);
+        if (previous?.html === html && element.childNodes.length &&
+                previous.first === element.firstChild && previous.last === element.lastChild &&
+                previous.count === element.childNodes.length) return;
+        const template = element.ownerDocument.createElement('template');
+        template.innerHTML = html;
+        patchPresentationChildren(element, template.content);
+        renderedMarketHtml.set(element, { html, first: element.firstChild, last: element.lastChild,
+            count: element.childNodes.length });
+    }
+
+    const CARD_FILTER_DEFS = Object.freeze([
+        Object.freeze({ color: '', label: '全て' }),
+        Object.freeze({ color: 'blue', label: '青' }),
+        Object.freeze({ color: 'green', label: '緑' }),
+        Object.freeze({ color: 'red', label: '赤' }),
+        Object.freeze({ color: 'purple', label: '紫' }),
+        Object.freeze({ color: 'affordable', label: '建設可' }),
+    ]);
+
+    function cardFilterTransition(currentFilter, requestedFilter) {
+        return Object.freeze({
+            cardFilter: requestedFilter,
+            changed: currentFilter !== requestedFilter,
+            shouldRender: true,
+        });
+    }
+
+    function createFilterController(initialFilter = '') {
+        let cardFilter = initialFilter;
+        let manuallySelected = false;
+
+        function get() {
+            return cardFilter;
+        }
+
+        function set(requestedFilter) {
+            manuallySelected = true;
+            const transition = cardFilterTransition(cardFilter, requestedFilter);
+            cardFilter = transition.cardFilter;
+            return transition;
+        }
+
+        function setAutomatic(requestedFilter) {
+            if (manuallySelected) {
+                return Object.freeze({ cardFilter, changed: false, shouldRender: false });
+            }
+            const transition = cardFilterTransition(cardFilter, requestedFilter);
+            cardFilter = transition.cardFilter;
+            return transition;
+        }
+
+        function clear() {
+            cardFilter = '';
+            manuallySelected = false;
+        }
+
+        function wasManuallySelected() {
+            return manuallySelected;
+        }
+
+        function snapshot() {
+            return Object.freeze({ cardFilter });
+        }
+
+        return Object.freeze({ get, set, setAutomatic, clear, wasManuallySelected, snapshot });
+    }
+
+    function safeCardColorName(color) {
+        return ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue';
+    }
+
+    function escapeText(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function isBuildGateOpen(options) {
+        const { phase, buildPhase, pendingRenovation, builtThisTurn } = options;
+        return phase === buildPhase && pendingRenovation <= 0 && !builtThisTurn;
+    }
+
+    function includesAction(allowedActions, action) {
+        return allowedActions && typeof allowedActions.has === 'function'
+            ? allowedActions.has(action)
+            : Array.isArray(allowedActions) && allowedActions.includes(action);
+    }
+
+    function buildActionState(options) {
+        const buildGateOpen = isBuildGateOpen(options);
+        const { isHumanTurn, allowedActions } = options;
+        return Object.freeze({
+            buildGateOpen,
+            canBuildCardAction: buildGateOpen && !!isHumanTurn && includesAction(allowedActions, 'buildCard'),
+            canBuildLandmarkAction: buildGateOpen && !!isHumanTurn && includesAction(allowedActions, 'buildLandmark'),
+        });
+    }
+
+    function buildShortcutView(options = {}) {
+        const buildActionAvailable = includesAction(options.allowedActions, 'buildCard') ||
+            includesAction(options.allowedActions, 'buildLandmark');
+        const visible = options.phase === options.buildPhase &&
+            options.hasPending !== true && options.builtThisTurn !== true &&
+            options.isHumanTurn === true && options.isReplaying !== true &&
+            options.inputBlocked !== true && buildActionAvailable;
+        return Object.freeze({
+            visible,
+            display: visible ? 'block' : 'none',
+            disabled: !visible,
+            ariaHidden: visible ? 'false' : 'true',
+        });
+    }
+
+    function applyBuildShortcutView(button, view) {
+        if (!button || !view) return false;
+        button.style.display = view.display;
+        button.hidden = view.display === 'none';
+        button.disabled = view.disabled;
+        if (typeof button.setAttribute === 'function') {
+            button.setAttribute('aria-hidden', view.ariaHidden);
+        }
+        return true;
+    }
+
+    function focusAndScrollToBuildMenu(target) {
+        if (!target || typeof target.focus !== 'function' ||
+                typeof target.scrollIntoView !== 'function') return false;
+        try {
+            target.focus({ preventScroll: true });
+        } catch (_) {
+            try {
+                target.focus();
+            } catch (_) {
+                return false;
+            }
+        }
+        if (typeof PlazaField !== 'undefined' && typeof document !== 'undefined' &&
+                document.documentElement.dataset.design === 'plaza') {
+            PlazaField.focusTarget('market');
+        } else target.scrollIntoView({ block: 'start' });
+        return true;
+    }
+
+    function undoBuildActionState(options) {
+        const visible = !!options.hasUndoState && !!options.hasGame && !!options.builtThisTurn &&
+            includesAction(options.allowedActions, 'undoBuild');
+        return Object.freeze({ visible, enabled: visible && !!options.isHumanTurn });
+    }
+
+    function buildUndoBuildButtonHtml(state) {
+        return state && state.visible
+            ? `<button class="undo-btn" data-action="undoBuild"${state.enabled ? '' : ' disabled'}><span class="undo-btn-fallback-icon" aria-hidden="true">↩</span><svg class="undo-btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#undo"></use></svg><span>建設を取り消す</span></button>`
+            : '';
+    }
+
+    const FACILITY_ART = Object.freeze({
+        '麦畑': 'field', '花畑': 'flower', 'コーン畑': 'corn', 'ブドウ園': 'vineyard',
+        '牧場': 'ranch', '森林': 'forest', 'リンゴ園': 'orchard', '鉱山': 'mine',
+        'パン屋': 'bakery', 'コンビニ': 'convenience', 'チーズ工場': 'cheese',
+        '家具工場': 'furniture', '青果市場': 'produce', 'カフェ': 'cafe',
+        'ファミレス': 'family', 'スタジアム': 'stadium', 'テレビ局': 'tv-station',
+        'ビジネスセンター': 'business-center', 'サンマ漁船': 'fishery',
+        'マグロ漁船': 'tuna-boat', 'フラワーショップ': 'florist',
+        '食品倉庫': 'warehouse', '寿司屋': 'sushi', 'ピザ屋': 'pizzeria',
+        'バーガーショップ': 'burger', '出版社': 'publisher', '税務署': 'tax-office',
+        '雑貨屋': 'general-store', '改装屋': 'remodel', '貸金業': 'lender',
+        'ワイナリー': 'winery', '引越し屋': 'mover', 'ドリンク工場': 'beverage',
+        '高級フレンチ': 'bistro', '会員制BAR': 'members-bar', '清掃業': 'cleaning',
+        'ITベンチャー': 'startup', '公園': 'park-ground',
+    });
+
+    const LANDMARK_ART = Object.freeze({
+        '駅': 'station', 'ショッピングモール': 'mall', '遊園地': 'park',
+        '電波塔': 'radio', '港': 'port', '空港': 'airport',
+    });
+
+    const CATEGORY_ART = Object.freeze({
+        '農園': 'field', '畜産': 'ranch', '工業': 'factory', '海産': 'harbor', '大施設': 'civic',
+    });
+
+    const CATEGORY_SCENE = Object.freeze({
+        '農園': 'pasture', '畜産': 'pasture', '工業': 'industrial', '海産': 'water',
+        '商店': 'street', '飲食店': 'street', '特殊': 'street', '大施設': 'civic',
+    });
+
+    const FACILITY_ART_FRAMING = Object.freeze({
+        '空港': '0 0 160 80',
+        '遊園地': '12 2 136 76',
+        '港': '18 4 130 72',
+        '寿司屋': '0 0 160 80',
+        '牧場': '0 0 160 80',
+        '鉱山': '0 0 160 80',
+    });
+
+    let localFacilityArtPromise = null;
+    let localFacilityArtPrefix = null;
+    let localFacilityArtIds = new Set();
+    const FACILITY_ART_READY_EVENT = 'facility-art-ready';
+
+    function prepareLocalFacilityArt() {
+        if (localFacilityArtPromise) return localFacilityArtPromise;
+        if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body ||
+                typeof globalThis.fetch !== 'function' || typeof globalThis.DOMParser !== 'function') return null;
+        // One trusted, same-origin source remains the art's only maintained copy.
+        // Loading never blocks drawing: external references work until ready.
+        localFacilityArtPromise = globalThis.fetch('icons/facility-art.svg', { credentials: 'same-origin' })
+            .then(response => { if (!response.ok) throw new Error('Facility art unavailable'); return response.text(); })
+            .then(source => {
+                const parsed = new globalThis.DOMParser().parseFromString(source, 'image/svg+xml');
+                const svg = parsed.documentElement;
+                if (svg.localName !== 'svg' || parsed.querySelector('parsererror')) throw new Error('Invalid facility art');
+                const allowed = new Set(['svg', 'defs', 'symbol', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'linearGradient', 'radialGradient', 'stop', 'use', 'title', 'desc', 'clipPath', 'mask']);
+                const elements = [svg, ...Array.from(svg.querySelectorAll('*'))];
+                const ids = new Set();
+                for (const element of elements) {
+                    if (!allowed.has(element.localName)) throw new Error('Unsupported facility art element');
+                    const id = element.getAttribute('id');
+                    if (id) {
+                        if (!/^[A-Za-z][\w.-]*$/u.test(id) || ids.has(id)) throw new Error('Invalid facility art id');
+                        ids.add(id);
+                    }
+                    for (const attribute of Array.from(element.attributes)) {
+                        if (/^on/iu.test(attribute.name) || attribute.name === 'style') throw new Error('Unsupported facility art attribute');
+                    }
+                }
+                let suffix = 0;
+                let prefix = 'facility-local-';
+                while ([...ids].some(id => document.getElementById(`${prefix}${id}`))) prefix = `facility-local-${++suffix}-`;
+                for (const element of elements) {
+                    for (const attribute of Array.from(element.attributes)) {
+                        let value = attribute.value;
+                        if (attribute.name === 'id') value = `${prefix}${value}`;
+                        else if (attribute.localName === 'href') {
+                            if (!value.startsWith('#') || !ids.has(value.slice(1))) throw new Error('External facility art reference');
+                            value = `#${prefix}${value.slice(1)}`;
+                        } else if (/url\(/iu.test(value)) {
+                            value = value.replace(/url\(\s*['"]?#([\w.-]+)['"]?\s*\)/gu, (match, id) => {
+                                if (!ids.has(id)) throw new Error('Missing facility art reference');
+                                return `url(#${prefix}${id})`;
+                            });
+                            if (/url\(\s*['"]?(?!#)/iu.test(value)) throw new Error('External facility art paint');
+                        }
+                        if (value !== attribute.value) element.setAttributeNS(attribute.namespaceURI, attribute.name, value);
+                    }
+                }
+                const mount = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                mount.setAttribute('aria-hidden', 'true');
+                mount.setAttribute('focusable', 'false');
+                mount.setAttribute('width', '0');
+                mount.setAttribute('height', '0');
+                mount.setAttribute('data-local-facility-art', 'ready');
+                mount.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;';
+                for (const child of Array.from(svg.childNodes)) mount.appendChild(document.importNode(child, true));
+                document.body.prepend(mount);
+                localFacilityArtIds = ids;
+                localFacilityArtPrefix = prefix;
+                document.dispatchEvent(new window.CustomEvent(FACILITY_ART_READY_EVENT));
+                return true;
+            }).catch(() => false);
+        return localFacilityArtPromise;
+    }
+
+    function facilityArtReference(motif) {
+        prepareLocalFacilityArt();
+        return localFacilityArtPrefix && localFacilityArtIds.has(motif)
+            ? `#${localFacilityArtPrefix}${motif}` : `icons/facility-art.svg#${motif}`;
+    }
+
+    function refreshFacilityArtReferences(root) {
+        if (!localFacilityArtPrefix || !root?.querySelectorAll) return;
+        for (const use of Array.from(root.querySelectorAll('use[href^="icons/facility-art.svg#"]'))) {
+            const motif = use.getAttribute('href').slice('icons/facility-art.svg#'.length);
+            if (localFacilityArtIds.has(motif)) use.setAttribute('href', `#${localFacilityArtPrefix}${motif}`);
+        }
+    }
+
+    function renderFacilityArt(name, landmark = false, category = '') {
+        const named = Object.prototype.hasOwnProperty.call(FACILITY_ART, name) ? FACILITY_ART[name] : null;
+        const grouped = Object.prototype.hasOwnProperty.call(CATEGORY_ART, category) ? CATEGORY_ART[category] : null;
+        const landmarkMotif = Object.prototype.hasOwnProperty.call(LANDMARK_ART, name) ? LANDMARK_ART[name] : 'landmark';
+        const motif = landmark ? landmarkMotif : (named || grouped || 'shop');
+        const scene = landmark ? 'landmark' : (CATEGORY_SCENE[category] || 'street');
+        const viewBox = FACILITY_ART_FRAMING[name] || '0 0 160 80';
+        return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"><use href="${facilityArtReference(motif)}"></use></svg>`;
+    }
+
+    function renderLandmarkBadgeIcon(name) {
+        const motif = Object.prototype.hasOwnProperty.call(LANDMARK_ART, name) ? LANDMARK_ART[name] : 'landmark';
+        return `<svg class="landmark-badge-icon" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="${facilityArtReference(motif)}"></use></svg>`;
+    }
+
+    function townDevelopmentStage(facilityCount, landmarkCount) {
+        const facilities = Number.isFinite(facilityCount) ? Math.max(0, Math.floor(facilityCount)) : 0;
+        const landmarks = Number.isFinite(landmarkCount) ? Math.max(0, Math.floor(landmarkCount)) : 0;
+        const development = facilities + landmarks * 2;
+        if (development >= 8) return 'city';
+        if (development >= 3) return 'neighborhood';
+        return 'quiet';
+    }
+
+    function renderDiceMark() {
+        return '<svg class="card-dice-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="#fff4d6" stroke="#9b713f" stroke-width="1.5"/><circle cx="6" cy="6" r="1.35" fill="#31475a"/><circle cx="14" cy="6" r="1.35" fill="#31475a"/><circle cx="10" cy="10" r="1.35" fill="#31475a"/><circle cx="6" cy="14" r="1.35" fill="#31475a"/><circle cx="14" cy="14" r="1.35" fill="#31475a"/></svg>';
+    }
+
+    function renderCoinMark() {
+        return '<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>';
+    }
+
+    function renderTownScenery(cards, built) {
+        const motifs = new Set(built.map(([name]) => LANDMARK_ART[name]));
+        const scenes = new Set(cards.map(card => CATEGORY_SCENE[card.category]));
+        const development = Math.min(12, cards.length + built.length * 2);
+        const roadEnd = 110 + development * 41;
+        const lamps = Array.from({ length: Math.min(7, Math.floor(development / 2)) }, (_, index) => {
+            const x = 72 + index * 81;
+            return `<g data-town-lamp="${index}" stroke="#d5bd83" stroke-width="2"><path d="M${x} 164V133"/><path d="M${x - 5} 134L${x} 126L${x + 5} 134Z" fill="#f9dfa1"/><circle cx="${x}" cy="132" r="10" fill="#f6d687" opacity=".13" stroke="none"/></g>`;
+        }).join('');
+        const landscape = [];
+        if (scenes.has('pasture')) landscape.push('<g data-town-feature="gardens"><path d="M0 153Q60 127 133 146L168 166H0Z" fill="#7f9272"/><path d="M12 154L115 145M29 164L133 153" stroke="#c6ba7e" stroke-width="3"/><path d="M32 146V135M56 143V133M80 143V132" stroke="#d8c68d" stroke-width="2"/></g>');
+        if (scenes.has('water') || motifs.has('port')) landscape.push('<g data-town-feature="waterfront"><path d="M454 150Q548 131 640 146V180H444Z" fill="#59888c"/><path d="M469 162H529M557 153H615M529 175H614" stroke="#a2c3bb" stroke-width="2"/><path d="M493 145H627V152H493Z" fill="#bfad83"/><path d="M510 150V165M595 150V165" stroke="#536e72" stroke-width="3"/></g>');
+        if (scenes.has('industrial')) landscape.push('<g data-town-feature="works"><path d="M387 120V86H396V120M409 125V94H418V125" fill="#b39a85" stroke="#496772" stroke-width="2"/><path d="M391 83Q380 72 391 61Q406 51 397 43" fill="none" stroke="#b8c1ac" stroke-width="6" opacity=".4"/></g>');
+        if (motifs.has('station')) landscape.push('<g data-town-feature="railway"><path d="M0 170H420M0 176H420" stroke="#a6ab9a" stroke-width="2"/><path d="M58 165V151Q58 147 63 147H142Q148 147 148 153V165Z" fill="#ded3ae" stroke="#3b5968" stroke-width="2"/><path d="M66 151H131V157H66Z" fill="#446779"/><path d="M61 160H144" stroke="#bb875e" stroke-width="3"/><circle cx="75" cy="166" r="3" fill="#304c5b"/><circle cx="132" cy="166" r="3" fill="#304c5b"/></g>');
+        if (motifs.has('park')) landscape.push('<g data-town-feature="fairground" stroke="#d9bd82" stroke-width="2" fill="none"><circle cx="548" cy="74" r="26"/><path d="M548 48V100M522 74H574M530 56L566 92M566 56L530 92M548 74L531 122M548 74L565 122"/><path d="M524 68H532V77H524ZM544 44H552V53H544ZM564 68H572V77H564ZM544 95H552V104H544Z" fill="#d8b482" stroke="#466471"/></g>');
+        if (motifs.has('radio')) landscape.push('<g data-town-feature="beacon"><path d="M89 109L100 43L111 109M94 84H106M97 64H103" fill="none" stroke="#bec0a6" stroke-width="2"/><circle cx="100" cy="40" r="4" fill="#f1cb81"/><circle cx="100" cy="40" r="12" fill="#f1cb81" opacity=".12"/></g>');
+        if (motifs.has('mall')) landscape.push('<g data-town-feature="shopping-street" stroke="#d5bd83" stroke-width="2"><path d="M219 131Q285 145 350 130" fill="none"/><path d="M229 134V142M255 139V147M284 141V149M313 138V146M339 133V141"/><path d="M224 141H234V148H224ZM250 146H260V153H250ZM279 148H289V155H279ZM308 145H318V152H308ZM334 140H344V147H334Z" fill="#f8d790" stroke="none"/></g>');
+        if (motifs.has('airport')) landscape.push('<g data-town-feature="air-route"><path d="M393 44Q435 27 488 35" fill="none" stroke="#d9d5b6" stroke-width="2" opacity=".5"/><path d="M496 35L510 30L514 20L518 21L516 31L533 34L532 38L515 37L507 44L504 43L508 36L498 39Z" fill="#eee0b6" stroke="#496673" stroke-width="1.5"/></g>');
+        // The first copy occupies its featured lot. Further copies and types
+        // beyond those lots populate the distant neighbourhood, so purchases
+        // change the scenery even while the visible town has only a few types.
+        const featuredTypes = Math.min(8, new Set(cards.map(card => card.name)).size);
+        const population = Math.min(64, Math.max(0, cards.length - featuredTypes));
+        const residences = Array.from({ length: Math.ceil(population / 2) }, (_, index) => {
+            const x = 8 + (index % 16) * 39;
+            const y = 82 + Math.floor(index / 16) * 23;
+            const secondWindow = population > index * 2 + 1
+                ? `<path d="M${x + 13} ${y + 8}H${x + 17}V${y + 13}H${x + 13}Z" fill="#f0cf8b"/>` : '';
+            return `<g><path d="M${x} ${y + 18}V${y + 4}L${x + 10} ${y - 2}L${x + 21} ${y + 4}V${y + 18}Z" fill="#6e8787" stroke="#425f69" stroke-width="1"/><path d="M${x + 4} ${y + 8}H${x + 8}V${y + 13}H${x + 4}Z" fill="#f0cf8b"/>${secondWindow}</g>`;
+        }).join('');
+        landscape.unshift(`<g class="town-population" data-town-population="${population}">${residences}</g>`);
+        return `<g class="town-state-scenery">${landscape.join('')}<path data-town-road="${development}" d="M14 162Q${Math.round(roadEnd / 2)} 149 ${roadEnd} 162" fill="none" stroke="#baad8b" stroke-width="8" opacity=".55"/><g class="town-backdrop-lamps">${lamps}</g></g>`;
+    }
+
+    function renderTownBackdrop(cards = [], built = []) {
+        return `<svg class="town-backdrop" viewBox="0 0 640 180" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+            <path d="M0 106Q94 62 192 106T384 97T640 92V180H0Z" fill="#5b7779" opacity=".45"/>
+            <path d="M0 131Q138 103 266 135T640 120V180H0Z" fill="#496b68"/>
+            <g class="town-backdrop-neighborhood" stroke="#294653" stroke-width="2" stroke-linejoin="round">
+                <path d="M24 123V85L54 66L83 85V123Z" fill="#b7b49a"/><path d="M17 86L54 59L90 86" fill="#526a71"/>
+                <path d="M34 92H47V105H34ZM60 92H73V105H60Z" fill="#f1d493"/><path d="M49 123V107H62V123" fill="#405c67"/>
+                <path d="M95 124V95L128 75L159 95V124Z" fill="#829798"/><path d="M89 96L128 69L166 96" fill="#4a636d"/>
+                <path d="M106 103H119V115H106ZM136 103H149V115H136Z" fill="#f0cd8b"/>
+                <path d="M475 128V86H531V128Z" fill="#a3aa99"/><path d="M468 87L481 73H525L539 87Z" fill="#49646d"/>
+                <path d="M486 98H519V113H486Z" fill="#e8cb91"/><path d="M480 96H525L521 101H484Z" fill="#d4b47e"/>
+                <path d="M551 126V84L583 62L614 84V126Z" fill="#b3b49d"/><path d="M545 84L583 55L621 84" fill="#49616c"/>
+                <path d="M564 95H576V109H564ZM591 95H603V109H591Z" fill="#f4d697"/>
+            </g>
+            <g class="town-backdrop-city" stroke="#294653" stroke-width="2" stroke-linejoin="round">
+                <path d="M186 123V69H225V123Z" fill="#758e95"/><path d="M183 69L191 60H219L229 69Z" fill="#425e6c"/>
+                <path d="M195 81H205V92H195ZM212 81H220V92H212ZM195 100H205V111H195ZM212 100H220V111H212Z" fill="#f0cf8d"/>
+                <path d="M247 123V80L271 63L296 80V123Z" fill="#a2ac9c"/><path d="M241 81L271 57L302 81" fill="#4c6870"/>
+                <path d="M257 91H266V103H257ZM277 91H286V103H277Z" fill="#ebca8a"/>
+                <path d="M320 124V56H344V124Z" fill="#afa889"/><path d="M313 56L332 33L351 56Z" fill="#4e6570"/>
+                <circle cx="332" cy="68" r="9" fill="#eddbac"/><path d="M332 62V68L337 71" fill="none"/>
+                <path d="M321 108H343V119H321Z" fill="#e9c983"/>
+                <path d="M365 127V88H403V127Z" fill="#8e9f99"/><path d="M359 88L384 68L409 88" fill="#4c6971"/>
+                <path d="M374 99H383V111H374ZM390 99H399V111H390Z" fill="#efcf8e"/>
+                <path d="M421 126V68H452V126Z" fill="#779297"/><path d="M417 69H456L451 58H422Z" fill="#415e6b"/>
+                <path d="M428 80H437V91H428ZM443 80H449V91H443ZM428 101H437V112H428ZM443 101H449V112H443Z" fill="#f0d492"/>
+            </g>
+            ${renderTownScenery(cards, built)}
+        </svg>`;
+    }
+
+    function renderTownGrowth(cards, built) {
+        const development = Math.min(24, cards.length + built.length * 3);
+        const stage = townDevelopmentStage(cards.length, built.length);
+        const characters = new Map();
+        for (const card of cards) {
+            const character = FACILITY_ART[card.name] === 'forest' ? 'woodland'
+                : CATEGORY_SCENE[card.category] || 'street';
+            characters.set(character, (characters.get(character) || 0) + 1);
+        }
+        const dominant = [...characters].sort((a, b) => b[1] - a[1])[0]?.[0] || 'street';
+        const water = dominant === 'water' || built.some(([name]) => LANDMARK_ART[name] === 'port');
+        const industry = dominant === 'industrial';
+        const rural = dominant === 'pasture' || dominant === 'woodland';
+        const landscape = water ? 'waterfront' : industry ? 'industrial'
+            : dominant === 'woodland' ? 'woodland' : rural ? 'gardens' : 'street';
+        const roadCount = stage === 'city' ? 4 : stage === 'neighborhood' ? 2 : 1;
+        const extent = Math.min(624, 160 + development * 22);
+        const roads = Array.from({ length: roadCount }, (_, index) => {
+            const y = 207 + index * 81;
+            return `<path d="M16 ${y}H${extent}" stroke="#445e64" stroke-width="${stage === 'city' ? 18 : 12}"/><path d="M16 ${y}H${extent}" stroke="#c6b98d" stroke-width="2" stroke-dasharray="12 12"/>`;
+        }).join('');
+        const trees = Array.from({ length: Math.min(10, 2 + Math.floor(development / 3)) }, (_, index) => {
+            const x = index % 2 ? 622 : 10;
+            const y = 126 + Math.floor(index / 2) * 72;
+            return `<g data-town-growth-tree="${index}"><path d="M${x} ${y + 18}V${y - 3}" stroke="#a79873" stroke-width="4"/><path d="M${x - 10} ${y + 4}Q${x - 17} ${y - 13} ${x} ${y - 24}Q${x + 17} ${y - 13} ${x + 10} ${y + 4}Z" fill="#78977e" stroke="#405f62" stroke-width="2"/><path d="M${x - 5} ${y - 5}Q${x} ${y - 17} ${x + 5} ${y - 12}" fill="none" stroke="#a8b28c" stroke-width="2"/></g>`;
+        }).join('');
+        const lamps = Array.from({ length: Math.min(10, Math.floor(development / 2)) }, (_, index) => {
+            const x = index % 2 ? 474 : 160;
+            const y = 204 + Math.floor(index / 2) * 54;
+            return `<g data-town-growth-lamp="${index}"><path d="M${x} ${y}V${y - 24}H${x + 9}" fill="none" stroke="#b8b393" stroke-width="3"/><path d="M${x + 4} ${y - 24}H${x + 14}L${x + 12} ${y - 18}H${x + 6}Z" fill="#f4d189"/><path d="M${x + 4} ${y - 4}H${x + 17}" stroke="#edcb8b" stroke-width="3" opacity=".5"/></g>`;
+        }).join('');
+        const skylineCount = stage === 'city' ? 6 : stage === 'neighborhood' ? 3 : 1;
+        const skyline = Array.from({ length: skylineCount }, (_, index) => {
+            const x = 24 + index * 100;
+            const h = (stage === 'city' ? 52 : stage === 'neighborhood' ? 34 : 20) + (index % 2) * 8;
+            if (dominant === 'woodland') {
+                const pine = (left, bottom, scale, light) => `<g transform="translate(${left} ${bottom}) scale(${scale})"><path d="M21 0V-18H27V0Z" fill="#9d8968"/><path d="M24 -60L10 -40H17L5 -24H13L0 -7Q24 0 48 -7L35 -24H43L31 -40H38Z" fill="${light ? '#789776' : '#456e5d'}" stroke="#385d53" stroke-width="1.5"/><path d="M24 -58L17 -41H24L13 -25H25L8 -10Q18 -6 24 -7Z" fill="${light ? '#adc094' : '#759775'}" opacity=".65"/></g>`;
+                return `<g data-town-canopy="layered"><ellipse cx="${x + 34}" cy="82" rx="43" ry="7" fill="#284f47" opacity=".35"/>${pine(x - 3, 80, h / 84, false)}${pine(x + 35, 83, h / 92, false)}${pine(x + 13, 84, h / 62, true)}</g>`;
+            }
+            if (water && !industry) return `<path d="M${x} 73H${x + 64}L${x + 52} 87H${x + 12}Z" fill="#375d69"/><path d="M${x + 28} 73V${78 - h}L${x + 57} 66H${x + 28}" fill="#b9cfbd" stroke="#718f90" stroke-width="3"/>`;
+            if (industry) return `<path d="M${x} 78V48L${x + 16} 36V48L${x + 32} 36V48H${x + 62}V78Z" fill="#587a80" stroke="#9aaf99" stroke-width="3"/><path d="M${x + 45} 48V${78 - h}H${x + 54}V48" fill="#aa9f85"/>`;
+            if (rural) return `<path d="M${x} 78L${x + 32} ${80 - h}L${x + 64} 78Z" fill="#8aa174"/><path d="M${x + 10} 72H${x + 54}M${x + 18} 61H${x + 46}" stroke="#d7be78" stroke-width="4"/>`;
+            return `<path d="M${x} 78V${78 - h}L${x + 24} ${66 - h}L${x + 48} ${78 - h}V78Z" fill="#62828a" stroke="#9aaf99" stroke-width="3"/><path d="M${x + 12} ${86 - h}H${x + 18}M${x + 30} ${86 - h}H${x + 36}" stroke="#e7cc91" stroke-width="4"/>`;
+        }).join('');
+        const markedLandmarks = built.slice(0, Object.keys(LANDMARK_ART).length);
+        const landmarkBeacons = markedLandmarks.map(([name], index) => {
+            const x = Math.round(40 + index * 560 / Math.max(1, markedLandmarks.length - 1));
+            const y = 19 + (index % 2) * 7;
+            return `<g data-town-growth-landmark="${escapeText(name)}" data-town-landmark-marker="pennant"><ellipse cx="${x}" cy="81" rx="10" ry="3" fill="#274d48" opacity=".3"/><path d="M${x} 80V${y}" stroke="#bbb69a" stroke-width="3"/><path d="M${x + 2} ${y + 2}Q${x + 13} ${y - 1} ${x + 23} ${y + 4}L${x + 18} ${y + 11}L${x + 23} ${y + 18}Q${x + 12} ${y + 13} ${x + 2} ${y + 16}Z" fill="#e4c37e" stroke="#af8d59" stroke-width="1.5"/><path d="M${x + 4} ${y + 5}Q${x + 11} ${y + 2} ${x + 18} ${y + 6}" fill="none" stroke="#f4dea3" stroke-width="2"/></g>`;
+        }).join('');
+        const furnishings = Array.from({ length: Math.min(4, Math.floor(development / 4)) }, (_, index) => {
+            const x = 62 + index * 148;
+            return `<g data-town-growth-bench="${index}" stroke="#bea97c" stroke-width="3"><path d="M${x} 465H${x + 26}M${x + 3} 459H${x + 23}M${x + 4} 465V471M${x + 22} 465V471"/><path d="M${x + 33} 467V455H${x + 45}V467Z" fill="#647f78" stroke="#9aaa84" stroke-width="2"/><path d="M${x + 32} 455Q${x + 39} 442 ${x + 46} 455" fill="#9caf87" stroke="none"/></g>`;
+        }).join('');
+        const ground = water
+            ? '<path d="M0 69Q160 53 320 70T640 66V100Q470 85 320 100T0 96Z" fill="#5b9293"/><path d="M20 83H140M200 87H310M390 83H520" stroke="#abc8b9" stroke-width="3"/>'
+            : `<path d="M0 76Q160 49 320 73T640 70V107H0Z" fill="${rural ? '#7c9677' : '#667f78'}"/>`;
+        return `<svg class="town-growth-scenery" data-town-growth="${development}" data-town-character="${landscape}" viewBox="0 0 640 480" preserveAspectRatio="none" aria-hidden="true" focusable="false">${ground}<g class="town-growth-skyline" data-town-silhouette="${landscape}" data-town-silhouette-kind="${industry ? 'industrial' : dominant === 'woodland' ? 'woodland' : landscape}" data-town-silhouette-count="${skylineCount}">${skyline}${landmarkBeacons}</g><g fill="none">${roads}</g>${trees}${lamps}${furnishings}</svg>`;
+    }
+
+    function shouldAnimateTownLot(previousCount, ownedCount, copy, visibleCount) {
+        if (![previousCount, ownedCount, copy, visibleCount].every(Number.isSafeInteger) ||
+                previousCount < 0 || ownedCount <= previousCount || copy < 0 ||
+                visibleCount <= 0 || copy >= visibleCount) return false;
+        // Each picture represents one copy. Beyond the finite lots, only the
+        // representative remainder badge changes; existing copies do not arrive again.
+        return previousCount >= visibleCount ? copy === 0 : copy >= previousCount;
+    }
+
+    function townFacilityLotPosition(index, totalCount) {
+        const columns = 4;
+        const row = Math.floor(index / columns);
+        const rowStart = row * columns;
+        const rowCount = Math.min(columns, totalCount - rowStart);
+        const lotWidth = rowCount === 1 ? 48 : rowCount === 2 ? 38 : rowCount === 3 ? 30 : 23;
+        const columnStride = lotWidth + (rowCount === 4 ? 1 : 3);
+        const rowWidth = lotWidth + Math.max(0, rowCount - 1) * columnStride;
+        const rowTotal = Math.ceil(totalCount / columns);
+        const lastRowCount = Math.min(columns, totalCount - (rowTotal - 1) * columns);
+        const lastRowWidth = lastRowCount === 1 ? 48 : lastRowCount === 2 ? 38 : lastRowCount === 3 ? 30 : 23;
+        const rowStackHeight = (rowTotal - 1) * 17 + lastRowWidth / 2;
+        return {
+            x: (100 - rowWidth) / 2 + (index - rowStart) * columnStride,
+            y: Math.max(25, (100 - rowStackHeight) / 2) + row * 17,
+            width: lotWidth,
+        };
+    }
+
+    function renderTownHtml(player, enabledLandmarks = new Set(), options = {}) {
+        const cards = Array.isArray(player.cards) ? player.cards : [];
+        const grouped = new Map();
+        for (const card of cards) {
+            const entry = grouped.get(card.name) || { card, count: 0 };
+            entry.count++;
+            grouped.set(card.name, entry);
+        }
+        const built = Object.entries(player.landmarks || {})
+            .filter(([name, value]) => value === true && enabledLandmarks.has(name));
+        const stage = townDevelopmentStage(cards.length, built.length);
+        // Seven founding districts keep their locations. The eighth is a
+        // recent-acquisition window, so later facility types also reach the
+        // town without moving those districts or allocating unbounded lots.
+        const districts = [...grouped.values()].slice(0, 7);
+        const foundingNames = new Set(districts.map(entry => entry.card.name));
+        for (let index = cards.length - 1; index >= 0; index--) {
+            if (!foundingNames.has(cards[index].name)) {
+                districts.push(grouped.get(cards[index].name));
+                break;
+            }
+        }
+        const lots = districts.map(entry => ({ ...entry, copy: 0 }));
+        for (let copy = 1; copy < 6 && lots.length < 16; copy++) {
+            for (const entry of districts) {
+                if (entry.count > copy && lots.length < 16) lots.push({ ...entry, copy });
+            }
+        }
+        const visibleCopies = new Map();
+        const townRows = Math.ceil(lots.length / 4);
+        const townAspect = townRows === 1 ? (640 / 340).toFixed(4) : townRows === 2 ? '1.6' : (640 / 480).toFixed(4);
+        for (const lot of lots) visibleCopies.set(lot.card.name, (visibleCopies.get(lot.card.name) || 0) + 1);
+        const facilities = lots.map(({ card, count, copy }, index) => {
+            const position = townFacilityLotPosition(index, lots.length);
+            const shown = visibleCopies.get(card.name);
+            const remainingCopies = count - shown;
+            const activationEvents = Number.isInteger(options.playerIndex) ? (options.events?.activations || []).filter(event => event.facility === true &&
+                event.subject === card.name && (Number.isInteger(event.owner) ? event.owner === options.playerIndex
+                    : event.to !== null ? event.to === options.playerIndex : event.from === options.playerIndex) &&
+                Number.isSafeInteger(event.amount)) : [];
+            const activationIds = new Set();
+            let activationNet = 0;
+            let activationCount = 0;
+            for (const event of activationEvents) {
+                activationNet += (event.to === options.playerIndex ? event.amount : 0) -
+                    (event.from === options.playerIndex ? event.amount : 0);
+                if (event.activation && activationIds.has(event.activation)) continue;
+                if (event.activation) activationIds.add(event.activation);
+                activationCount += Number.isSafeInteger(event.count) && event.count > 0 ? event.count : 1;
+            }
+            const activated = Number.isSafeInteger(activationNet) && activationCount > 0;
+            const activationBadge = activated
+                ? `<span class="town-activation-mark" aria-hidden="true">発動${activationCount}回${activationNet ? ` · ${activationNet > 0 ? '+' : ''}${activationNet}` : ''}</span>` : '';
+            const countBadge = copy === 0 && remainingCopies > 0
+                ? `<span class="town-building-count" title="所有${count}枚・絵${shown}枚・省略${remainingCopies}枚">+${remainingCopies}枚</span>` : '';
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}${activated ? ' plaza-town-building-activated' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}"${activated ? ` data-town-activation-count="${activationCount}" data-town-activation-net="${activationNet}" title="${activationCount}回発動・収支${activationNet > 0 ? '+' : ''}${activationNet}コイン"` : ''} style="--town-x:${position.x}%;--town-y:${position.y}%;--town-width:${position.width}%">${renderFacilityArt(card.name, false, card.category)}${activationBadge}${countBadge}</span>`;
+        }).join('');
+        // Landmark lots are keyed to definition order, not acquisition order.
+        const landmarkSlots = Object.keys(LANDMARK_ART);
+        const landmarks = built.map(([name]) => {
+            const slot = Math.max(0, landmarkSlots.indexOf(name));
+            return `<span class="town-building town-landmark" data-town-slot-landmark="${slot}" data-town-building="landmark:${escapeText(name)}" style="--town-x:${2 + slot * 16}%;--town-y:16%;--town-width:15%">${renderFacilityArt(name, true)}</span>`;
+        }).join('');
+        const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
+        const roads = '<svg class="town-district-roads" viewBox="0 0 640 300" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#465e65" stroke-width="17"/><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#c2b18b" stroke-width="2" stroke-dasharray="9 11" opacity=".55"/></svg>';
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" data-town-rows="${townRows}" style="--town-aspect:${townAspect}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}${renderTownGrowth(cards, built)}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
+    }
+
+    function renderBuildCardButton(options) {
+        const { card, stock, canBuildThis, escapeHtml, getEffectText, highlighted = false } = options;
+        const safeName = escapeHtml(card.name);
+        const safeColor = safeCardColorName(card.color);
+        const highlightClass = highlighted ? ' market-refill-highlight' : '';
+        const highlightBadge = highlighted ? '<span class="market-refill-badge">補充</span>' : '';
+        return `<div class="card-wrapper${highlightClass}">${highlightBadge}<button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${renderDiceMark()} ${card.diceNums.join("・")}</span><span class="card-category-tag"><span class="card-family-mark" data-category="${escapeHtml(card.category)}" aria-hidden="true"></span>${escapeHtml(card.category)}</span></div>${renderFacilityArt(card.name, false, card.category)}<div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${renderCoinMark()}${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div></button><div class="card-meta-row"><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く"><span class="card-detail-emoji" aria-hidden="true">ℹ</span><svg class="card-detail-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#info"></use></svg><span class="card-detail-label"> 詳細</span></button><span class="card-stock">残り${stock}枚</span></div></div>`;
+    }
+
+    function renderLandmarkBuildButton(options) {
+        const { name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji, renderLandmarkMark } = options;
+        const safeName = escapeHtml(name);
+        const landmarkMark = typeof renderLandmarkMark === 'function'
+            ? `<span class="card-landmark-mark">${renderLandmarkMark(name)}</span>`
+            : getLandmarkEmoji(name);
+        const builtStatus = '<span class="card-built-status"><span class="card-built-emoji" aria-hidden="true">✅</span><svg class="card-built-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#check"></use></svg><span>済</span></span>';
+        return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${landmarkMark}</span><span class="card-category-tag"><span class="card-family-mark" data-category="大施設" aria-hidden="true"></span>ランドマーク</span></div>${renderFacilityArt(name, true)}<div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? builtStatus : renderCoinMark() + cost}</span></div><div class="card-effect">${escapeHtml(getLandmarkEffectText(name))}</div></div></button><div class="card-meta-row card-meta-row-detail-only"><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く"><span class="card-detail-emoji" aria-hidden="true">ℹ</span><svg class="card-detail-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#info"></use></svg><span class="card-detail-label"> 詳細</span></button></div></div>`;
+    }
+
+    function cardFilterButtonView(cardFilter, color) {
+        const active = cardFilter === color;
+        return Object.freeze({
+            active,
+            ariaPressed: active ? 'true' : 'false',
+            className: `card-filter-btn${active ? ' active' : ''}`,
+        });
+    }
+
+    function buildCardFilterBarHtml(cardFilter) {
+        return CARD_FILTER_DEFS.map(({ color, label }) => {
+            const view = cardFilterButtonView(cardFilter, color);
+            return `<button class="${view.className}" data-action="setCardFilter" data-card-filter="${color}" aria-pressed="${view.ariaPressed}">${label}</button>`;
+        }).join('');
+    }
+
+    function cardFilterFocusPlan(requestedFilter, source = {}) {
+        const knownFilter = CARD_FILTER_DEFS.some(definition => definition.color === requestedFilter);
+        const restore = knownFilter && source.action === 'setCardFilter' && source.cardFilter === requestedFilter;
+        return Object.freeze({ restore, cardFilter: requestedFilter });
+    }
+
+    function canRestoreCardFilterFocus(facts = {}) {
+        return facts.connected !== false && !facts.hidden && !facts.disabled && !facts.ancestorHidden;
+    }
+
+    function buildActionIdentity(source = {}) {
+        if (source.action === 'buildCard' && source.cardName) {
+            return Object.freeze({ action: 'buildCard', name: source.cardName });
+        }
+        if (source.action === 'buildLandmark' && source.landmarkName) {
+            return Object.freeze({ action: 'buildLandmark', name: source.landmarkName });
+        }
+        if (source.action === 'undoBuild') {
+            return Object.freeze({ action: 'undoBuild', name: '' });
+        }
+        return null;
+    }
+
+    function buildActionFocusPlan(sourceIdentity, previousBuildIdentity, eligible) {
+        if (eligible !== true || !sourceIdentity) {
+            return Object.freeze({ restore: false, identity: null, fallback: false });
+        }
+        const identity = sourceIdentity.action === 'undoBuild'
+            ? previousBuildIdentity
+            : sourceIdentity;
+        return Object.freeze({
+            restore: true,
+            identity: identity || null,
+            fallback: true,
+        });
+    }
+
+    function createActionFocusController() {
+        let previousBuildIdentity = null;
+        return Object.freeze({
+            reset() {
+                previousBuildIdentity = null;
+            },
+            snapshot() {
+                return Object.freeze({ previousBuildIdentity });
+            },
+            plan(source = {}, eligible = false) {
+                const sourceIdentity = buildActionIdentity(source);
+                const plan = buildActionFocusPlan(
+                    sourceIdentity,
+                    previousBuildIdentity,
+                    eligible
+                );
+                if (eligible === true && sourceIdentity && sourceIdentity.action !== 'undoBuild') {
+                    previousBuildIdentity = sourceIdentity;
+                }
+                return plan;
+            },
+        });
+    }
+
+    function applyBuildActionFocusPlan(plan, effects = {}) {
+        if (!plan || plan.restore !== true) return false;
+        const target = typeof effects.findIdentity === 'function'
+            ? effects.findIdentity(plan.identity)
+            : null;
+        if (target && typeof effects.focusIdentity === 'function' &&
+                effects.focusIdentity(target) === true) return true;
+        return plan.fallback === true && typeof effects.focusFallback === 'function'
+            ? effects.focusFallback() === true
+            : false;
+    }
+
+    function canBuildCard(options) {
+        const { card, stock, current, canBuildCardAction } = options;
+        return !!canBuildCardAction && stock > 0 && current.coins >= card.cost &&
+            !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0);
+    }
+
+    function cardMatchesFilter(card, cardFilter, canBuildThis) {
+        if (cardFilter === 'affordable') return canBuildThis;
+        return !cardFilter || card.color === cardFilter;
+    }
+
+    function buildCardEmptyStateHtml(cardFilter) {
+        return cardFilter === 'affordable'
+            ? '<p class="build-filter-empty">現在建設できる施設はありません</p>'
+            : '<p class="build-filter-empty">この条件に表示できる施設はありません</p>';
+    }
+
+    function buildVisibleCardButtonsHtml(options) {
+        const { cards, cardFilter, enabledCards, shopStock, current, canBuildCardAction, compareCardsForDisplay, getShopStockCount, renderBuildCardButton } = options;
+        const highlightedNames = new Set(options.highlightedCardNames || []);
+        const sortedCards = [...cards].sort(compareCardsForDisplay);
+        return sortedCards.map(card => {
+            if (!enabledCards.has(card.name)) return "";
+            const stock = getShopStockCount(shopStock, card);
+            if (stock <= 0) return "";
+            const canBuildThis = canBuildCard({ card, stock, current, canBuildCardAction });
+            if (!cardMatchesFilter(card, cardFilter, canBuildThis)) return "";
+            return renderBuildCardButton(card, stock, canBuildThis, highlightedNames.has(card.name));
+        }).join("");
+    }
+
+    function buildLandmarkButtonsHtml(options) {
+        const { landmarks, enabledLandmarks, currentCoins, canBuildLandmarkAction, landmarkCost, renderLandmarkBuildButton } = options;
+        return Object.entries(landmarks).filter(([name]) => enabledLandmarks.has(name)).map(([name, built]) => {
+            const cost = landmarkCost(name);
+            const canBuildThis = canBuildLandmarkAction && !built && currentCoins >= cost;
+            return renderLandmarkBuildButton(name, built, cost, canBuildThis);
+        }).join("");
+    }
+
+    function buildBuildMenuHtml(options) {
+        const { canBuildCardAction, canBuildLandmarkAction, filterBtnsHtml, cardHtml, landmarkHtml, undoBtn, marketStatusHtml = '' } = options;
+        const canBuild = canBuildCardAction || canBuildLandmarkAction;
+        return `<h3><span class="build-menu-heading-emoji" aria-hidden="true">🏗️</span><svg class="build-menu-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg><span>${canBuild ? "市場から施設を選んでください" : "施設一覧"}</span></h3>${undoBtn}${marketStatusHtml}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+    }
+
+    function buildMarketStatusHtml(marketSupply, shopStock, players = []) {
+        if (!marketSupply || marketSupply.mode !== 'ten-type') return '';
+        const visibleTypes = Object.values(shopStock || {}).filter(count => Number.isInteger(count) && count > 0).length;
+        const deckCount = Array.isArray(marketSupply.deck) ? marketSupply.deck.length : 0;
+        const warningClass = deckCount === 0 ? ' market-deck-empty'
+            : deckCount <= 10 ? ' market-deck-low' : '';
+        const warning = deckCount === 0 ? '<strong>山札切れ</strong>'
+            : deckCount <= 10 ? '<strong>残りわずか</strong>' : '';
+        const history = Array.isArray(marketSupply.refillHistory)
+            ? marketSupply.refillHistory.slice().reverse() : [];
+        const revealedCount = Number.isSafeInteger(marketSupply.revealedCardCount) &&
+            marketSupply.revealedCardCount >= 0 ? marketSupply.revealedCardCount : 0;
+        const totalCards = revealedCount + deckCount;
+        const gaugePercent = marketSupply.totalsComplete === true && totalCards > 0
+            ? Math.max(0, Math.min(100, Math.round(revealedCount / totalCards * 100))) : null;
+        const gaugeHtml = gaugePercent === null ? ''
+            : `<div class="market-deck-gauge" aria-hidden="true"><span style="width:${gaugePercent}%"></span></div>`;
+        const historyHtml = history.length > 0
+            ? `<details class="market-refill-history"><summary>補充履歴（${history.length}件）</summary><ol>${history.map(entry => {
+                const names = Array.isArray(entry && entry.cardNames) ? entry.cardNames : [];
+                const counts = new Map();
+                for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
+                const summary = Array.from(counts, ([name, count]) =>
+                    escapeText(count > 1 ? `${name}×${count}` : name)
+                ).join('、');
+                const player = Number.isSafeInteger(entry && entry.playerIndex)
+                    ? players[entry.playerIndex] : null;
+                const turn = Number.isSafeInteger(entry && entry.turnCount) && entry.turnCount >= 0
+                    ? `${entry.turnCount + 1}ターン目` : '';
+                const actor = player && typeof player.name === 'string'
+                    ? `${escapeText(player.name)}の建設後` : '';
+                const context = [turn, actor].filter(Boolean).join('・');
+                return `<li>${context ? `<span class="market-refill-context">${context}</span>` : ''}${summary || '補充カードなし'}</li>`;
+            }).join('')}</ol></details>`
+            : '';
+        return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
+    }
+
+    return Object.freeze({ bindBuildMenuPointerCapture, patchPresentationChildren, updateBuildMenuHtml, prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;
+if (typeof window !== 'undefined') window.UiBuildMenu = UiBuildMenu;
+if (typeof globalThis !== 'undefined') globalThis.UiBuildMenu = UiBuildMenu;

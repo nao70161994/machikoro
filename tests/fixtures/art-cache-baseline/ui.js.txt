@@ -1,0 +1,2680 @@
+/* global UiMarketTarget, UiCardBoard */
+/* global UiCompactMarket, CardBoardField, Element, HTMLElement, HTMLDetailsElement, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
+const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
+const uiClientStorageFacade = ClientStorage.createFacade();
+const pendingModalUpdateController = UiPendingEffects.createUpdateController();
+const pendingModalFocusController = UiPendingEffects.createFocusController();
+const diceChoiceFocusController = UiDiceChoice.createFocusController();
+const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
+const buildActionFocusController = UiBuildMenu.createActionFocusController();
+let cardDetailFocusOrigin = null;
+let cardDetailReturnsToMarket = false;
+const turnCoinBalanceCache = new WeakMap();
+const plazaReceiptRenderCache = new WeakMap();
+const plazaTurnEventsCache = new WeakMap();
+
+function plazaTurnEventsFor(game, maxActivations = 12) {
+    if (!game || typeof game !== 'object') return null;
+    const key = `${game.turnCount}:${game.currentPlayerIndex}:${game.log?.length || 0}:${maxActivations}`;
+    const log = game.log;
+    const first = log?.[0];
+    const last = log?.[log.length - 1];
+    const cached = plazaTurnEventsCache.get(game);
+    if (cached?.key === key && cached.log === log && cached.first === first && cached.last === last) return cached.events;
+    const events = UiTurnEvents.project(game.log || [], {
+        players: game.players, turnPlayerIndex: game.currentPlayerIndex,
+        display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
+        landmarkNames: Player.landmarkNames(), maxActivations,
+    });
+    plazaTurnEventsCache.set(game, { key, log, first, last, events });
+    return events;
+}
+const plazaIncomePreviewPanel = typeof UiIncomePreviewPanel !== 'undefined' ? UiIncomePreviewPanel.create({
+    document,
+    getGame: () => uiGameRuntimeSnapshot().game,
+    getSelectedPlayerIndex: () => PlazaField.selectedPlayerIndex(),
+    getSession: () => uiGameRuntimeSnapshot().cpuPlayers,
+    preview: UiIncomePreview.create({
+        simulation: CPUSimulation, createGame: count => new GameManager(count),
+        cloneCard: card => createCardByName(card.name),
+        defaultLandmarks: () => Player.landmarkNames(), cards: CARDS,
+        tunaEffect: CARD_EFFECTS.TUNA, harborName: LANDMARK_NAMES.HARBOR,
+    }),
+    stationName: LANDMARK_NAMES.STATION, harborName: LANDMARK_NAMES.HARBOR,
+}) : null;
+if (plazaIncomePreviewPanel) {
+    plazaIncomePreviewPanel.init();
+    document.getElementById('plazaPlayerInsightsIncome').hidden = false;
+    PlazaField.setInsightsListener(() => plazaIncomePreviewPanel.refresh());
+}
+
+const plazaFeedback = typeof UiPlazaFeedback !== 'undefined' ? UiPlazaFeedback.create({
+    document,
+    getGame: () => uiGameRuntimeSnapshot().game,
+    getSession: () => uiGameRuntimeSnapshot().cpuPlayers,
+    isReplaying: () => uiOnlineRuntimeSnapshot().isReplaying === true,
+    isVisible: () => document.documentElement?.dataset?.design === 'plaza' &&
+        document.getElementById('gameScreen').style.display !== 'none',
+    getEnabledLandmarks: () => getEnabledLandmarkSelection(),
+    getReceipt: () => document.getElementById('plazaDiceReceipt'),
+    getMarketCard: (name, landmark) => Array.from(document.querySelectorAll('#buildMenu .card-btn'))
+        .find(button => (landmark ? button.getAttribute('data-landmark-name') : button.getAttribute('data-card-name')) === name),
+    isWinner: (game, index) => game.checkWinner() === game.players[index],
+    playLandmarkSound: () => {
+        const game = uiGameRuntimeSnapshot().game;
+        const online = uiOnlineRuntimeSnapshot();
+        // Human build commands already play their sound. Observers and CPU
+        // turns use this receipt cue once; replay and winners never reach it.
+        if (currentCpuPlayerAt(game.currentPlayerIndex) ||
+                (online.isOnlineGame && online.myPlayerIndex !== game.currentPlayerIndex)) playSound('build');
+    },
+    onMilestones: events => {
+        const target = document.getElementById('plazaBuildReceipt');
+        if (!target) return;
+        target.innerHTML = events.filter(event => !event.winner).map(event => {
+            const category = event.landmark ? '' : CARDS.find(card => card.name === event.name)?.category || '';
+            return `<article class="plaza-build-result${event.landmark ? ' plaza-build-landmark' : ''}"><div class="plaza-build-result-art">${UiBuildMenu.renderFacilityArt(event.name, event.landmark, category)}</div><div class="plaza-build-result-copy"><p>${escapeHtml(event.message)}${event.landmark ? `：${escapeHtml(getLandmarkEffectText(event.name))}` : ''}</p><button type="button" data-built-town-index="${event.playerIndex}">建設した街を見る</button></div></article>`;
+        }).join('');
+    },
+}) : null;
+if (plazaFeedback) document.getElementById('plazaBuildReceipt').addEventListener('click', event => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest('[data-built-town-index]');
+    if (button) PlazaField.focusTarget(Number(button.getAttribute('data-built-town-index')));
+});
+if (plazaFeedback && typeof MutationObserver !== 'undefined') {
+    const gameScreen = document.getElementById('gameScreen');
+    const feedbackVisibilityObserver = new MutationObserver(() => {
+        if (document.documentElement?.dataset?.design !== 'plaza' ||
+                gameScreen.style.display === 'none' || document.body.classList.contains('game-finished')) {
+            plazaFeedback.reset();
+        }
+    });
+    feedbackVisibilityObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-design'] });
+    feedbackVisibilityObserver.observe(gameScreen, { attributes: true, attributeFilter: ['style'] });
+    feedbackVisibilityObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
+/** @type {number | null} */
+let logRelatedHighlightTimer = null;
+let gameLogPresentationInitialized = false;
+const uiLogHighlightEffects = UiLogHighlightEffects.create({
+    document,
+    getGame: () => uiGameRuntimeSnapshot().game,
+    getTimer: () => logRelatedHighlightTimer,
+    setTimer: timer => { logRelatedHighlightTimer = timer; },
+    clearTimeout: timer => window.clearTimeout(timer),
+    schedule: (callback, delay) => window.setTimeout(callback, delay),
+});
+
+function uiGameRuntimeSnapshot() {
+    return GameRuntimeState.runtime.snapshot();
+}
+
+function uiOnlineRuntimeSnapshot() {
+    return OnlineRuntimeState.runtime.snapshot();
+}
+
+function safeUiStorageSet(key, value) {
+    try {
+        if (typeof safeStorageSet === 'function') return safeStorageSet(key, value);
+        return uiClientStorageFacade.set(key, value);
+    } catch (_) {
+        return false;
+    }
+}
+
+function safeUiStorageRemove(key) {
+    try {
+        if (typeof safeStorageRemove === 'function') {
+            safeStorageRemove(key);
+            return;
+        }
+        uiClientStorageFacade.remove(key);
+    } catch (_) {}
+}
+
+function currentCpuPlayerAt(index) {
+    try {
+        const cpuPlayers = uiGameRuntimeSnapshot().cpuPlayers;
+        if (!Array.isArray(cpuPlayers)) return null;
+        return cpuPlayers[index] || null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function tutorialSettingsSnapshot() {
+    return UiTutorialSettings.runtime.snapshot();
+}
+
+function triggerUiHaptic(kind) {
+    return UiTurnPrivacy.vibrateFromEnvironment(kind, {
+        document,
+        navigator: typeof navigator !== 'undefined' ? navigator : null,
+    });
+}
+
+function applyHotseatHandoff(view) {
+    const overlay = document.getElementById('hotseatHandoffOverlay');
+    if (!overlay) return false;
+    const wasVisible = overlay.style.display !== 'none' && overlay.style.display !== '';
+    if (view.visible === true && !wasVisible) {
+        // Native top-layer dialogs outrank this shared div overlay. Exit the
+        // previous seat's auxiliary views without restoring its focus/cues;
+        // closeMarket also invalidates a market suspended for card details.
+        if (typeof CardBoardField !== 'undefined') {
+            CardBoardField.closeTown?.(false);
+            CardBoardField.closeMarket?.(false);
+        }
+        if (!openAccessibleModal('hotseatHandoffOverlay')) return false;
+    }
+    if (view.visible !== true && wasVisible) {
+        closeAccessibleModal('hotseatHandoffOverlay', { restoreFocus: false });
+    }
+    return UiTurnPrivacy.applyHandoffView(view, {
+        overlay,
+        name: document.getElementById('hotseatHandoffName'),
+        button: document.getElementById('hotseatHandoffButton'),
+        focusInitial: view.visible === true && !wasVisible,
+    });
+}
+
+function acceptHotseatHandoff() {
+    applyHotseatHandoff(hotseatHandoffController.dismiss());
+    UiScreenFocus.ensureCurrentScreenFocus(document);
+    return true;
+}
+
+function renderLog() {
+    const logEl = document.getElementById("log");
+    const titleEl = document.getElementById("logTitle");
+    const summaryEl = document.getElementById("logSummary");
+    if (!logEl || !titleEl || !summaryEl) return;
+
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const cur = currentGame.log || [];
+    const logDisplayOptions = {
+        stripLeadingEmoji: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        players: currentGame.players,
+        turnPlayerName: currentGame.players[currentGame.currentPlayerIndex]?.name || '',
+        turnBalance: captureTurnCoinBalance(currentGame, uiGameRuntimeSnapshot().cpuPlayers,
+            uiOnlineRuntimeSnapshot().isReplaying === true),
+    };
+
+    const history = logHistoryController.append(cur);
+    const countLabel = document.getElementById('logCountLabel');
+    if (countLabel) countLabel.textContent = `ログ (${history.entryCount})`;
+    else titleEl.textContent = `📋 ログ (${history.entryCount})`;
+
+    logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(
+        UiLogDisplay.groupCoinEvents(UiLogDisplay.projectHistoryActors(history.entries,
+            LOG_TYPE_DISPLAY, logDisplayOptions), LOG_TYPE_DISPLAY,
+            Object.assign({}, logDisplayOptions, { turnPlayerName: '' })),
+        LOG_TYPE_DISPLAY,
+        escapeHtml,
+        logDisplayOptions
+    );
+    summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
+    const receipt = document.getElementById('plazaDiceReceipt');
+    if (receipt && typeof UiTurnEvents !== 'undefined') {
+        // Typed logs retain every owned-card activation. Keep all player
+        // routes in the scrollable details, including late zero payments.
+        const projected = plazaTurnEventsFor(currentGame, 1000);
+        const html = UiTurnReceipt.buildHtml(projected, escapeHtml);
+        const diceKey = JSON.stringify(projected.dice);
+        const session = uiGameRuntimeSnapshot().cpuPlayers;
+        const previous = plazaReceiptRenderCache.get(receipt);
+        const sameResult = Boolean(previous) && previous.session === session && previous.turn === currentGame.turnCount &&
+            previous.actor === currentGame.currentPlayerIndex && previous.dice === diceKey;
+        if (!sameResult || previous.html !== html) {
+            const details = /** @type {HTMLDetailsElement | null} */ (receipt.querySelector('details'));
+            const keepOpen = sameResult && details?.open;
+            const keepFocus = sameResult && receipt.contains(document.activeElement);
+            receipt.innerHTML = html;
+            const nextDetails = /** @type {HTMLDetailsElement | null} */ (receipt.querySelector('details'));
+            if (nextDetails && keepOpen) nextDetails.open = true;
+            if (keepFocus) /** @type {HTMLElement | null} */ (nextDetails?.querySelector('summary'))?.focus({ preventScroll: true });
+            plazaReceiptRenderCache.set(receipt, { html, session, turn: currentGame.turnCount,
+                actor: currentGame.currentPlayerIndex, dice: diceKey });
+        }
+    }
+    const recent = document.getElementById('plazaRecentEvents');
+    if (recent) recent.innerHTML = UiLogDisplay.buildRecentEventsHtml(
+        history.entries, cur,
+        LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions
+    );
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function captureTurnCoinBalance(currentGame, session, replaying) {
+    const player = currentGame.players[currentGame.currentPlayerIndex];
+    if (!player || !Number.isSafeInteger(player.coins) || !Array.isArray(session)) return null;
+    const previous = turnCoinBalanceCache.get(session);
+    const newTurn = !previous || previous.turnCount !== currentGame.turnCount ||
+        previous.playerIndex !== currentGame.currentPlayerIndex || previous.replaying;
+    const baseline = replaying ? null : newTurn
+        ? currentGame.phase === GAME_PHASES.ROLL ? player.coins : null
+        : previous.baseline;
+    turnCoinBalanceCache.set(session, {
+        turnCount: currentGame.turnCount, playerIndex: currentGame.currentPlayerIndex,
+        baseline, replaying,
+    });
+    return baseline === null ? null : { actor: player.name, net: player.coins - baseline };
+}
+
+function highlightLogEntry(playerName = '', targetName = '', cardName = '', logMessage = '') {
+    const result = uiLogHighlightEffects.highlight(playerName, targetName, cardName, logMessage);
+    if (typeof PlazaField !== 'undefined' && document.documentElement?.dataset?.design === 'plaza') {
+        const players = uiGameRuntimeSnapshot().game.players;
+        const exact = players.map((player, index) =>
+            player.name === playerName || player.name === targetName ? index : -1).filter(index => index >= 0);
+        const matches = exact.length ? exact : !playerName && !targetName
+            ? players.map((player, index) => logMessage.includes(player.name) ? index : -1).filter(index => index >= 0)
+            : [];
+        if (matches.length === 1) PlazaField.focusTarget(matches[0]);
+    }
+    return result;
+}
+
+function tutorialOptions() {
+    const tutorial = tutorialSettingsSnapshot();
+    const gameState = uiGameRuntimeSnapshot();
+    const onlineState = uiOnlineRuntimeSnapshot();
+    return {
+        cards: CARDS,
+        enabledCards: getEnabledCardSelection(),
+        getShopStockCount,
+        shopStock: SHOP_STOCK,
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        landmarkNames: LANDMARK_NAMES,
+        landmarkCost: Player.landmarkCost,
+        game: gameState.game,
+        isOnlineGame: onlineState.isOnlineGame,
+        myPlayerIndex: onlineState.myPlayerIndex,
+        currentCpuPlayerAt,
+        tutorialLevel: tutorial.tutorialLevel,
+        phases: GAME_PHASES,
+    };
+}
+
+function getTutorialHints(current) {
+    return UiTutorial.getHints(current, tutorialOptions());
+}
+
+function getTutorialMessage() {
+    return UiTutorial.getMessage(tutorialOptions());
+}
+
+const tutorialDisclosureState = new WeakMap();
+
+function renderTutorial() {
+    safeRenderStep('syncTutorialControls', () => syncTutorialControls());
+    const box = document.getElementById("tutorialBox");
+    if (!box) return;
+    const tutorial = tutorialSettingsSnapshot();
+    const currentGame = uiGameRuntimeSnapshot().game;
+    if (!tutorial.tutorialEnabled || !currentGame || currentGame.checkWinner()) {
+        box.style.display = "none";
+        box.innerHTML = "";
+        return;
+    }
+    const message = getTutorialMessage();
+    box.style.display = "block";
+    const session = uiGameRuntimeSnapshot().cpuPlayers;
+    const previous = tutorialDisclosureState.get(session);
+    const disclosure = /** @type {HTMLDetailsElement} */ (box.querySelector?.('.plaza-guide-disclosure'));
+    const expanded = previous && previous.box === box && disclosure ? disclosure.open : false;
+    const compact = UiTutorial.shouldCompact({
+        design: document.documentElement?.dataset?.design,
+        portrait: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(orientation: portrait)').matches,
+        landscapeShort: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches,
+        level: tutorial.tutorialLevel, turnCount: currentGame.turnCount,
+    });
+    if (Array.isArray(session)) tutorialDisclosureState.set(session, { box });
+    box.innerHTML = UiTutorial.buildHtml(message, escapeHtml, { compact, expanded });
+}
+
+function applyTutorialSettingChange(plan) {
+    UiTutorialSettings.executeChange(plan, {
+        setEnabled(value) { UiTutorialSettings.runtime.setEnabled(value); },
+        setLevel(value) { UiTutorialSettings.runtime.setLevel(value); },
+        persist: safeUiStorageSet,
+        syncControls: syncTutorialControls,
+        renderTutorial,
+    });
+}
+
+function setTutorialEnabled(enabled) {
+    applyTutorialSettingChange(UiTutorialSettings.planEnabledChange(enabled));
+}
+
+function onToggleTutorial(enabled) {
+    setTutorialEnabled(enabled);
+}
+
+function toggleTutorial() {
+    setTutorialEnabled(!tutorialSettingsSnapshot().tutorialEnabled);
+}
+
+function onChangeTutorialLevel(level) {
+    applyTutorialSettingChange(UiTutorialSettings.planLevelChange(level));
+}
+
+function cycleTutorialLevel() {
+    applyTutorialSettingChange(UiTutorialSettings.planLevelCycle(tutorialSettingsSnapshot().tutorialLevel));
+}
+
+function syncTutorialControls() {
+    const tutorial = tutorialSettingsSnapshot();
+    const view = UiTutorial.buildControlView(tutorial.tutorialEnabled, tutorial.tutorialLevel);
+    const checkbox = /** @type {HTMLInputElement | null} */ (
+        document.getElementById("tutorialEnabled")
+    );
+    if (checkbox) checkbox.checked = view.enabled;
+    const select = /** @type {HTMLSelectElement | null} */ (
+        document.getElementById("tutorialLevel")
+    );
+    if (select) select.value = view.selectedLevel;
+    const setButtonLabel = (button, label) => {
+        if (!button) return;
+        const labelElement = typeof button.querySelector === 'function'
+            ? button.querySelector('.tutorial-toggle-label')
+            : null;
+        if (labelElement) labelElement.textContent = label;
+        else button.textContent = label;
+    };
+    const btn = document.getElementById("btnTutorialToggle");
+    if (btn) {
+        setButtonLabel(btn, view.toggleText);
+        btn.classList.toggle("active", view.active);
+        btn.setAttribute("aria-pressed", view.toggleAriaPressed);
+    }
+    const levelBtn = document.getElementById("btnTutorialLevel");
+    if (levelBtn) {
+        setButtonLabel(levelBtn, view.levelText);
+        levelBtn.classList.toggle("active", view.active);
+        levelBtn.setAttribute("aria-label", view.levelAriaLabel);
+    }
+}
+
+function render() {
+    try {
+        _render();
+        syncInitialGameLogPresentation();
+    } catch (err) {
+        if (typeof showCrashScreen === 'function') showCrashScreen(err);
+    }
+}
+
+function setLogCollapsed(collapsed) {
+    const log = document.getElementById('log');
+    const icon = document.getElementById('logToggleIcon');
+    const header = document.querySelector('.log-header');
+    if (!log || !icon || !header || !log.classList || !header.classList) return false;
+    if (log.classList.contains('collapsed') !== (collapsed === true)) {
+        log.classList.toggle('collapsed');
+    }
+    if (document.documentElement?.dataset?.design === 'cardboard') {
+        document.getElementById('gameLogContainer')?.classList.toggle('cardboard-panel-open', !collapsed);
+        if (!collapsed && typeof CardBoardField !== 'undefined') CardBoardField.closeDisclosures();
+        document.getElementById('cardboardLogToggle')?.setAttribute('aria-expanded', String(!collapsed));
+    }
+    const view = UiLogDisplay.buildLogToggleView(collapsed);
+    icon.textContent = view.iconText;
+    header.classList.toggle('collapsed', view.collapsed);
+    if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', view.ariaExpanded);
+    return true;
+}
+
+function syncInitialGameLogPresentation() {
+    const gameScreen = document.getElementById('gameScreen');
+    if (!gameScreen || gameScreen.style?.display !== 'block') {
+        gameLogPresentationInitialized = false;
+        return;
+    }
+    if (gameLogPresentationInitialized) return;
+    gameLogPresentationInitialized = true;
+    const isSunsetMobile = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design) &&
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 480px)').matches;
+    setLogCollapsed(isSunsetMobile || document.documentElement?.dataset?.design === 'cardboard');
+}
+
+function _render() {
+    const online = uiOnlineRuntimeSnapshot().isOnlineGame;
+    const restartButton = document.getElementById("btnRestart");
+    if (restartButton) {
+        const restartLabel = document.getElementById('restartButtonLabel');
+        if (restartLabel) restartLabel.textContent = online ? '対戦から退出する' : '最初からやり直す';
+        else restartButton.textContent = online ? '対戦から退出する' : '🔄 最初からやり直す';
+    }
+    const leaveHelp = document.getElementById("onlineLeaveHelp");
+    if (leaveHelp) leaveHelp.hidden = !online;
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const renderPlan = !currentGame
+        ? UiRenderRuntime.plan()
+        : UiRenderRuntime.plan({
+            hasGame: true,
+            current: currentGame.currentPlayer(),
+            winner: currentGame.checkWinner(),
+        });
+    UiRenderRuntime.execute(renderPlan, {
+        syncTutorialControls,
+        renderWinnerState,
+        renderActiveGameState,
+        persistAfterRender,
+    });
+    if (typeof updateGameActivityStatus === 'function') updateGameActivityStatus();
+}
+
+function clearOnlineSessionAfterWin() {
+    const clearOnlineSession = typeof globalThis !== 'undefined' && typeof globalThis.clearOnlineSessionStorage === 'function'
+        ? globalThis.clearOnlineSessionStorage
+        : (typeof clearOnlineSessionStorage === 'function' ? clearOnlineSessionStorage : null);
+    if (clearOnlineSession) {
+        clearOnlineSession();
+    } else {
+        safeUiStorageRemove('onlineSession');
+    }
+}
+
+function renderWinnerState(winner) {
+    dismissTurnGreeting();
+    plazaFeedback?.reset();
+    if (typeof PlazaField !== 'undefined') PlazaField.toggleComparison(false);
+    if (typeof CardBoardField !== 'undefined') {
+        CardBoardField.closeTown(false);
+        CardBoardField.closeMarket(false);
+    }
+    if (document.body && document.body.classList) document.body.classList.add('game-finished');
+    const gameState = uiGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const winnerIdx = currentGame.players.indexOf(winner);
+    const turnTimeline = document.getElementById('turnTimeline');
+    if (turnTimeline) turnTimeline.style.display = 'none';
+    const isCPUWinner = !!currentCpuPlayerAt(winnerIdx);
+    let streakState = UiWinner.streakRuntime.snapshot();
+    if (!winSoundPlayed) {
+        streakState = UiWinner.streakRuntime.recordWinner(winner.name);
+        safeUiStorageSet('winStreak', streakState.winStreak);
+        safeUiStorageSet('lastWinnerName', streakState.lastWinnerName);
+    }
+    let resultAdSlot = '';
+    try {
+        resultAdSlot = typeof renderAdSlot === 'function' ? renderAdSlot('result-bottom') : '';
+    } catch (error) {
+        resultAdSlot = '';
+    }
+    const firstPresentation = !winSoundPlayed;
+    if (firstPresentation) UiWinner.gameOriginRuntime.record(uiOnlineRuntimeSnapshot().isOnlineGame);
+    const statusHtml = UiWinner.buildWinnerScreenHtml({
+        designTheme: document.documentElement?.dataset?.design,
+        renderCoinMark: UiBuildMenu.renderCoinMark,
+        isCpuPlayer: index => !!currentCpuPlayerAt(index),
+        compactReview: document.documentElement?.dataset?.design === 'cardboard' || UiWinner.shouldCompactReview(
+            document.documentElement?.dataset?.design,
+            typeof window !== 'undefined' ? window.innerWidth : Infinity
+        ),
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        townHtml: document.documentElement?.dataset?.design === 'cardboard'
+            ? UiCardBoard.buildPlayerHtml(winner, {
+                winnerCollection: true, index: winnerIdx,
+                enabledLandmarks: getEnabledLandmarkSelection(),
+                renderFacilityArt: UiBuildMenu.renderFacilityArt, escapeHtml, getEffectText,
+            })
+            : UiBuildMenu.renderTownHtml(winner, getEnabledLandmarkSelection()),
+        winner,
+        players: currentGame.players,
+        isCpuWinner: isCPUWinner,
+        turnCount: currentGame.turnCount + 1,
+        winStreak: streakState.winStreak,
+        logEntries: logHistoryController.snapshot().entries,
+        logTypes: LOG_TYPES,
+        reviewSummary: currentGame.reviewSummary,
+        marketSupply: currentGame.marketSupply,
+        canRematch: !UiWinner.gameOriginRuntime.wasOnline(),
+        canOnlineRematch: UiWinner.gameOriginRuntime.wasOnline() &&
+            !!uiOnlineRuntimeSnapshot().socket,
+        resultAdSlot,
+        escapeHtml,
+    });
+    const winnerStatusText = UiWinner.buildWinnerStatusText({
+        winner,
+        isCpuWinner: isCPUWinner,
+        turnCount: currentGame.turnCount + 1,
+    });
+    UiWinnerEffects.execute({ statusHtml, winnerStatusText, firstPresentation }, {
+        setStatusHtml(html) {
+            const status = document.getElementById('status');
+            status?.classList.add('game-winner');
+            if (status.innerHTML !== html) status.innerHTML = html;
+        },
+        announceWinner(text) {
+            const status = document.getElementById("turnStatusAnnouncer");
+            if (status) status.textContent = text;
+        },
+        markPresented() {
+            winSoundPlayed = true;
+            triggerUiHaptic('win');
+        },
+        playWinSound() {
+            playSound('win');
+        },
+        recordStats() {
+            const cpuList = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : [];
+            recordGameStats(winner, currentGame, cpuList);
+        },
+        notifyFinish() {
+            if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
+        },
+        clearSavedGame() {
+            safeUiStorageRemove('savedGame');
+            safeUiStorageRemove('savedGameV1');
+            safeUiStorageRemove('savedGameHistoryV1');
+        },
+        clearOnlineSession() {
+            if (!UiWinner.gameOriginRuntime.wasOnline()) clearOnlineSessionAfterWin();
+        },
+        markOnlineFinished() {
+            if (!UiWinner.gameOriginRuntime.wasOnline() &&
+                    typeof markOnlineGameFinished === 'function') {
+                markOnlineGameFinished();
+            }
+        },
+        refreshPwaUpdateState() {
+            if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
+        },
+        updateResumeButton,
+        startConfetti,
+        applyTerminalControls(controls) {
+            const btnRoll = /** @type {HTMLButtonElement} */ (document.getElementById("btnRoll"));
+            btnRoll.disabled = controls.rollDisabled;
+            const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById("btnSkip"));
+            btnSkip.disabled = controls.skipDisabled;
+            btnSkip.textContent = controls.skipText;
+            const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
+            btnReroll.style.display = controls.rerollDisplay;
+            btnReroll.hidden = controls.rerollDisplay === 'none';
+            document.getElementById("diceChoose").innerHTML = controls.diceChooseHtml;
+            document.getElementById("buildMenu").innerHTML = controls.buildMenuHtml;
+            renderBuildShortcut(true);
+        },
+        renderTutorial,
+        renderLog,
+        renderPlayers,
+        focusWinnerAction() {
+            /** @type {HTMLDivElement | null} */
+            const heading = document.querySelector('.winner-title');
+            if (heading && typeof heading.focus === 'function') {
+                heading.focus({ preventScroll: true });
+                heading.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+            }
+        },
+    });
+}
+
+async function shareGameResult() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const winner = currentGame && currentGame.checkWinner();
+    const text = currentGame && UiWinner.buildShareText({
+        winner,
+        players: currentGame.players,
+        turnCount: currentGame.turnCount + 1,
+    });
+    if (!text || typeof navigator === 'undefined' || !navigator.clipboard ||
+            typeof navigator.clipboard.writeText !== 'function') {
+        showNotice('この端末では結果をコピーできませんでした');
+        return false;
+    }
+    try {
+        await navigator.clipboard.writeText(text);
+        showNotice('対戦結果をコピーしました。共有先へ貼り付けてください');
+        return true;
+    } catch (_) {
+        showNotice('この端末では結果をコピーできませんでした');
+        return false;
+    }
+}
+
+async function shareGameResultImage() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const winner = currentGame && currentGame.checkWinner();
+    const model = currentGame && UiWinner.buildResultCardModel({
+        winner,
+        players: currentGame.players,
+        turnCount: currentGame.turnCount + 1,
+    });
+    if (!model || typeof document === 'undefined') return false;
+    const canvas = document.createElement('canvas');
+    if (!UiWinner.drawResultCard(canvas, model)) {
+        showNotice('結果画像を作成できませんでした');
+        return false;
+    }
+    const blob = await new Promise(resolve => {
+        if (typeof canvas.toBlob === 'function') canvas.toBlob(resolve, 'image/png');
+        else resolve(null);
+    });
+    if (!blob) {
+        showNotice('結果画像を作成できませんでした');
+        return false;
+    }
+    const file = typeof File === 'function'
+        ? new File([blob], 'dice-city-result.png', { type: 'image/png' }) : null;
+    try {
+        if (file && navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+            await navigator.share({ files: [file], title: 'ダイスシティ 対戦結果' });
+            showNotice('対戦結果を共有しました');
+            return true;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'dice-city-result.png';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotice('対戦結果の画像を保存しました');
+        return true;
+    } catch (_) {
+        showNotice('結果画像を共有できませんでした');
+        return false;
+    }
+}
+
+function renderActiveGameState(current) {
+    if (document.body && document.body.classList) document.body.classList.remove('game-finished');
+    document.getElementById('status')?.classList.remove('game-winner');
+    UiWinner.gameOriginRuntime.reset();
+    const gameState = uiGameRuntimeSnapshot();
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const isCPUTurn = !!currentCpuPlayerAt(currentGame.currentPlayerIndex);
+    const humanPlayerCount = currentGame.players.reduce((count, player, playerIndex) =>
+        count + (currentCpuPlayerAt(playerIndex) ? 0 : 1), 0);
+    const previousTurnState = activeGameTurnStateController.snapshot();
+    const view = UiGameStatusView.buildActiveGameView({
+        current,
+        designTheme: document.documentElement?.dataset?.design,
+        isHumanTurn: isCurrentHumanUiTurn(),
+        players: currentGame.players,
+        phase: currentGame.phase,
+        phases: GAME_PHASES,
+        rollPhase: GAME_PHASES.ROLL,
+        currentPlayerIndex: currentGame.currentPlayerIndex,
+        previousPlayerIndex: previousTurnState.previousPlayerIndex,
+        currentTurnCount: currentGame.turnCount,
+        previousTurnCount: previousTurnState.previousTurnCount,
+        previousPhase: previousTurnState.previousPhase,
+        isReplaying: onlineState.isReplaying,
+        currentName: current.name,
+        isCpuTurn: isCPUTurn,
+        canRoll: canShowUiAction('rollDice'),
+        canNextTurn: canShowUiAction('nextTurn'),
+        pendingRenovation: currentGame.pendingRenovation,
+        pendingIT: currentGame.pendingIT,
+        builtThisTurn: currentGame.builtThisTurn,
+        previousCoins: gameState.prevCoins,
+        cpuPlayerIndexes: currentGame.players
+            .map((player, playerIndex) => currentCpuPlayerAt(playerIndex) ? playerIndex : -1)
+            .filter(playerIndex => playerIndex >= 0),
+        isOnlineGame: onlineState.isOnlineGame,
+        myPlayerIndex: onlineState.myPlayerIndex,
+        lastDice1: currentGame.lastDice1,
+        lastDice2: currentGame.lastDice2,
+        lastDiceResult: currentGame.lastDiceResult,
+    });
+    UiGameStatusEffects.execute(view, {
+        setStatusText(text) {
+            const status = document.getElementById("status");
+            if (!status) return;
+            if (document.documentElement?.dataset?.design !== 'cardboard' || status.classList.contains('game-winner')) {
+                status.textContent = text;
+                return;
+            }
+            status.replaceChildren();
+            const turnLabel = document.createElement('span');
+            turnLabel.className = 'cardboard-turn-status-name';
+            turnLabel.textContent = `👤 ${view.turnPlayerName || 'プレイヤー'}のターン`;
+            turnLabel.title = turnLabel.textContent;
+            turnLabel.setAttribute('aria-label', `${view.turnPlayerName || 'プレイヤー'}のターン`);
+            status.appendChild(turnLabel);
+            const balance = document.createElement('span');
+            balance.className = 'cardboard-turn-status-coins';
+            balance.textContent = `🪙 ${view.turnPlayerCoins ?? 0}コイン`;
+            balance.setAttribute('aria-label', `${view.turnPlayerCoins ?? 0}コイン`);
+            status.appendChild(balance);
+            const currentStep = view.turnTimeline?.stages?.find(stage => stage.state === 'current');
+            if (!currentStep) return;
+            const phase = document.createElement('span');
+            phase.className = 'cardboard-phase-indicator';
+            phase.textContent = `今：${currentStep.label}`;
+            phase.setAttribute('aria-label', `現在の段階：${currentStep.label}${currentStep.detail ? `、${currentStep.detail}` : ''}`);
+            if (currentStep.detail) phase.title = currentStep.detail;
+            status.appendChild(phase);
+        },
+        renderTurnTimeline(timeline) {
+            const container = document.getElementById('turnTimeline');
+            if (container) container.style.display = 'block';
+            UiGameStatusEffects.applyTurnTimeline(
+                timeline,
+                document.getElementById('turnTimelineList')
+            );
+        },
+        announceTurn(name, isCpuTurn, playerIndex) {
+            showTurnAnnouncer(name, isCpuTurn, playerIndex);
+            if (!isCpuTurn) triggerUiHaptic('turn');
+        },
+        setPreviousPlayerIndex(playerIndex, turnCount, phase) {
+            activeGameTurnStateController.set(playerIndex, turnCount, phase);
+        },
+        setRollDisabled(disabled) {
+            const btnRoll = /** @type {HTMLButtonElement} */ (document.getElementById("btnRoll"));
+            btnRoll.disabled = disabled;
+        },
+        setSkipButton(skipButton) {
+            const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById("btnSkip"));
+            btnSkip.disabled = skipButton.disabled;
+            btnSkip.textContent = skipButton.textContent;
+        },
+        hideReroll() {
+            const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
+            btnReroll.style.display = "none";
+            btnReroll.hidden = true;
+        },
+        updateDiceDisplay(diceValues) {
+            updateDiceDisplay(diceValues);
+            const diceKey = [
+                currentGame.turnCount,
+                currentGame.currentPlayerIndex,
+                currentGame.usedReroll ? 1 : 0,
+                ...(diceValues || []),
+            ].join(':');
+            const announcementPlan = diceResultAnnouncementController.transition(diceValues, {
+                eligible: diceResultAnnouncementEligible(),
+                rerolled: currentGame.usedReroll === true,
+                resultKey: UiDiceDisplay.resultIdentity(
+                    currentGame.diceResolutionSequence,
+                    diceKey
+                ),
+            });
+            UiDiceDisplay.applyAnnouncementPlan(
+                announcementPlan,
+                document.getElementById('diceResultAnnouncer')
+            );
+        },
+        runRenderStep(name, callback) {
+            safeRenderStep(name, callback);
+        },
+        renderDiceChoose() {
+            renderDiceChoose();
+        },
+        renderPending() {
+            renderPending();
+        },
+        renderTutorial() {
+            renderTutorial();
+        },
+        renderLog() {
+            renderLog();
+        },
+        renderPlayers() {
+            renderPlayers();
+        },
+        showCoinAnimation(playerIndex, diff) {
+            showCoinAnimation(playerIndex, diff);
+        },
+        announceCoinChanges(text) {
+            const announcer = document.getElementById('coinChangeAnnouncer');
+            if (!announcer) return;
+            announcer.textContent = '';
+            announcer.textContent = text;
+        },
+        setPreviousCoins(coins) {
+            GameRuntimeState.runtime.setPreviousCoins(coins);
+        },
+        renderBuildMenu() {
+            renderBuildMenu();
+        },
+        syncUiInteractabilityAfterRender() {
+            if (typeof syncUiInteractabilityAfterRender === 'function') syncUiInteractabilityAfterRender('render-active-game-state');
+        },
+        schedulePostBuildUiStabilizer() {
+            if (typeof schedulePostBuildUiStabilizer === 'function') schedulePostBuildUiStabilizer('render-active-game-state');
+        },
+        checkAutoSkip() {
+            checkAutoSkip();
+        },
+    });
+    const handoff = hotseatHandoffController.observe({
+        turnChanged: view.turnTransition.announce &&
+            previousTurnState.previousPlayerIndex !== currentGame.currentPlayerIndex,
+        isOnlineGame: onlineState.isOnlineGame,
+        isCpuTurn: isCPUTurn,
+        humanPlayerCount,
+        playerIndex: currentGame.currentPlayerIndex,
+        playerName: current.name,
+    });
+    plazaFeedback?.refresh();
+    if (handoff.visible) applyHotseatHandoff(handoff);
+}
+
+function persistAfterRender() {
+    saveGameState();
+}
+
+function currentUiAllowedActions() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    if (!currentGame) return new Set();
+    try {
+        if (typeof currentGame.allowedActions === 'function') return currentGame.allowedActions();
+        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return GameManager.allowedActionsFor(currentGame);
+    } catch (_) {}
+    return new Set();
+}
+
+function uiOnlineActionFlightState() {
+    try {
+        if (typeof getOnlineActionFlightState === 'function') return getOnlineActionFlightState();
+    } catch (_) {}
+    return {
+        inFlight: typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        startedAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
+    };
+}
+
+function isOnlineUiInputBlocked() {
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const isReconnecting = typeof isOnlineReconnectInputBlocked === 'function'
+        ? isOnlineReconnectInputBlocked()
+        : onlineState.isReconnectingOnline;
+    const socketAvailable = !!onlineState.socket;
+    return UiInputPolicy.onlineBlockReason({
+        isOnlineGame: onlineState.isOnlineGame,
+        isReconnecting,
+        actionInFlight: uiOnlineActionFlightState().inFlight,
+        socketAvailable,
+        socketConnected: socketAvailable ? onlineState.socket.connected : false,
+    }) !== '';
+}
+
+function isCurrentHumanUiTurn() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const hasGame = !!currentGame;
+    const currentPlayerIndex = hasGame ? currentGame.currentPlayerIndex : -1;
+    return UiInputPolicy.isHumanTurn({
+        hasGame,
+        isCpuTurn: hasGame && !!currentCpuPlayerAt(currentPlayerIndex),
+        isOnlineGame: onlineState.isOnlineGame,
+        onlineBlockReason: isOnlineUiInputBlocked() ? 'blocked' : '',
+        currentPlayerIndex,
+        myPlayerIndex: onlineState.myPlayerIndex,
+    });
+}
+
+function canShowUiAction(action) {
+    const humanTurn = !!action && isCurrentHumanUiTurn();
+    return UiInputPolicy.canShowAction(
+        action,
+        humanTurn,
+        humanTurn ? currentUiAllowedActions() : null
+    );
+}
+
+function uiActionDisabledAttr(action) {
+    return canShowUiAction(action) ? '' : ' disabled';
+}
+
+function setDiceChooseContent(el, html, identity = '') {
+    if (!el) return;
+    const nextHtml = html || "";
+    const active = document.activeElement;
+    const activeWithin = !!active && (active === el ||
+        (typeof el.contains === 'function' && el.contains(active)));
+    const focusPlan = diceChoiceFocusController.transition(
+        !!nextHtml,
+        diceChoiceFocusEligible(),
+        nextHtml ? identity : '',
+        activeWithin
+    );
+    if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
+    if (el.style) el.style.display = nextHtml ? "block" : "none";
+    UiDiceChoice.applyFocusPlan(focusPlan, el, {
+        restorePrimaryFocus: () => UiScreenFocus.focusGamePrimary(document),
+    });
+}
+
+function diceChoiceFocusEligible() {
+    return uiOnlineRuntimeSnapshot().isReplaying !== true && isCurrentHumanUiTurn();
+}
+
+function diceResultAnnouncementEligible() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    if (!currentGame || onlineState.isReplaying === true ||
+            !!currentCpuPlayerAt(currentGame.currentPlayerIndex)) return false;
+    return !onlineState.isOnlineGame ||
+        currentGame.currentPlayerIndex === onlineState.myPlayerIndex;
+}
+
+function renderDiceChoose() {
+    const el = document.getElementById("diceChoose");
+    if (!el) return;
+    if (!isCurrentHumanUiTurn()) { setDiceChooseContent(el, ""); return; }
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const options = {
+        phase: currentGame.phase,
+        lastDiceResult: currentGame.lastDiceResult,
+        lastDice1: currentGame.lastDice1,
+        lastDice2: currentGame.lastDice2,
+        allowedActions: currentUiAllowedActions(),
+        disabledAttr: uiActionDisabledAttr,
+        phases: GAME_PHASES,
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+    };
+    const html = UiDiceChoice.buildHtml(options);
+    setDiceChooseContent(el, html, UiDiceChoice.choiceIdentity(options));
+}
+
+function shouldShowPendingForCurrentPlayer() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const state = {
+        phase: currentGame.phase,
+        pendingPhase: GAME_PHASES.PENDING,
+        pendingIT: currentGame.pendingIT,
+        pendingRenovation: currentGame.pendingRenovation,
+    };
+    if (!UiPendingMenu.isPendingDisplayCandidate(state)) return false;
+    return UiPendingMenu.shouldShowForCurrentPlayer({
+        ...state,
+        isHumanTurn: isCurrentHumanUiTurn(),
+    });
+}
+
+function normalizePendingModalInteraction(el, modal, hasContent) {
+    UiPendingEffects.applyModalInteraction(
+        UiPendingMenu.pendingModalInteractionView(hasContent),
+        { body: document.body, modal, content: el }
+    );
+}
+
+function pendingModalFocusEligible() {
+    const onlineState = uiOnlineRuntimeSnapshot();
+    return onlineState.isReplaying !== true && isCurrentHumanUiTurn();
+}
+
+function updatePendingModalContent(el, modal, html) {
+    if (!el || !modal) return false;
+    let nextHtml = html || "";
+    if (nextHtml) {
+        const blockingIds = visibleBlockingModalIds().filter(id => id !== 'pendingModal');
+        if (blockingIds.length > 0) {
+            recordModalPolicyViolation('pending-modal-open-denied', { parentModalId: blockingIds[0], childModalId: 'pendingModal', visibleBlockingModalIds: blockingIds });
+            nextHtml = '';
+        }
+    }
+    return pendingModalUpdateController.run(() => {
+        const documentRef = typeof document !== 'undefined' ? document : null;
+        const activeElement = documentRef && documentRef.activeElement;
+        const focusPlan = pendingModalFocusController.transition(!!nextHtml, {
+            activeWithin: UiPendingEffects.containsActiveElement(modal, el, activeElement),
+            focusEligible: pendingModalFocusEligible(),
+        });
+        if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
+        normalizePendingModalInteraction(el, modal, !!nextHtml);
+        UiPendingEffects.applyFocusPlan(focusPlan, {
+            content: el,
+            restoreGameFocus: () => UiScreenFocus.focusGame(documentRef),
+        });
+        return true;
+    });
+}
+
+function hidePendingModalContent(el, modal) {
+    updatePendingModalContent(el, modal, "");
+}
+
+function shouldRenderPendingField(nextPending, allowedActions, field, action) {
+    return (!nextPending || nextPending.field === field) && allowedActions.has(action);
+}
+
+function pendingInspectHintHtml() {
+    return UiPendingMenu.pendingInspectHintHtml();
+}
+
+function buildPendingTvHtml(game) {
+    return UiPendingMenu.buildPendingTvHtml(game, escapeHtml, undefined, undefined,
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design));
+}
+
+function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml,
+        illustrated, UiBuildMenu.renderFacilityArt);
+}
+
+function businessCardOptionsForPlayer(player) {
+    return UiPendingMenu.businessCardOptionsForPlayer(player);
+}
+
+function buildBusinessCardChipGroupHtml(player, cards, inputId) {
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml,
+        undefined, illustrated, UiBuildMenu.renderFacilityArt);
+}
+
+function buildBusinessTargetExchangeHtml(player, playerIndex) {
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml,
+        undefined, illustrated, UiBuildMenu.renderFacilityArt);
+}
+
+function buildPendingBusinessHtml(game) {
+    return UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml, undefined, undefined,
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
+}
+
+function buildPendingCleaningHtml(game) {
+    return UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, undefined, undefined,
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
+}
+
+function buildPendingMoverHtml(game) {
+    return UiPendingMenu.buildPendingMoverHtml(game, escapeHtml, undefined, undefined,
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
+}
+
+function buildPendingRenovationHtml(game) {
+    return UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, LANDMARK_NAMES, undefined,
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
+}
+
+function buildPendingItHtml(game) {
+    return UiPendingMenu.buildPendingItHtml(game, undefined, undefined, undefined,
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design));
+}
+
+function pendingMenuRendererSpecs() {
+    return UiPendingMenu.rendererSpecs();
+}
+
+function shouldRenderPendingMenuSpec(spec, game, allowedActions, nextPending) {
+    return shouldRenderPendingField(nextPending, allowedActions, spec.field, spec.action) && spec.isActive(game);
+}
+
+const businessSelectionController = UiPendingMenu.createBusinessSelectionController();
+
+function buildPendingMenuHtml(game, allowedActions, nextPending) {
+    return UiPendingMenu.buildMenuHtml(game, allowedActions, nextPending, {
+        businessSelections: businessSelectionController.selections(game),
+        escapeHtml,
+        landmarkNames: LANDMARK_NAMES,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        useSunsetIcons: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+    });
+}
+
+function renderPending() {
+    const el = document.getElementById("pendingMenu");
+    const modal = document.getElementById("pendingModal");
+    if (!shouldShowPendingForCurrentPlayer()) { hidePendingModalContent(el, modal); return; }
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
+        ? GameManager.nextPendingActionFor(currentGame)
+        : null;
+    const allowedActions = currentUiAllowedActions();
+    const html = buildPendingMenuHtml(currentGame, allowedActions, nextPending);
+    updatePendingModalContent(el, modal, html);
+}
+
+function renderPlayerDifficultyLabel(difficulty) {
+    return UiPlayerDisplay.difficultyLabel(difficulty);
+}
+
+function validRenderCpuDifficulty(value) {
+    return UiPlayerDisplay.normalizeCpuDifficulty(value);
+}
+
+function getPlayerSettingForRender(index, player) {
+    const setup = GameSetupState.runtime.snapshot();
+    const gameState = uiGameRuntimeSnapshot();
+    const settings = setup.playerSettings;
+    const cpus = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : [];
+    const resolved = UiPlayerDisplay.resolvePlayerSetting({
+        playerSettings: settings,
+        cpuPlayers: cpus,
+        index,
+        player,
+    });
+    if (resolved.missing) {
+        recordFlowTrace('render-player-setting-fallback', {
+            playerIndex: index,
+            fallbackType: resolved.type,
+            fallbackDifficulty: resolved.difficulty,
+            playerSettingsLength: settings.length,
+            cpuPlayersLength: cpus.length,
+            playersLength: gameState.game && Array.isArray(gameState.game.players)
+                ? gameState.game.players.length : 0,
+        });
+    }
+    return resolved;
+}
+
+const playerPanelRenderCache = new WeakMap();
+const playerPanelDisclosureCache = new WeakMap();
+const playerPanelDisclosureListeners = new WeakSet();
+const playerPanelDisclosureClickListeners = new WeakSet();
+const townCoinEventCache = new WeakMap();
+const townCoinEffects = new Set();
+const townCoinPulses = new Set();
+let townCoinVisibilityObserver = null;
+
+function clearTownCoinEffects() {
+    for (const effect of townCoinEffects) {
+        clearTimeout(effect.timer);
+        effect.clear();
+    }
+    townCoinEffects.clear();
+    for (const effect of townCoinPulses) {
+        clearTimeout(effect.timer);
+        effect.clear();
+    }
+    townCoinPulses.clear();
+}
+
+function showTownCoinAmount(source, wallet, amount, payment) {
+    if (townCoinEffects.size >= 6 || !wallet?.getBoundingClientRect || !document.body?.appendChild) return;
+    const target = wallet.getBoundingClientRect();
+    const origin = source?.getBoundingClientRect?.();
+    const hud = document.getElementById('plazaPlayerHud')?.getBoundingClientRect?.();
+    const opponentBounds = wallet.closest?.('.plaza-hud-opponents')?.getBoundingClientRect?.();
+    const walletViewport = opponentBounds?.width > 0 && opponentBounds?.height > 0
+        ? opponentBounds : hud;
+    const viewport = document.getElementById('plazaViewport')?.getBoundingClientRect?.();
+    const screen = document.getElementById('gameScreen');
+    const visible = (rect, bounds) => rect && bounds && rect.width > 0 && rect.height > 0 &&
+        rect.left < bounds.right && rect.right > bounds.left &&
+        rect.top < bounds.bottom && rect.bottom > bounds.top;
+    const screenBounds = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    if (!visible(target, hud) || !visible(target, walletViewport) ||
+            !visible(target, screenBounds) || screen?.style.display === 'none') return;
+    const reduced = document.body.classList?.contains('accessibility-reduced-motion') ||
+        (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const staticAmount = reduced || payment || !visible(origin, viewport) || !visible(origin, screenBounds);
+    const marker = document.createElement('span');
+    marker.className = `plaza-coin-amount${staticAmount ? ' plaza-coin-static' : ''}${payment ? ' plaza-coin-payment' : ''}`;
+    marker.textContent = `${payment ? '-' : '+'}${amount}`;
+    marker.setAttribute('aria-hidden', 'true');
+    const start = staticAmount ? target : origin;
+    marker.style.left = `${start.left + start.width / 2}px`;
+    marker.style.top = `${start.top + start.height / 2}px`;
+    marker.style.setProperty('--coin-dx', `${target.left + target.width / 2 - start.left - start.width / 2}px`);
+    marker.style.setProperty('--coin-dy', `${target.top + target.height / 2 - start.top - start.height / 2}px`);
+    document.body.appendChild(marker);
+    const effect = { clear: () => marker.remove(), timer: null };
+    effect.timer = setTimeout(() => { effect.clear(); townCoinEffects.delete(effect); }, 900);
+    townCoinEffects.add(effect);
+    if (!townCoinVisibilityObserver && typeof MutationObserver !== 'undefined') {
+        townCoinVisibilityObserver = new MutationObserver(() => {
+            if (document.documentElement?.dataset?.design !== 'plaza' || screen.style.display === 'none') {
+                clearTownCoinEffects();
+            }
+        });
+        townCoinVisibilityObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-design'] });
+        townCoinVisibilityObserver.observe(screen, { attributes: true, attributeFilter: ['style'] });
+    }
+}
+
+function animateTownCoinEvents(container, currentGame, session, replaying) {
+    const entries = Array.isArray(currentGame.log) ? currentGame.log : [];
+    const signatures = entries.map(entry => `${entry.type}\u0000${entry.message}`);
+    const previous = townCoinEventCache.get(container);
+    townCoinEventCache.set(container, {
+        session, replaying, turnCount: currentGame.turnCount,
+        playerIndex: currentGame.currentPlayerIndex, signatures,
+    });
+    // Rehydrate/replay/Undo/reroll establish a fresh visual baseline. Only append
+    // events in the same live turn may animate; rendering twice never repeats it.
+    if (!previous || previous.session !== session || replaying || previous.replaying ||
+            previous.turnCount !== currentGame.turnCount ||
+            previous.playerIndex !== currentGame.currentPlayerIndex ||
+            previous.signatures.length > signatures.length ||
+            previous.signatures.some((value, index) => value !== signatures[index])) {
+        clearTownCoinEffects();
+        return;
+    }
+    const pulse = (index, subject, cls, amount) => {
+        const panel = container.querySelector(`#playerBox${index}`);
+        if (!panel) return;
+        const targets = Array.from(panel.querySelectorAll('[data-town-building]'))
+            .filter(element => element.dataset.townBuilding === `card:${subject}` ||
+                element.dataset.townBuilding === `landmark:${subject}`);
+        if (cls === 'town-payment-pulse') {
+            const coins = panel.querySelector('.player-coins');
+            if (coins) targets.push(coins);
+        }
+        if (document.documentElement?.dataset?.design === 'plaza') {
+            const hudCoins = document.getElementById('plazaPlayerHud')?.querySelector(
+                `[data-player-index="${index}"] .plaza-player-coins`);
+            if (hudCoins) targets.push(hudCoins);
+            if (hudCoins) showTownCoinAmount(targets[0] || hudCoins, hudCoins, amount,
+                cls === 'town-payment-pulse');
+        }
+        for (const element of targets) {
+            element.classList.add(cls);
+            const effect = { clear: () => element.classList.remove(cls), timer: null };
+            effect.timer = setTimeout(() => { effect.clear(); townCoinPulses.delete(effect); }, 1200);
+            townCoinPulses.add(effect);
+        }
+    };
+    const players = currentGame.players;
+    const options = { players, turnPlayerName: players[currentGame.currentPlayerIndex]?.name || '' };
+    const grouped = new Map();
+    for (const entry of entries.slice(previous.signatures.length)) {
+        const event = UiLogDisplay.coinEvent(entry, LOG_TYPE_DISPLAY, options);
+        if (!event || event.amount <= 0) continue;
+        const indices = players.map((player, index) => player.name === event.actor ? index : -1)
+            .filter(index => index >= 0);
+        if (indices.length !== 1) continue;
+        const key = JSON.stringify([indices[0], event.subject, event.payment, event.transfer]);
+        const previousEvent = grouped.get(key);
+        const amount = (previousEvent?.amount || 0) + event.amount;
+        if (Number.isSafeInteger(amount)) grouped.set(key, { ...event, index: indices[0], amount });
+    }
+    for (const event of grouped.values()) {
+        pulse(event.index, event.subject, event.payment && !event.transfer
+            ? 'town-payment-pulse' : 'town-income-pulse', event.amount);
+        if (event.transfer) pulse(currentGame.currentPlayerIndex, event.subject, 'town-payment-pulse', event.amount);
+    }
+}
+
+function snapshotTownBuildingCounts(players) {
+    const enabledLandmarks = getEnabledLandmarkSelection();
+    return players.map(player => {
+        const counts = new Map();
+        for (const card of player.cards || []) {
+            const key = `card:${card.name}`;
+            counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        for (const [name, built] of Object.entries(player.landmarks || {})) {
+            if (built && enabledLandmarks.has(name)) counts.set(`landmark:${name}`, 1);
+        }
+        return counts;
+    });
+}
+
+function animateNewTownBuildings(container, previousCounts, currentCounts) {
+    if (!Array.isArray(previousCounts)) return;
+    const landmarkCount = counts => [...counts.keys()].filter(key => key.startsWith('landmark:')).length;
+    const newLeader = UiPlayerDisplay.landmarkLeadChange(previousCounts.map(landmarkCount), currentCounts.map(landmarkCount));
+    currentCounts.forEach((counts, playerIndex) => {
+        const previous = previousCounts[playerIndex] || new Map();
+        const panel = container.querySelector(`#playerBox${playerIndex}`);
+        if (!panel) return;
+        // The representative district has a finite number of lots. Purchases
+        // beyond those lots still grow the population and receive a town cue.
+        if ([...counts].some(([key, count]) => key.startsWith('card:') && count > (previous.get(key) || 0))) {
+            panel.querySelector('.town-street')?.classList.add('town-construction-arrival');
+        }
+        panel.querySelectorAll('[data-town-building]').forEach(building => {
+            const key = building.dataset.townBuilding;
+            const previousCount = previous.get(key) || 0;
+            const ownedCount = counts.get(key) || 0;
+            const arrived = key.startsWith('landmark:') ? ownedCount > previousCount
+                : UiBuildMenu.shouldAnimateTownLot(previousCount, ownedCount,
+                    Number(building.dataset.townCopy || 0), Number(building.dataset.townVisible || ownedCount));
+            if (arrived) {
+                building.classList.add('town-building-arrival');
+                if (key.startsWith('landmark:')) {
+                    building.classList.add('town-building-landmark-arrival');
+                    const street = panel.querySelector('.town-street');
+                    if (!street) return;
+                    street.classList.add('town-landmark-completion');
+                    if (!street.querySelector('.town-event-caption')) {
+                        const caption = document.createElement('span');
+                        caption.className = 'town-event-caption';
+                        caption.setAttribute('aria-hidden', 'true');
+                        caption.textContent = `${key.slice('landmark:'.length)}が完成${newLeader === playerIndex ? '・一歩リード' : ''}`;
+                        street.appendChild(caption);
+                        setTimeout(() => caption.remove(), 1200);
+                    }
+                }
+            }
+        });
+    });
+}
+
+function renderPlayers() {
+    const gameState = uiGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    // Pure transitions replace the game and player objects after normal actions.
+    // The CPU roster belongs to the session: initializers and saved-game resume
+    // replace it, while action adoption and Undo keep its identity.
+    const townSession = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : currentGame.players;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
+    const onlineMyPlayerIndex = onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1;
+    const localCpuGame = !onlineState.isOnlineGame && settings.some(setting => setting.type === 'cpu');
+    const plazaDesign = document.documentElement?.dataset?.design === 'plaza';
+    const primaryPlayerIndex = onlineState.isOnlineGame
+        ? onlineMyPlayerIndex
+        : (localCpuGame ? settings.findIndex(setting => setting.type === 'human') : currentGame.currentPlayerIndex);
+    const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
+        buildTownHtml: (player, index) => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection(),
+            plazaDesign ? { playerIndex: index, events: plazaTurnEventsFor(currentGame, 1000) } : undefined),
+        settings,
+        currentPlayerIndex: currentGame.currentPlayerIndex,
+        plaza: plazaDesign,
+        compactInactive: document.documentElement?.dataset?.design === 'plaza' || currentGame.players.length >= 5 ||
+            (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+                (window.matchMedia('(max-width: 480px)').matches ||
+                    window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches)),
+        myPlayerIndex: primaryPlayerIndex,
+        compactCurrentPlayer: document.documentElement?.dataset?.design === 'plaza' || primaryPlayerIndex >= 0 &&
+            currentGame.currentPlayerIndex !== primaryPlayerIndex &&
+            settings[currentGame.currentPlayerIndex]?.type === 'cpu',
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        getLandmarkEmoji,
+        getCoinMark: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
+            ? UiBuildMenu.renderCoinMark
+            : null,
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        renderPlayerKindIcon: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
+            ? UiPlayerDisplay.renderPlayerKindIcon
+            : null,
+        getLandmarkBadgeIcon: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
+            ? UiBuildMenu.renderLandmarkBadgeIcon
+            : null,
+        compareCardNames: compareCardNamesForDisplay,
+        escapeHtml,
+        loanEffect: CARD_EFFECTS.LOAN,
+    });
+    const navigation = document.getElementById('playerNavigation');
+    const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(currentGame.players, {
+        marketTargetId: typeof UiMarketTarget !== 'undefined' ? UiMarketTarget.id(document) : 'buildMenu',
+        currentPlayerIndex: currentGame.currentPlayerIndex,
+        myPlayerIndex: onlineMyPlayerIndex,
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        escapeHtml,
+    });
+    if (navigation) {
+        navigation.innerHTML = navigationHtml;
+        navigation.style.display = navigationHtml ? 'flex' : 'none';
+        const playerArea = document.querySelector('.player-area');
+        const gameScreen = document.getElementById('gameScreen');
+        const gameLog = document.getElementById('gameLogContainer');
+        const promoteNavigation = currentGame.players.length >= 5 &&
+            !['sunset', 'plaza'].includes(document.documentElement?.dataset?.design);
+        const navigationParent = promoteNavigation ? gameScreen : playerArea;
+        const navigationAnchor = promoteNavigation ? gameLog : document.getElementById('players');
+        if (navigationParent && navigationAnchor &&
+                (navigation.parentElement !== navigationParent || navigation.nextElementSibling !== navigationAnchor)) {
+            navigationParent.insertBefore(navigation, navigationAnchor);
+        }
+    }
+    const container = document.getElementById("players");
+    if (container && typeof container.addEventListener === 'function' &&
+        !playerPanelDisclosureClickListeners.has(container)) {
+        container.addEventListener('click', event => {
+            const target = /** @type {HTMLElement | null} */ (event.target);
+            if (target?.closest('button')) return;
+            const summary = target?.closest('summary');
+            const panel = summary?.parentElement;
+            if (!panel || typeof panel.matches !== 'function' ||
+                    !panel.matches('details.player-box-compact')) return;
+            event.preventDefault();
+            const detailsPanel = /** @type {HTMLDetailsElement} */ (panel);
+            detailsPanel.open = !detailsPanel.open;
+            const disclosure = playerPanelDisclosureCache.get(container);
+            if (!disclosure) return;
+            if (detailsPanel.open) disclosure.openPanelIds.add(detailsPanel.id);
+            else disclosure.openPanelIds.delete(detailsPanel.id);
+        }, true);
+        playerPanelDisclosureClickListeners.add(container);
+    }
+    if (container && typeof container.addEventListener === 'function' &&
+            !playerPanelDisclosureListeners.has(container)) {
+        container.addEventListener('toggle', event => {
+            const panel = /** @type {HTMLElement | null} */ (event.target);
+            const disclosure = playerPanelDisclosureCache.get(container);
+            if (!panel || typeof panel.matches !== 'function' ||
+                    !panel.matches('details.player-box-compact') || !disclosure) return;
+            const detailsPanel = /** @type {HTMLDetailsElement} */ (panel);
+            if (detailsPanel.open) disclosure.openPanelIds.add(detailsPanel.id);
+            else disclosure.openPanelIds.delete(detailsPanel.id);
+        }, true);
+        playerPanelDisclosureListeners.add(container);
+    }
+    const previous = playerPanelRenderCache.get(container);
+    // Restore replay renders the initial game before applying its snapshot and
+    // tail actions. Treat the final restored ownership as the visual baseline,
+    // including when the last replay render already has identical markup.
+    if (previous?.replaying && !onlineState.isReplaying) {
+        previous.townBuildingCounts = snapshotTownBuildingCounts(currentGame.players);
+        previous.townSession = townSession;
+        previous.replaying = false;
+    }
+    // Human-turn recovery can render again immediately after a purchase.
+    // Keep unchanged panels, including their coin animation and focused cards.
+    if (!previous || previous.players !== currentGame.players ||
+            previous.html !== html || previous.firstChild !== container.firstElementChild) {
+        const townBuildingCounts = snapshotTownBuildingCounts(currentGame.players);
+        const previousDisclosure = playerPanelDisclosureCache.get(container);
+        const sameGame = previousDisclosure && currentGame.turnCount >= previousDisclosure.turnCount;
+        const openPanelIds = sameGame
+            ? new Set(previousDisclosure.openPanelIds)
+            : new Set();
+        if (sameGame) {
+            const panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+                container.querySelectorAll('details.player-box-compact')
+            );
+            panels.forEach(panel => {
+                if (panel.open) openPanelIds.add(panel.id);
+            });
+        }
+        container.innerHTML = html;
+        if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design) && !onlineState.isReplaying) {
+            animateNewTownBuildings(container, previous?.townSession === townSession
+                ? previous.townBuildingCounts : null, townBuildingCounts);
+        }
+        const panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+            container.querySelectorAll('details.player-box-compact')
+        );
+        panels.forEach(panel => {
+            if (openPanelIds.has(panel.id)) panel.open = true;
+        });
+        playerPanelDisclosureCache.set(container, {
+            turnCount: currentGame.turnCount,
+            openPanelIds,
+        });
+        playerPanelRenderCache.set(container, {
+            players: currentGame.players,
+            townSession,
+            replaying: onlineState.isReplaying === true,
+            html,
+            firstChild: container.firstElementChild,
+            townBuildingCounts,
+        });
+    }
+    if (typeof PlazaField !== 'undefined') PlazaField.render(
+        currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml,
+        getEnabledLandmarkSelection(), townSession, currentGame.phase, CARDS, UiBuildMenu.renderFacilityArt,
+        getEnabledCardSelection(),
+    );
+    if (typeof CardBoardField !== 'undefined') CardBoardField.render({
+        game: currentGame,
+        playerSettings: settings,
+        selfIndex: primaryPlayerIndex,
+        escapeHtml,
+        getEffectText,
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        session: townSession,
+        replaying: uiOnlineRuntimeSnapshot().isReplaying === true,
+        display: LOG_TYPE_DISPLAY,
+        refreshMarket: renderBuildMenu,
+        closeLog: () => setLogCollapsed(true),
+        onDiceResult: dismissTurnGreeting,
+        onUserInspection: dismissTurnGreeting,
+        onBuildMilestones: milestones => {
+            if (currentGame.checkWinner()) return;
+            const online = uiOnlineRuntimeSnapshot();
+            const remoteOrCpuBuild = milestones.some(build =>
+                currentCpuPlayerAt(build.playerIndex) ||
+                (online.isOnlineGame && online.myPlayerIndex !== build.playerIndex)
+            );
+            if (remoteOrCpuBuild) playSound('build');
+        },
+    });
+    plazaIncomePreviewPanel?.refresh(currentGame);
+    if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
+        animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
+    } else clearTownCoinEffects();
+}
+
+function getEffectText(card, compact = false) {
+    return UiCardDetail.cardEffectText(card, CARD_EFFECT_DESCRIPTIONS, compact === true);
+}
+
+function landmarkPresentation(name) {
+    return UiCardDetail.landmarkPresentation(name, Player._LANDMARK_DEFS, LANDMARK_NAMES.YAKUSHO);
+}
+
+function getLandmarkEffectText(name) {
+    return landmarkPresentation(name).effectText;
+}
+
+function getLandmarkEmoji(name) {
+    return landmarkPresentation(name).emoji;
+}
+
+function safeCardColorName(color) {
+    return UiBuildMenu.safeCardColorName(color);
+}
+
+function renderBuildCardButton(card, stock, canBuildThis, highlighted = false) {
+    return UiBuildMenu.renderBuildCardButton({ card, stock, canBuildThis, highlighted, escapeHtml, getEffectText });
+}
+
+function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
+    return UiBuildMenu.renderLandmarkBuildButton({
+        name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji,
+        renderLandmarkMark: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
+            ? UiBuildMenu.renderLandmarkBadgeIcon
+            : null,
+    });
+}
+
+function buildCardFilterBarHtml() {
+    return UiBuildMenu.buildCardFilterBarHtml(buildMenuFilterController.get());
+}
+
+function buildVisibleCardButtonsHtml(current, canBuildCardAction, highlightedCardNames = []) {
+    return UiBuildMenu.buildVisibleCardButtonsHtml({
+        cards: CARDS,
+        cardFilter: buildMenuFilterController.get(),
+        enabledCards: getEnabledCardSelection(),
+        shopStock: SHOP_STOCK,
+        current,
+        canBuildCardAction,
+        compareCardsForDisplay,
+        getShopStockCount,
+        renderBuildCardButton,
+        highlightedCardNames,
+    });
+}
+
+function buildLandmarkButtonsHtml(current, canBuildLandmarkAction) {
+    return UiBuildMenu.buildLandmarkButtonsHtml({
+        landmarks: current.landmarks,
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        currentCoins: current.coins,
+        canBuildLandmarkAction,
+        landmarkCost: Player.landmarkCost,
+        renderLandmarkBuildButton,
+    });
+}
+
+function currentUndoBuildActionState() {
+    const gameState = uiGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    if (!gameState.undoState || !currentGame || !currentGame.builtThisTurn) {
+        return UiBuildMenu.undoBuildActionState({
+            hasUndoState: !!gameState.undoState,
+            hasGame: !!currentGame,
+            builtThisTurn: !!(currentGame && currentGame.builtThisTurn),
+        });
+    }
+    try {
+        const allowedActions = currentUiAllowedActions();
+        const visibleState = UiBuildMenu.undoBuildActionState({
+            hasUndoState: true,
+            hasGame: true,
+            builtThisTurn: true,
+            allowedActions,
+        });
+        return UiBuildMenu.undoBuildActionState({
+            hasUndoState: true,
+            hasGame: true,
+            builtThisTurn: true,
+            allowedActions,
+            isHumanTurn: visibleState.visible && isCurrentHumanUiTurn(),
+        });
+    } catch (_) {
+        return UiBuildMenu.undoBuildActionState({});
+    }
+}
+
+function canRenderUndoBuildAction() {
+    return currentUndoBuildActionState().visible;
+}
+
+function buildUndoBuildButtonHtml() {
+    return UiBuildMenu.buildUndoBuildButtonHtml(currentUndoBuildActionState());
+}
+
+function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction, compact = false) {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const highlightedCardNames = typeof MarketSupply !== 'undefined' &&
+        typeof MarketSupply.consumePendingHighlightNames === 'function'
+        ? MarketSupply.consumePendingHighlightNames(currentGame && currentGame.marketSupply)
+        : [];
+    const filterBtnsHtml = buildCardFilterBarHtml();
+    if (compact) return UiCompactMarket.buildHtml({
+        cards: CARDS, cardFilter: buildMenuFilterController.get(), enabledCards: getEnabledCardSelection(),
+        shopStock: SHOP_STOCK, current, canBuildCardAction, canBuildLandmarkAction,
+        activeDiceValue: currentGame?.phase === GAME_PHASES.BUILD && currentGame.builtThisTurn !== true
+            ? currentGame.lastDiceResult : null,
+        compareCardsForDisplay, getShopStockCount, highlightedCardNames,
+        landmarks: current.landmarks, enabledLandmarks: getEnabledLandmarkSelection(),
+        currentCoins: current.coins, landmarkCost: Player.landmarkCost,
+        filterBtnsHtml, undoBtn: buildUndoBuildButtonHtml(), escapeHtml, getEffectText, getLandmarkEffectText,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        marketStatusHtml: UiBuildMenu.buildMarketStatusHtml(currentGame?.marketSupply, SHOP_STOCK, currentGame?.players),
+    });
+    const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction, highlightedCardNames) ||
+        UiBuildMenu.buildCardEmptyStateHtml(buildMenuFilterController.get());
+    const landmarkHtml = buildLandmarkButtonsHtml(current, canBuildLandmarkAction);
+    const undoBtn = buildUndoBuildButtonHtml();
+    return UiBuildMenu.buildBuildMenuHtml({
+        canBuildCardAction,
+        canBuildLandmarkAction,
+        filterBtnsHtml,
+        cardHtml,
+        landmarkHtml,
+        undoBtn,
+        marketStatusHtml: UiBuildMenu.buildMarketStatusHtml(
+            currentGame && currentGame.marketSupply,
+            SHOP_STOCK,
+            currentGame && currentGame.players
+        ),
+    });
+}
+
+function hasPendingBuildChoice(currentGame) {
+    if (!currentGame) return false;
+    return UiPendingMenu.isPendingDisplayCandidate({
+        phase: currentGame.phase,
+        pendingPhase: GAME_PHASES.PENDING,
+        pendingIT: currentGame.pendingIT,
+        pendingRenovation: currentGame.pendingRenovation,
+    });
+}
+
+function renderBuildShortcut(forceHidden = false) {
+    const button = document.getElementById('btnBuildShortcut');
+    if (button) {
+        const compact = document.documentElement?.dataset?.design === 'cardboard';
+        button.setAttribute('aria-controls', compact ? 'cardboardMarketDialog' : 'buildMenu');
+        button.setAttribute('aria-haspopup', compact ? 'dialog' : 'false');
+    }
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const view = !forceHidden && currentGame
+        ? UiBuildMenu.buildShortcutView({
+            phase: currentGame.phase,
+            buildPhase: GAME_PHASES.BUILD,
+            hasPending: hasPendingBuildChoice(currentGame),
+            builtThisTurn: currentGame.builtThisTurn,
+            isHumanTurn: isCurrentHumanUiTurn(),
+            isReplaying: onlineState.isReplaying,
+            inputBlocked: isOnlineUiInputBlocked(),
+            allowedActions: currentUiAllowedActions(),
+        })
+        : UiBuildMenu.buildShortcutView({});
+    return UiBuildMenu.applyBuildShortcutView(button, view);
+}
+
+function focusBuildMenu() {
+    if (document.documentElement?.dataset?.design === 'cardboard' &&
+            typeof CardBoardField !== 'undefined' && CardBoardField.openMarket()) return true;
+    return UiBuildMenu.focusAndScrollToBuildMenu(document.getElementById(
+        document.documentElement?.dataset?.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu'));
+}
+
+function renderBuildMenu() {
+    const compact = document.documentElement?.dataset?.design === 'cardboard';
+    const buildMenu = document.getElementById(compact ? 'cardboardMarket' : 'buildMenu');
+    const currentGame = uiGameRuntimeSnapshot().game;
+    renderBuildShortcut();
+    if (!buildMenu || !currentGame) return;
+    UiBuildMenu.bindBuildMenuPointerCapture(buildMenu);
+    const activeElement = document.activeElement;
+    let activeWithinBuildMenu = false;
+    let ancestor = activeElement;
+    while (ancestor) {
+        if (ancestor === buildMenu) {
+            activeWithinBuildMenu = true;
+            break;
+        }
+        ancestor = ancestor.parentElement;
+    }
+    const actionElement = activeWithinBuildMenu && typeof activeElement?.closest === 'function'
+        ? /** @type {HTMLElement | null} */ (activeElement.closest('[data-action]'))
+        : /** @type {HTMLElement | null} */ (activeElement);
+    const focusPlan = buildActionFocusController.plan(activeWithinBuildMenu ? {
+        action: actionElement?.dataset?.action,
+        cardName: actionElement?.dataset?.cardName,
+        landmarkName: actionElement?.dataset?.landmarkName,
+    } : {}, uiOnlineRuntimeSnapshot().isReplaying !== true && isCurrentHumanUiTurn());
+    const current = currentGame.currentPlayer();
+    const buildState = {
+        phase: currentGame.phase,
+        buildPhase: GAME_PHASES.BUILD,
+        pendingRenovation: currentGame.pendingRenovation,
+        builtThisTurn: currentGame.builtThisTurn,
+    };
+    const buildGateOpen = UiBuildMenu.isBuildGateOpen(buildState);
+    const actionState = UiBuildMenu.buildActionState({
+        ...buildState,
+        isHumanTurn: buildGateOpen && isCurrentHumanUiTurn(),
+        allowedActions: buildGateOpen ? currentUiAllowedActions() : new Set(),
+    });
+    const compactMarketViewport = document.documentElement?.dataset?.design === 'plaza' ||
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 480px)').matches;
+    if (compactMarketViewport && actionState.canBuildCardAction &&
+            !buildMenuFilterController.wasManuallySelected()) {
+        buildMenuFilterController.setAutomatic('affordable');
+    }
+    const marketHtml = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction, compact);
+    if (compact && typeof CardBoardField !== 'undefined') CardBoardField.updateMarket(marketHtml);
+    else UiBuildMenu.updateBuildMenuHtml(buildMenu, marketHtml);
+    UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
+        findIdentity(identity) {
+            if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
+            const market = document.getElementById('cardboardMarket');
+            const elements = Array.from(new Set([buildMenu, market].filter(Boolean))).flatMap(container => Array.from(
+                /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll(`[data-action="${identity.action}"]`))
+            ));
+            return Array.from(elements)
+                .find(element => identity.action === 'buildCard'
+                    ? element.dataset?.cardName === identity.name
+                    : element.dataset?.landmarkName === identity.name) || null;
+        },
+        focusIdentity: focusBuildActionElement,
+        focusFallback() {
+            const marketDialog = /** @type {HTMLDialogElement | null} */ (document.getElementById('cardboardMarketDialog'));
+            if (marketDialog?.open) {
+                const marketAction = /** @type {HTMLElement | null} */ (
+                    document.querySelector('#cardboardMarket .compact-market-buy:not(:disabled), #cardboardMarket .compact-market-detail') ||
+                    document.getElementById('cardboardMarketClose')
+                );
+                if (focusBuildActionElement(marketAction)) return true;
+            }
+            const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById('btnSkip'));
+            return focusBuildActionElement(btnSkip) || UiScreenFocus.focusGame(document);
+        },
+    });
+}
+
+/** @param {HTMLElement | null} element */
+function focusBuildActionElement(element) {
+    for (let parent = element?.parentElement; parent; parent = parent.parentElement) {
+        if (parent.tagName === 'DETAILS') (/** @type {HTMLDetailsElement} */ (parent)).open = true;
+    }
+    if (!element || typeof element.focus !== 'function' ||
+            !UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(element))) return false;
+    try {
+        element.focus({ preventScroll: true });
+    } catch (_) {
+        try {
+            element.focus();
+        } catch (_) {
+            return false;
+        }
+    }
+    element.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+    return true;
+}
+
+/** @param {HTMLElement} element */
+function cardFilterFocusFacts(element) {
+    let ancestor = element;
+    let ancestorHidden = false;
+    while (ancestor) {
+        const style = /** @type {CSSStyleDeclaration} */ (ancestor.style);
+        /** @type {Window | null} */
+        const view = document.defaultView;
+        const computed = view && typeof view.getComputedStyle === 'function'
+            ? view.getComputedStyle(ancestor)
+            : null;
+        if (ancestor.hidden || ancestor.inert || ancestor.getAttribute?.('aria-hidden') === 'true' ||
+            style.display === 'none' || style.visibility === 'hidden' ||
+            computed?.display === 'none' || computed?.visibility === 'hidden') {
+            ancestorHidden = true;
+            break;
+        }
+        ancestor = ancestor.parentElement;
+    }
+    return {
+        connected: element?.isConnected !== false,
+        hidden: !!element?.hidden,
+        disabled: uiDisabledState(element),
+        ancestorHidden,
+    };
+}
+
+/**
+ * @param {HTMLElement | null} element
+ * @returns {element is HTMLButtonElement | HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement}
+ */
+function isUiDisabledFormControl(element) {
+    return !!element && ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(element.tagName);
+}
+
+/** @param {HTMLElement | null} element */
+function uiDisabledState(element) {
+    if (!element) return false;
+    if (isUiDisabledFormControl(element)) return element.disabled;
+    return !!/** @type {HTMLElement & { disabled?: boolean }} */ (element).disabled;
+}
+
+function restoreCardFilterFocus(plan) {
+    if (!plan.restore) return false;
+    const buildMenu = document.getElementById(document.documentElement?.dataset?.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu');
+    if (!buildMenu || typeof buildMenu.querySelectorAll !== 'function') return false;
+    const targets = /** @type {NodeListOf<HTMLElement>} */ (
+        buildMenu.querySelectorAll('[data-action="setCardFilter"]')
+    );
+    const target = Array.from(targets)
+        .find(button => button.dataset?.cardFilter === plan.cardFilter);
+    if (!target || typeof target.focus !== 'function') return false;
+    if (!UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(target))) return false;
+    try {
+        target.focus({ preventScroll: true });
+    } catch (_) {
+        try {
+            target.focus();
+        } catch (_) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function setCardFilter(color, sourceElement = null) {
+    const focusPlan = UiBuildMenu.cardFilterFocusPlan(color, {
+        action: sourceElement?.dataset?.action,
+        cardFilter: sourceElement?.dataset?.cardFilter,
+    });
+    const transition = buildMenuFilterController.set(color);
+    if (transition.shouldRender) renderBuildMenu();
+    restoreCardFilterFocus(focusPlan);
+}
+
+function bcSelectCard(btn, inputId) {
+    if (!btn) return false;
+    if (!businessSelectionController.select(uiGameRuntimeSnapshot().game, inputId, Number(btn.dataset?.idx))) return false;
+    const group = typeof btn.closest === 'function' ? btn.closest('.bc-chip-group') : null;
+    const groupButtons = group && typeof group.querySelectorAll === 'function'
+        ? group.querySelectorAll('.bc-chip')
+        : [];
+    const view = UiPendingMenu.businessCardSelectionView(groupButtons.length, btn.dataset?.idx ?? '');
+    return UiPendingEffects.applyBusinessCardSelection(view, {
+        groupButtons,
+        selectedButton: btn,
+        findInput: () => document.getElementById(inputId),
+    });
+}
+
+function dismissTurnGreeting() {
+    turnAnnouncerTimerController.clear();
+    document.getElementById('cardboardBoard')?.classList.remove('cardboard-turn-cue');
+    const greeting = document.getElementById('turnAnnouncer');
+    if (greeting) {
+        greeting.style.display = 'none';
+        greeting.classList.remove('hiding');
+    }
+}
+
+function showTurnAnnouncer(name, isCPU, playerIndex) {
+    const el = document.getElementById("turnAnnouncer");
+    const text = document.getElementById("turnAnnouncerText");
+    if (!el || !text) return;
+    dismissTurnGreeting();
+    const view = UiTurnAnnouncer.buildView(name, isCPU);
+    const cardboard = document.documentElement?.dataset?.design === 'cardboard';
+    // The table already has a persistent turn HUD; emphasize it without
+    // placing a second message over facilities or the central market.
+    el.style.display = cardboard ? 'none' : view.display;
+    if (cardboard) document.getElementById('cardboardBoard')?.classList.add('cardboard-turn-cue');
+    const sunsetHtml = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
+        ? UiTurnAnnouncer.buildSunsetHtml(name, isCPU, escapeHtml)
+        : '';
+    if (sunsetHtml) text.innerHTML = sunsetHtml;
+    else text.textContent = view.text;
+    const status = document.getElementById("turnStatusAnnouncer");
+    if (status) status.textContent = UiTurnAnnouncer.buildStatusText(name, isCPU, playerIndex);
+    turnAnnouncerTimerController.start(view, {
+        beginHide() {
+            document.getElementById('cardboardBoard')?.classList.remove('cardboard-turn-cue');
+            if (!cardboard) el.classList.add("hiding");
+        },
+        finishHide() {
+            el.style.display = "none";
+            el.classList.remove("hiding");
+        },
+    });
+}
+
+function switchTab(tab) {
+    const view = UiTabView.buildMainTabView(tab);
+    UiTabEffects.applyMainTabView({
+        localContent: document.getElementById("tabContentLocal"),
+        onlineContent: document.getElementById("tabContentOnline"),
+        tournamentContent: document.getElementById("tabContentTournament"),
+        statsContent: document.getElementById("tabContentStats"),
+        localButton: document.getElementById("tabLocal"),
+        onlineButton: document.getElementById("tabOnline"),
+        tournamentButton: document.getElementById("tabTournament"),
+        statsButton: document.getElementById("tabStats"),
+    }, view);
+    updateGameSelectionSummary();
+    if (tab === 'online' && typeof checkOnlineReadiness === 'function') {
+        checkOnlineReadiness();
+    }
+    if (view.renderStats) renderStats();
+}
+
+function switchOnlineTab(tab) {
+    const view = UiTabView.buildOnlineTabView(tab);
+    UiTabEffects.applyOnlineTabView({
+        createContent: document.getElementById("onlineCreate"),
+        joinContent: document.getElementById("onlineJoin"),
+        createButton: document.getElementById("onlineTabCreate"),
+        joinButton: document.getElementById("onlineTabJoin"),
+    }, view);
+}
+
+function showRules() {
+    return openAccessibleModal("rulesModal");
+}
+
+function closeRules() {
+    closeAccessibleModal("rulesModal");
+}
+
+const CARD_SETS = {
+    basic: ["麦畑","牧場","パン屋","カフェ","コンビニ","森林","スタジアム","チーズ工場","家具工場","鉱山","ファミレス","リンゴ園","青果市場","テレビ局","ビジネスセンター"],
+    plus: ["花畑","サンマ漁船","マグロ漁船","フラワーショップ","食品倉庫","寿司屋","ピザ屋","バーガーショップ","出版社","税務署"],
+    sharp: ["コーン畑","ブドウ園","雑貨屋","改装屋","貸金業","ワイナリー","引越し屋","ドリンク工場","高級フレンチ","会員制BAR","清掃業","ITベンチャー","公園"],
+};
+
+const cardSelectState = UiCardSelect.createSelectionController(GameSelectionState.runtime.snapshot());
+const uiCardSelectEffects = UiCardSelectEffects.create({
+    getElementById: id => document.getElementById(id),
+    getActiveElement: () => document.activeElement,
+    getWindow: () => typeof window !== 'undefined' ? window : null,
+    findToggle(identity) {
+        const modal = document.getElementById('cardSelectModal');
+        if (!modal || typeof modal.querySelectorAll !== 'function') return null;
+        const toggles = /** @type {NodeListOf<HTMLElement>} */ (modal.querySelectorAll('[data-action]'));
+        return Array.from(toggles).find(element => {
+            if (!element || !element.dataset || element.dataset.action !== identity.action) {
+                return false;
+            }
+            return identity.action === 'toggleCard'
+                ? element.dataset.cardName === identity.name
+                : element.dataset.landmarkName === identity.name;
+        }) || null;
+    },
+});
+
+function syncCardSelectStateFromRuntime() {
+    const snapshot = GameSelectionState.runtime.snapshot();
+    cardSelectState.replaceCards([...snapshot.enabledCards]);
+    return cardSelectState.replaceLandmarks([...snapshot.enabledLandmarks]);
+}
+
+function applyCardSelectStateSnapshot() {
+    const snapshot = cardSelectState.snapshot();
+    replaceEnabledCardSelection([...snapshot.enabledCards]);
+    replaceEnabledLandmarkSelection([...snapshot.enabledLandmarks]);
+}
+
+function updateGameSelectionSummary() {
+    const selection = GameSelectionState.runtime.snapshot();
+    const cardCount = Array.isArray(selection.enabledCards) ? selection.enabledCards.length : 0;
+    const landmarkCount = Array.isArray(selection.enabledLandmarks) ? selection.enabledLandmarks.length : 0;
+    const marketLabel = selection.marketRule === 'ten-type' ? '公式10種市場' : '通常市場';
+    const text = `カード${cardCount}種・ランドマーク${landmarkCount}種・${marketLabel}`;
+    for (const id of ['localGameSelectionSummary', 'onlineGameSelectionSummary']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = text;
+    }
+    return text;
+}
+const logHistoryController = UiLogDisplay.createHistoryController();
+const activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
+const hotseatHandoffController = UiTurnPrivacy.createHandoffController();
+const turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
+// Presentation changes must not carry a previous turn cue into another theme
+// or a hidden/resumed game. They never trigger a new turn announcement.
+const dismissHiddenCardboardTurnCue = () => {
+    const board = document.getElementById('cardboardBoard');
+    if (!board?.classList.contains('cardboard-turn-cue')) return;
+    if (document.hidden || document.documentElement?.dataset?.design !== 'cardboard' ||
+            document.getElementById('gameScreen')?.style.display === 'none') dismissTurnGreeting();
+};
+document.addEventListener('design-theme-change', dismissHiddenCardboardTurnCue);
+document.addEventListener('visibilitychange', dismissHiddenCardboardTurnCue);
+if (typeof MutationObserver !== 'undefined') {
+    const screen = document.getElementById('gameScreen');
+    if (screen) new MutationObserver(dismissHiddenCardboardTurnCue)
+        .observe(screen, { attributes: true, attributeFilter: ['style'] });
+}
+
+const buildMenuFilterController = UiBuildMenu.createFilterController();
+const modalRuntimeController = UiModalPolicy.createRuntimeController();
+
+const MODAL_INERT_ROOT_IDS = UiModalPolicy.inertRootIds;
+const MODAL_POLICY_REGISTRY = UiModalPolicy.registry;
+const MODAL_STACK_EXCEPTION_REGISTRY = UiModalPolicy.exceptions;
+const MODAL_CLOSE_HANDLERS = Object.freeze({
+    rulesModal: closeRules,
+    cardSelectModal: closeCardSelect,
+    cardDetailModal: closeCardDetail,
+    confirmModal: () => closeConfirmModal(false),
+});
+
+const CARD_COLOR_ORDER = Object.freeze({ blue: 0, green: 1, red: 2, purple: 3 });
+
+const FLOW_TRACE_LIMIT = 40;
+
+function buildRuntimeStateSnapshot(reason = '') {
+    const gameState = uiGameRuntimeSnapshot();
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const pendingActions = currentGame && typeof GameManager !== 'undefined' && typeof GameManager.pendingActionsFor === 'function'
+        ? GameManager.pendingActionsFor(currentGame)
+        : [];
+    const elementState = id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (!el) return null;
+        return {
+            display: el.style ? el.style.display || '' : '',
+            disabled: uiDisabledState(el),
+            inert: !!el.inert,
+            htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
+        };
+    };
+    return UiRuntimeSnapshot.build({
+        reason,
+        timestamp: new Date().toISOString(),
+        game: currentGame,
+        isCpuTurn: !!(currentGame && currentCpuPlayerAt(currentGame.currentPlayerIndex)),
+        online: {
+            isOnlineGame: !!onlineState.isOnlineGame,
+            myPlayerIndex: onlineState.myPlayerIndex,
+        },
+        pendingActions,
+        ui: {
+            gameScreen: elementState('gameScreen'),
+            pendingModal: elementState('pendingModal'),
+            pendingMenu: elementState('pendingMenu'),
+            buildMenu: elementState(typeof UiMarketTarget !== 'undefined' ? UiMarketTarget.id(document) : 'buildMenu'),
+            btnSkip: elementState('btnSkip'),
+            confirmModal: elementState('confirmModal'),
+            rulesModal: elementState('rulesModal'),
+            cardSelectModal: elementState('cardSelectModal'),
+            cardDetailModal: elementState('cardDetailModal'),
+        },
+    });
+}
+
+function recordFlowTrace(event, details = {}) {
+    const trace = {
+        event,
+        details,
+        snapshot: buildRuntimeStateSnapshot(event),
+    };
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) {
+            const list = Array.isArray(root.__machikoroFlowTrace) ? root.__machikoroFlowTrace : [];
+            list.push(trace);
+            while (list.length > FLOW_TRACE_LIMIT) list.shift();
+            root.__machikoroFlowTrace = list;
+        }
+    } catch (_) {}
+    try {
+        const stored = safeUiStorageSet('machikoroLastFlowTrace', JSON.stringify(trace).slice(0, 4000));
+        if (stored && typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
+    } catch (_) {}
+    return trace;
+}
+
+function reportRenderStepError(step, error) {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const message = error && error.message || String(error);
+    const stack = error && error.stack || '';
+    const trace = recordFlowTrace('render-step-error', {
+        step,
+        message,
+        stack: stack.slice(0, 1200),
+        recoverable: true,
+    });
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[machikoro-render-step-error]', step, trace.snapshot, error);
+    }
+    if (typeof reportClientError === 'function') {
+        let traceSummary = '';
+        try {
+            traceSummary = JSON.stringify({ event: trace.event, snapshot: trace.snapshot }).slice(0, 1200);
+        } catch (_) {}
+        reportClientError({
+            source: 'render-step',
+            phase: currentGame && currentGame.phase,
+            message: 'render ' + step + ': ' + message,
+            stack: [stack, traceSummary ? 'FLOW_TRACE ' + traceSummary : ''].filter(Boolean).join('\n'),
+        });
+    }
+}
+
+function safeRenderStep(step, fn) {
+    try {
+        fn();
+        return true;
+    } catch (error) {
+        reportRenderStepError(step, error);
+        return false;
+    }
+}
+
+function compareCardsForDisplay(a, b) {
+    return UiCardOrder.compareCardsForDisplay(a, b, CARD_COLOR_ORDER);
+}
+
+function compareCardNamesForDisplay(a, b) {
+    return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
+}
+
+function resetFullLog() {
+    logHistoryController.reset();
+    activeGameTurnStateController.reset();
+    applyHotseatHandoff(hotseatHandoffController.reset());
+    buildMenuFilterController.clear();
+}
+
+const uiModalDomEffects = UiModalDomEffects.createRuntime({
+    controller: modalRuntimeController,
+    getDocument: () => typeof document === 'undefined' ? null : document,
+    getVisibleBlockingIds: () => visibleBlockingModalIds(),
+    getWindow: () => typeof window === 'undefined' ? null : window,
+    inertRootIds: MODAL_INERT_ROOT_IDS,
+    policy: UiModalPolicy,
+    recordTrace: (event, details) => {
+        if (typeof recordFlowTrace === 'function') recordFlowTrace(event, details);
+    },
+});
+
+function isVisibleFocusableElement(element) {
+    return uiModalDomEffects.isVisibleFocusable(element);
+}
+
+function getFocusableElements(root) {
+    return uiModalDomEffects.focusableElements(root);
+}
+
+function focusModal(modal) {
+    uiModalDomEffects.focusModal(modal);
+}
+
+function clearOrphanAccessibleModalLocks() {
+    return uiModalDomEffects.clearOrphanLocks();
+}
+
+function setAppInertForModal(enabled) {
+    uiModalDomEffects.setAppInert(enabled);
+}
+
+function resetAccessibleModalRuntimeState() {
+    buildActionFocusController.reset();
+    diceChoiceFocusController.reset();
+    diceResultAnnouncementController.reset();
+    pendingModalFocusController.reset();
+    return uiModalDomEffects.resetRuntimeState();
+}
+
+function modalPolicyFor(id) {
+    return UiModalPolicy.policyFor(id);
+}
+
+function isModalVisibleById(id) {
+    return uiModalDomEffects.isModalVisible(id);
+}
+
+function modalStackExceptionKey(parentId, childId) {
+    return UiModalPolicy.stackExceptionKey(parentId, childId);
+}
+
+function hasRegisteredModalStackException(parentId, childId) {
+    return UiModalPolicy.hasStackException(parentId, childId);
+}
+
+function recordModalPolicyViolation(type, details = {}) {
+    return uiModalRuntime.recordViolation(type, details);
+}
+
+function visibleBlockingModalIds() {
+    return uiModalRuntime.visibleBlockingIds();
+}
+
+function canOpenBlockingModal(id) {
+    return uiModalRuntime.canOpen(id);
+}
+
+function normalizeModalVisualStateForOpen(modal) {
+    uiModalDomEffects.normalizeForOpen(modal);
+}
+
+const uiModalRuntime = UiModalRuntime.createRuntime({
+    appendViolation: entry => {
+        try {
+            const root = typeof window !== 'undefined' ? window : globalThis;
+            if (!root) return;
+            const list = Array.isArray(root.__machikoroModalPolicyViolations)
+                ? root.__machikoroModalPolicyViolations
+                : [];
+            list.push(entry);
+            while (list.length > 20) list.shift();
+            root.__machikoroModalPolicyViolations = list;
+        } catch (_) {}
+    },
+    buildSnapshot: reason => buildRuntimeStateSnapshot(reason),
+    canRenderPending: () => typeof renderPending === 'function',
+    canTrace: () => typeof recordFlowTrace === 'function',
+    closePlan: UiModalClose,
+    controller: modalRuntimeController,
+    domEffects: uiModalDomEffects,
+    getCloseHandler: id => MODAL_CLOSE_HANDLERS[id] || null,
+    getDocument: () => typeof document === 'undefined' ? null : document,
+    isCloseAuthorityEnabled: () => isUiModalCloseEffectAuthorityEnabled(),
+    isOpenAuthorityEnabled: () => isUiModalOpenEffectAuthorityEnabled(),
+    nowIso: () => new Date().toISOString(),
+    openPlan: UiModalOpen,
+    policy: UiModalPolicy,
+    recordTrace: (event, details) => recordFlowTrace(event, details),
+    renderPending: () => renderPending(),
+    warn: (...args) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn(...args);
+        }
+    },
+});
+
+function isUiModalOpenEffectAuthorityEnabled() {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        const value = root && root.MACHIKORO_UI_MODAL_OPEN_EFFECT_AUTHORITY_ENABLED;
+        return value === true || value === 1 || value === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function legacyUiModalOpenPlan(id) {
+    return uiModalRuntime.legacyOpenPlan(id);
+}
+
+function uiModalOpenPlanSelection(id) {
+    return uiModalRuntime.selectOpenPlan(id);
+}
+
+function runUiModalOpenEffectsLegacy(modal, id) {
+    uiModalRuntime.runOpenLegacy(modal, id);
+}
+
+function runUiModalOpenEffects(modal, id) {
+    uiModalRuntime.runOpen(modal, id);
+}
+
+function openAccessibleModal(id) {
+    return uiModalRuntime.open(id);
+}
+
+function isUiModalCloseEffectAuthorityEnabled() {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        const value = root && root.MACHIKORO_UI_MODAL_CLOSE_EFFECT_AUTHORITY_ENABLED;
+        return value === true || value === 1 || value === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function uiModalClosePlanInput(id, options, visibleBlockingIds, nextActiveModalId) {
+    return uiModalRuntime.closePlanInput(
+        id,
+        options,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
+}
+
+function legacyUiModalClosePlan(id, options, visibleBlockingIds, nextActiveModalId) {
+    return uiModalRuntime.legacyClosePlan(
+        id,
+        options,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
+}
+
+function uiModalClosePlanSelection(id, options, visibleBlockingIds, nextActiveModalId) {
+    return uiModalRuntime.selectClosePlan(
+        id,
+        options,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
+}
+
+function runUiModalCloseEffectsLegacy(id, options, beforeSnapshot,
+        visibleBlockingIds, nextActiveModalId) {
+    uiModalRuntime.runCloseLegacy(
+        id,
+        options,
+        beforeSnapshot,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
+}
+
+function runUiModalCloseEffects(id, options, beforeSnapshot,
+        visibleBlockingIds, nextActiveModalId) {
+    uiModalRuntime.runClose(
+        id,
+        options,
+        beforeSnapshot,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
+}
+
+function closeAccessibleModal(id, options = {}) {
+    uiModalRuntime.close(id, options);
+    if (id === 'cardDetailModal') finishCardDetailClose();
+    if (id !== 'hotseatHandoffOverlay' && visibleBlockingModalIds().length === 0) {
+        const handoff = hotseatHandoffController.snapshot();
+        if (handoff.visible) applyHotseatHandoff(handoff);
+    }
+}
+
+function setConfirmModalAwaitingChoice(value) {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) root.__machikoroConfirmModalOpen = !!value;
+    } catch (_) {}
+}
+
+const confirmModalController = UiModalPolicy.createConfirmController(
+    setConfirmModalAwaitingChoice
+);
+
+function closeConfirmModal(accepted) {
+    const transition = confirmModalController.close(accepted);
+    closeAccessibleModal('confirmModal');
+    if (transition.cancelHandler) transition.cancelHandler();
+}
+
+function handleModalKeydown(event) {
+    uiModalRuntime.handleKeydown(event);
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    document.addEventListener('keydown', handleModalKeydown);
+}
+
+const cardSelectModalBindingController = UiCardSelect.createBindingController();
+
+function cardSelectActionFromEvent(event) {
+    const target = event && event.target;
+    if (!target) return null;
+    if (typeof target.closest === 'function') return target.closest('[data-action]');
+    return target.dataset && target.dataset.action ? target : null;
+}
+
+function handleCardSelectModalClick(event) {
+    const button = cardSelectActionFromEvent(event);
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'toggleCard') toggleCard(button.dataset.cardName);
+    else if (action === 'toggleLandmark') toggleLandmark(button.dataset.landmarkName);
+    else if (action === 'toggleSet') toggleSet(button.dataset.set);
+    else if (action === 'closeCardSelect') closeCardSelect();
+}
+
+function bindCardSelectModalHandlers() {
+    if (!cardSelectModalBindingController.claim()) return;
+    const modal = document.getElementById('cardSelectModal');
+    if (modal && typeof modal.addEventListener === 'function') {
+        modal.addEventListener('click', handleCardSelectModalClick);
+        modal.addEventListener('change', event => {
+            const target = /** @type {HTMLSelectElement | null} */ (event.target);
+            if (target && target.id === 'marketRuleSelect' && typeof target.value === 'string') {
+                replaceMarketRuleSelection(target.value);
+                updateGameSelectionSummary();
+            }
+        });
+    }
+
+}
+
+function showCardSelect() {
+    if (!canOpenBlockingModal("cardSelectModal")) return false;
+    if (typeof beginOnlineCardSelection === 'function' && !beginOnlineCardSelection()) return false;
+    bindCardSelectModalHandlers();
+    renderCardSelectModal();
+    return openAccessibleModal("cardSelectModal");
+}
+
+function closeCardSelect() {
+    if (typeof saveOnlineCardSelection === 'function' && !saveOnlineCardSelection()) return false;
+    updateGameSelectionSummary();
+    closeAccessibleModal("cardSelectModal");
+}
+
+function buildCardSelectToggleButtonHtml(name, enabled) {
+    return UiCardSelect.buildCardToggleButtonHtml({
+        name,
+        enabled,
+        escapeHtml,
+    });
+}
+
+function buildLandmarkSelectToggleButtonHtml(name, enabled) {
+    return UiCardSelect.buildLandmarkToggleButtonHtml({
+        name,
+        enabled,
+        escapeHtml,
+        getLandmarkEmoji,
+    });
+}
+
+function renderCardSelectModal() {
+    const selection = syncCardSelectStateFromRuntime();
+    const view = UiCardSelect.buildCardSelectViewModel({
+        cardSets: CARD_SETS,
+        enabledCards: selection.enabledCards,
+        enabledLandmarks: selection.enabledLandmarks,
+        landmarkNames: Player.landmarkNames(),
+        compareCardNames: compareCardNamesForDisplay,
+        buildCardHtml: buildCardSelectToggleButtonHtml,
+        buildLandmarkHtml: buildLandmarkSelectToggleButtonHtml,
+    });
+    uiCardSelectEffects.apply(view);
+    const marketRuleSelect = /** @type {HTMLSelectElement | null} */ (
+        document.getElementById('marketRuleSelect')
+    );
+    const waitingRoom = !!uiOnlineRuntimeSnapshot().myRoomId;
+    if (marketRuleSelect) {
+        marketRuleSelect.value = GameSelectionState.runtime.snapshot().marketRule;
+        marketRuleSelect.disabled = waitingRoom;
+    }
+    const roomHelp = document.getElementById('cardSelectRoomHelp');
+    if (roomHelp) roomHelp.hidden = !waitingRoom;
+    updateGameSelectionSummary();
+}
+
+function toggleCard(name) {
+    syncCardSelectStateFromRuntime();
+    const result = cardSelectState.toggleCard(name);
+    if (!result.changed) return;
+    applyCardSelectStateSnapshot();
+    renderCardSelectModal();
+}
+
+function toggleSet(set) {
+    const cards = CARD_SETS[set];
+    if (!cards) return;
+    syncCardSelectStateFromRuntime();
+    cardSelectState.toggleSet(cards);
+    applyCardSelectStateSnapshot();
+    renderCardSelectModal();
+}
+
+function toggleLandmark(name) {
+    syncCardSelectStateFromRuntime();
+    const result = cardSelectState.toggleLandmark(name);
+    if (!result.changed) return;
+    applyCardSelectStateSnapshot();
+    renderCardSelectModal();
+}
+
+function toggleLog() {
+    if (document.documentElement?.dataset?.design === 'cardboard') {
+        const open = document.getElementById('gameLogContainer')?.classList.contains('cardboard-panel-open');
+        return setLogCollapsed(Boolean(open));
+    }
+    const log = document.getElementById("log");
+    if (!log || !log.classList) return false;
+    const collapsed = log.classList.toggle("collapsed");
+    return setLogCollapsed(collapsed);
+}
+
+function buildLandmarkDetailContent(name) {
+    return UiCardDetail.buildLandmarkDetailContent({
+        name,
+        emoji: getLandmarkEmoji(name),
+        cost: Player.landmarkCost(name),
+        effectText: getLandmarkEffectText(name),
+        escapeHtml,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        showFacilityArt: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+    });
+}
+
+function buildCardDetailContent(card) {
+    return UiCardDetail.buildCardDetailContent({
+        card,
+        escapeHtml,
+        getEffectText,
+        safeCardColorName,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        showFacilityArt: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+    });
+}
+
+function showCardDetail(name, isLandmark = false) {
+    const modal = document.getElementById('cardDetailModal');
+    const title = document.getElementById('cardDetailTitle');
+    const body = document.getElementById('cardDetailBody');
+    if (!modal || !title || !body) return false;
+    let content;
+    if (isLandmark) {
+        content = buildLandmarkDetailContent(name);
+    } else {
+        const card = CARDS.find(c => c.name === name);
+        if (!card) return false;
+        content = buildCardDetailContent(card);
+    }
+    if (!canOpenBlockingModal('cardDetailModal')) return false;
+    title.textContent = content.title;
+    body.innerHTML = content.html;
+    const target = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cardDetailReturnsToMarket = typeof CardBoardField !== 'undefined' &&
+        typeof CardBoardField.suspendMarketForDetail === 'function' && CardBoardField.suspendMarketForDetail();
+    const opened = openAccessibleModal('cardDetailModal');
+    // Delegated card actions can stop bubbling before the table's inspection
+    // handler. A successfully opened detail is itself explicit inspection.
+    if (opened && document.documentElement?.dataset?.design === 'cardboard') dismissTurnGreeting();
+    if (!opened && cardDetailReturnsToMarket) {
+        CardBoardField.resumeMarketAfterDetail(target);
+        cardDetailReturnsToMarket = false;
+    }
+    cardDetailFocusOrigin = opened && target
+        ? { target, action: target.dataset?.action, cardName: target.dataset?.cardName,
+            landmarkName: target.dataset?.landmarkName }
+        : null;
+    return opened;
+}
+
+function closeCardDetail() {
+    closeAccessibleModal('cardDetailModal');
+}
+
+function finishCardDetailClose() {
+    const origin = cardDetailFocusOrigin;
+    cardDetailFocusOrigin = null;
+    if (document.getElementById('cardDetailModal')?.style.display !== 'none') return;
+    const returnToMarket = cardDetailReturnsToMarket;
+    cardDetailReturnsToMarket = false;
+    if (returnToMarket && typeof CardBoardField !== 'undefined') {
+        // A human handoff queued while reading details takes priority over
+        // restoring a native top-layer market above the handoff overlay.
+        if (hotseatHandoffController.snapshot().visible || visibleBlockingModalIds().length > 0) {
+            CardBoardField.closeMarket(false);
+            return;
+        }
+        if (CardBoardField.resumeMarketAfterDetail(origin?.target)) return;
+    }
+    if (!origin || origin.target?.isConnected) return;
+    const replacement = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('button[data-action]'))).find(element =>
+        element.dataset.action === origin.action && element.dataset.cardName === origin.cardName &&
+        element.dataset.landmarkName === origin.landmarkName && !element.disabled &&
+        element.getClientRects().length > 0);
+    if (!replacement) return;
+    for (let parent = replacement.parentElement; parent; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
+    }
+    replacement.focus({ preventScroll: true });
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+
+function showConfirm(message, onOk, onCancel) {
+    const modal = document.getElementById('confirmModal');
+    const messageEl = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    if (!modal || !messageEl || !okBtn || !cancelBtn) {
+        showNotice('確認ダイアログを表示できません');
+        return false;
+    }
+    if (!canOpenBlockingModal('confirmModal')) return false;
+    messageEl.textContent = message;
+    if (!openAccessibleModal('confirmModal')) return false;
+    confirmModalController.open(onCancel);
+    okBtn.onclick = () => {
+        closeConfirmModal(true);
+        try {
+            onOk();
+        } finally {
+            UiScreenFocus.ensureCurrentScreenFocus(document);
+        }
+    };
+    cancelBtn.onclick = () => {
+        closeConfirmModal(false);
+    };
+    return true;
+}
+
+// Upgrade only art references when the shared local symbol definitions arrive.
+// This never reruns actions, receipts, focus transitions or game scheduling.
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function' && typeof UiBuildMenu !== 'undefined') {
+    document.addEventListener(UiBuildMenu.FACILITY_ART_READY_EVENT, () => {
+        UiBuildMenu.refreshFacilityArtReferences(document);
+    });
+    UiBuildMenu.refreshFacilityArtReferences(document);
+}
