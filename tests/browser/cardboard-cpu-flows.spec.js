@@ -1,17 +1,66 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('node:fs/promises');
+const espree = require('espree');
 
 // Diagnostic candidate only: keep this untracked file off the primary Nightly
 // for the seven aggregated monetary routes. No product action/scheduler overrides.
 test.use({ serviceWorkers: 'block', video: 'off', deviceScaleFactor: 1, isMobile: false, hasTouch: false,
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-for (const treatment of ['normal', 'static-cards', 'static-cards-no-caption']) {
+// Function-body instrumentation is diagnostic only. try/finally and timer
+// reads can affect JIT/optimization, so durations are not an uninstrumented A/B.
+const profileTargets = {
+    'cardBoardField.js': new Set(['updateOwnerLabels', 'syncOwnerLabels', 'draw', 'updateMarket', 'replaceHtml', 'positionBuildNotice']),
+    'cardTableCamera.js': new Set(['paint', 'layout', 'focusCard', 'syncLayout', 'refresh', 'applyReading']),
+    'cardTableLayout.js': new Set(['layout', 'ownerSize', 'marketSize', 'applyOwnerShape']),
+    'cardBoardActivationTags.js': new Set(['show', 'play', 'clear']),
+    'cardBoardTransfers.js': new Set(['play', 'retarget', 'clear', 'stopMotion']),
+};
+function instrumentBodies(source, filename) {
+    const ast = espree.parse(source, { ecmaVersion: 'latest', sourceType: 'script', range: true });
+    const inserts = [];
+    const visit = node => {
+        if (!node || typeof node !== 'object') return;
+        if (node.type === 'FunctionDeclaration' && profileTargets[filename].has(node.id?.name)) {
+            const suffix = node.range[0];
+            const profile = `__cpuPaintProfile${suffix}`;
+            const start = `__cpuPaintStart${suffix}`;
+            const end = `__cpuPaintEnd${suffix}`;
+            const directives = node.body.body.filter(statement => statement.type === 'ExpressionStatement' && statement.directive);
+            const opening = directives.length ? directives.at(-1).range[1] : node.body.range[0] + 1;
+            inserts.push({ offset: opening, text: `
+const ${profile}=globalThis.__cpuPaintProfile;const ${start}=${profile}?.active?performance.now():null;try{
+` });
+            inserts.push({ offset: node.body.range[1] - 1, text: `
+}finally{if(${start}!==null){try{const ${end}=performance.now();if(${profile}.records.length<500)${profile}.records.push({file:${JSON.stringify(filename)},name:${JSON.stringify(node.id.name)},at:${start}-${profile}.startedAt,duration:${end}-${start},endedAfterTurn:!${profile}.active});}catch{}}}
+` });
+        }
+        for (const [key, value] of Object.entries(node)) {
+            if (key === 'range') continue;
+            if (Array.isArray(value)) value.forEach(visit);
+            else if (value && typeof value === 'object') visit(value);
+        }
+    };
+    visit(ast);
+    for (const insert of inserts.sort((a, b) => b.offset - a.offset)) {
+        source = source.slice(0, insert.offset) + insert.text + source.slice(insert.offset);
+    }
+    // Validate nested insertions as JavaScript before fulfilling any response.
+    espree.parse(source, { ecmaVersion: 'latest', sourceType: 'script' });
+    return source;
+}
+
+for (const treatment of ['normal']) {
 test(`標準CPUの描画分離診断 ${treatment}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 936 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.route(/\/js\/(cardBoardField|cardTableCamera|cardTableLayout|cardBoardActivationTags|cardBoardTransfers)\.js(?:\?.*)?$/, async route => {
+        const response = await route.fetch();
+        const filename = new URL(route.request().url()).pathname.split('/').pop();
+        await route.fulfill({ response, body: instrumentBodies(await response.text(), filename) });
+    });
     await page.goto('/');
     // Diagnostic interventions only: retain the actual actions, dice, scheduler
     // and canonical game; isolate whole-card animation and caption painting.
@@ -61,6 +110,8 @@ test(`標準CPUの描画分離診断 ${treatment}`, async ({ page }, testInfo) =
         const initialActor = game.currentPlayerIndex;
         const trace = window.cpuEventTimeline = { startedAt: performance.now(), initialTurn, initialActor,
             treatment, cpuSpeed: 1500, cpuDifficulties: runtime.cpuPlayers.map(cpu => cpu?.difficulty), events: [] };
+        window.__cpuPaintProfile = { active: true, startedAt: trace.startedAt, records: [],
+            limit: 500, method: 'AST function-body try/finally; inclusive durations; instrumentation/JIT overhead possible' };
         let resolveFirstTransfer, resolveTurn;
         window.cpuEventFirstTransfer = new Promise(resolve => { resolveFirstTransfer = resolve; });
         window.cpuEventTurnChanged = new Promise(resolve => { resolveTurn = resolve; });
@@ -72,6 +123,7 @@ test(`標準CPUの描画分離診断 ${treatment}`, async ({ page }, testInfo) =
             if (turnRecorded) return true;
             if (current.turnCount === initialTurn && current.currentPlayerIndex === initialActor) return false;
             turnRecorded = true;
+            window.__cpuPaintProfile.active = false;
             trace.events.push({ kind: 'turn-change', at: performance.now() - trace.startedAt,
                 turn: current.turnCount, actor: current.currentPlayerIndex });
             trace.final = { turn: current.turnCount, actor: current.currentPlayerIndex,
@@ -193,7 +245,8 @@ test(`標準CPUの描画分離診断 ${treatment}`, async ({ page }, testInfo) =
     } finally {
         const evidence = await page.evaluate(() => {
             window.stopCpuEventObservation();
-            return { ...window.cpuEventTimeline,
+            window.__cpuPaintProfile.active = false;
+            return { ...window.cpuEventTimeline, callbackProfile: window.__cpuPaintProfile,
                 diceRngCalls: window.cpuEventTimeline.diceRngCalls ?? window.cpuDiagnosticDiceCalls() };
         });
         const file = testInfo.outputPath('cpu-events-timeline.json');
