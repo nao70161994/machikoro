@@ -167,9 +167,13 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                     await page.locator('#cardboardMarket .compact-market-expand').click();
                     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
                     const purchased = await snapshot();
+                    // Rule actions may hydrate a new GameManager. Identity is a
+                    // presentation invariant only; rebase after purchase/Undo.
+                    await page.evaluate(() => { window.ownerNamesGame = GameRuntimeState.runtime.snapshot().game; });
                     expect(purchased.state.playerCoins[0]).toBe(canonical.state.playerCoins[0] - 1);
                     await page.keyboard.press('Escape');
                     await overview();
+                    expect(await snapshot()).toEqual(purchased);
                     expect(purchased.state.playerCardNames[0].filter(name => name === '麦畑').length)
                         .toBe(canonical.state.playerCardNames[0].filter(name => name === '麦畑').length + 1);
                     expect(purchased.state.shopStock['麦畑']).toBe(canonical.state.shopStock['麦畑'] - 1);
@@ -177,6 +181,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                     expect(afterPurchase.expected).toEqual(initial.expected);
                     await page.locator('#cardboardMarket [data-action="undoBuild"]').click();
                     await page.locator('#confirmOkBtn').click();
+                    await page.evaluate(() => { window.ownerNamesGame = GameRuntimeState.runtime.snapshot().game; });
                     await overview();
                     afterUndo = await measure('undo');
                     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);

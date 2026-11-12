@@ -255,6 +255,7 @@ const CardBoardField = (() => {
             const layouts = [false, true].flatMap(inset => widths.map(width => ({ width, inset, height: baseHeight, lines: /** @type {string[] | null} */ (null) })));
             // Never use a narrow single line which would ellipsize an owner.
             // Try the familiar CPU split before balancing any other full name.
+            const semanticCpu = displayName.match(/^(CPU)(（(?:弱|普通|強|最強)）)(\s*・\s*\d+)?$/);
             const cpuName = !duplicateName && labelText.match(/^(CPU（(?:弱|普通|強|最強)）)(\s*・\s*\d+)$/);
             if (cpuName && ownerLabelMeasure) {
                 const lines = [cpuName[1], cpuName[2]];
@@ -273,7 +274,7 @@ const CardBoardField = (() => {
                 if (duplicateName) candidates.push([`席${index + 1} · `, displayName]);
                 let balanced = null;
                 let balancedWidth = Infinity;
-                for (let split = 1; split < characters.length; split++) {
+                for (let split = 1; !semanticCpu && split < characters.length; split++) {
                     const lines = [characters.slice(0, split).join(''), characters.slice(split).join('')];
                     const width = Math.max(...lines.map(line => measure.measureText(line).width));
                     if (width < balancedWidth) { balanced = lines; balancedWidth = width; }
@@ -289,16 +290,50 @@ const CardBoardField = (() => {
             // pocket narrower than even the balanced two-line CPU name. Keep
             // all preceding placements, then try semantic CPU/level/seat lines
             // without reducing the font or dropping the duplicate-seat prefix.
-            if (bounds.width <= 340 && ownerLabelMeasure) {
-                const compactCpu = displayName.match(/^(CPU)(（(?:弱|普通|強|最強)）)(\s*・\s*\d+)?$/);
-                if (compactCpu && (!duplicateName || !compactCpu[3])) {
-                    const lines = duplicateName ? [`席${index + 1} · `, compactCpu[1], compactCpu[2]]
-                        : [compactCpu[1], compactCpu[2], compactCpu[3]].filter(Boolean);
-                    const measure = ownerLabelMeasure;
-                    const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
-                    if (lines.length === 3 && lines.join('') === labelText && width <= maximumWidth) {
-                        for (const inset of [false, true]) layouts.push({ width, inset, height: baseHeight + 32, lines });
+            if (semanticCpu && ownerLabelMeasure) {
+                const lines = [duplicateName ? `席${index + 1} · ` : '', ...semanticCpu.slice(1)].filter(Boolean);
+                const measure = ownerLabelMeasure;
+                const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
+                if (lines.length >= 3 && lines.join('') === labelText && width <= maximumWidth) {
+                    for (const inset of [false, true]) layouts.push({ width, inset, height: baseHeight + 16 * (lines.length - 1), lines });
+                }
+            }
+            // Only after the existing complete-name candidates fail, a narrow
+            // table may use a taller grapheme layout. Never split a known CPU
+            // token, reduce its font, or shrink the actual facility cards.
+            if (bounds.width <= 340 && ownerLabelMeasure && !semanticCpu) {
+                const measure = ownerLabelMeasure;
+                const segmenter = typeof Intl.Segmenter === 'function'
+                    ? new Intl.Segmenter('ja', { granularity: 'grapheme' }) : null;
+                const characters = segmenter ? Array.from(segmenter.segment(labelText), part => part.segment) : Array.from(labelText);
+                const widths = new Map();
+                const textWidth = (start, end) => {
+                    const key = `${start}:${end}`;
+                    if (!widths.has(key)) widths.set(key, measure.measureText(characters.slice(start, end).join('')).width);
+                    return widths.get(key);
+                };
+                for (const count of [3, 4]) {
+                    if (characters.length < count) continue;
+                    // Minimize the widest complete line, preserving grapheme
+                    // order. Small player-name inputs bound this search.
+                    const plans = Array.from({ length: count + 1 }, () => new Map());
+                    plans[0].set(0, { width: 0, lines: [] });
+                    for (let line = 1; line <= count; line++) {
+                        for (let end = line; end <= characters.length; end++) {
+                            for (let start = line - 1; start < end; start++) {
+                                const previous = plans[line - 1].get(start);
+                                if (!previous) continue;
+                                const width = Math.max(previous.width, textWidth(start, end));
+                                if (!plans[line].has(end) || width < plans[line].get(end).width) {
+                                    plans[line].set(end, { width, lines: [...previous.lines, characters.slice(start, end).join('')] });
+                                }
+                            }
+                        }
                     }
+                    const plan = plans[count].get(characters.length);
+                    const width = Math.max(44, Math.ceil(plan.width) + 16);
+                    if (width > maximumWidth || plan.lines.join('') !== labelText) continue;
+                    for (const inset of [false, true]) layouts.push({ width, inset, height: baseHeight + 16 * (count - 1), lines: plan.lines });
                 }
             }
             for (const { width, inset, height, lines } of layouts) {
