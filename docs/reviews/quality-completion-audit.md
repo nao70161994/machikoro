@@ -4,6 +4,14 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
 
+### v364画像レビューとv365の追加修正（2026-11-12 JST）
+
+v363実UI原寸16画像の独立レビューは、全カード/所有札/ランドマークの明確な卓外欠落や重大被覆なし、勝利と再戦の表示も明瞭と評価。[4対局の操作実測](assets/nightly-quality/v363/normal-ui-playthrough-summary.json)。2人320/1440は68/72turn、4人390/844は79/111turnで完走。金色手番と青緑発動はPCで識別できるが、4人844終盤では演出中の別規則 `.cardboard-resolving` が発動者HUDに金色insetを再付与していた。v365でHUDだけ青緑へ修正し、手番の金色outlineとカード側の発動金色は維持する。既存の実ロール/全4所有者の逐次発動case（844/320）で、その瞬間の実CSSを採取するassertを追加。時間/件数/順序/衝突条件は緩和していない。独立ソースレビューで具体的な退行は見当たらないが、native検証は次の一括CIで行う。
+
+基準候補生成 [43240237655](https://github.com/nao70161994/machikoro/actions/runs/43240237655) は成功。16画像のbyte比較は11完全一致/5差分。独立旧新10画像レビューでカード卓4幅は採用を支持。差分は案内文、短名札の寸法/配置、前回までの市場価格/在庫整理も含む。実カード・操作の重大切れや被覆は見当たらない：[320前](assets/nightly-quality/v364/card-table-before-320.png)・[320後](assets/nightly-quality/v364/card-table-after-320.png)。静止fixtureの画像評価で、長名・演出中・対局全体を保証しない。カード卓4枚だけ承認して更新、他12枚は既存を維持する。
+
+夕暮れの広場844候補の693pixel差は下部3ラベルの文字位置に限定される。画像上は重大不具合ではないが意図的変更の説明がないため、その基準は更新しない。[候補5差分の計測](assets/nightly-quality/v364/baseline-candidate-differences.json)。既存の比較許容値も変更しない。未達は、320終盤で左右に余白があり文字が小さい点、冷間描画遅延の根本原因、送金テンポ、公式との差、物理端末未確認。Goal未完了・マージ保留。
+
 ### v363一括検証の完了とv364追加改善（2026-11-12 JST）
 
 製品 `e110e048`（cache v363）の通常Release [43198631333](https://github.com/nao70161994/machikoro/actions/runs/43198631333)、16画面/操作 [43198631134](https://github.com/nao70161994/machikoro/actions/runs/43198631134)、Nightly [43198653424](https://github.com/nao70161994/machikoro/actions/runs/43198653424) はすべて成功。6分割の統合検証で373実行（WebKit371/Chromium2）、許可済skip1、retry0、欠落・重複なしを確認した：[実行網羅性の原本](assets/nightly-quality/v363/nightly-browser-coverage.json)。前回flakyだった390px建設も初回成功。ただし、冷間描画の不安定さが一度の成功で解消したとは判定しない。
