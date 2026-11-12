@@ -10,11 +10,15 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
     { from: null, to: 0, amount: 4 }, { from: 1, to: 2, amount: 0 },
 ] };
 function fixture() {
-    let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null;
+    let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null, endpointShift = 0;
     const animated = [];
+    const frameQueue = new Map();
+    let nextFrame = 0;
     const motion = { matches: false, addEventListener(type, callback) { this.callback = callback; },
         removeEventListener() { this.callback = null; } };
     const documentRef = { defaultView: { matchMedia: () => motion,
+        requestAnimationFrame(callback) { const handle = ++nextFrame; frameQueue.set(handle, callback); return handle; },
+        cancelAnimationFrame(handle) { frameQueue.delete(handle); },
         MutationObserver: class {
             constructor(callback) { observerCallback = callback; }
             observe() {}
@@ -28,14 +32,28 @@ function fixture() {
         appendChild(child) { this.children.push(child); child.parentNode = this; }
         remove() { if (this.parentNode) this.parentNode.children.splice(this.parentNode.children.indexOf(this), 1); this.isConnected = false; }
         setAttribute(name, value) { this.attributes[name] = value; }
-        animate(frames, options) { animated.push({ frames, options }); return { cancel: () => { cancelled++; }, finished: Promise.resolve() }; }
+        getAttribute(name) { return this.attributes[name] ?? null; }
+        animate(frames, options) {
+            const record = { frames, options, updates: 0, animation: null };
+            const animation = { currentTime: 125, startTime: 1000, playState: 'running',
+                effect: { setKeyframes(next) { record.frames = next; record.updates++; } },
+                pause() { this.playState = 'paused'; },
+                play() { this.playState = 'running'; record.plays = (record.plays || 0) + 1; },
+                cancel() { cancelled++; this.playState = 'idle'; }, finished: Promise.resolve() };
+            record.animation = animation;
+            animated.push(record);
+            return animation;
+        }
         getBoundingClientRect() { return { left: 0, top: 0, width: 600, height: 400 }; }
         querySelector(selector) {
             if (selector.includes('"2"')) return null;
-            return { getBoundingClientRect: () => ({ left: selector.includes('"1"') ? 400 : 20, top: 20, width: 100, height: 40 }) };
+            return { getBoundingClientRect: () => ({ left: (selector.includes('"1"') ? 400 : 20) + endpointShift, top: 20, width: 100, height: 40 }) };
         }
     }
     return { container: new Element(), animated, timer: () => timer, timerDelay: () => timerDelay, cancelled: () => cancelled,
+        frameQueue,
+        flushFrame() { const pending = [...frameQueue.values()]; frameQueue.clear(); pending.forEach(callback => callback()); },
+        setEndpointShift(value) { endpointShift = value; },
         setAppReducedMotion(value) { appReducedMotion = value; },
         notifyPreferenceChanged() { observerCallback?.(); }, motion };
 }
@@ -326,5 +344,138 @@ runTest('同じ施設からの複数経路は同じ紹介ステップ内に収�
     assert.deepStrictEqual(animated.map(item => item.options.delay), [1200, 1220]);
     assert.ok(animated.every(item => item.options.delay + item.options.duration < 1900));
     assert.strictEqual(container.children[0].children.filter(child => child.className === 'cardboard-transfer').length, 2);
+    controller.clear();
+});
+
+runTest('自動送金は同じ送受信者の全施設を合算し並列600msで全経路を開始する', () => {
+    const { container, animated, timerDelay } = fixture();
+    const controller = CardBoardTransfers.create();
+    const resolved = { participantNames: ['街A', '街B'], activations: [
+        { facility: true, subject: '麦畑', owner: 0, from: null, to: 0, amount: 1 },
+        { facility: true, subject: 'パン屋', owner: 0, from: null, to: 0, amount: 2 },
+        { facility: true, subject: 'カフェ', owner: 1, from: 0, to: 1, amount: 3 },
+    ] };
+    const before = JSON.stringify(resolved);
+    const canonicalProjection = CardBoardTransfers.project(resolved);
+    controller.play({ container, events: resolved, simultaneous: true, delayMs: 500 });
+    const coins = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
+    assert.strictEqual(coins.length, 2);
+    assert.deepStrictEqual(coins.map(coin => coin.textContent), ['3コイン', '3コイン']);
+    assert.deepStrictEqual(coins.map(coin => JSON.parse(coin.dataset.subjects)), [['麦畑', 'パン屋'], ['カフェ']]);
+    assert.deepStrictEqual(coins.map(coin => [coin.dataset.from, coin.dataset.to, coin.dataset.mode]),
+        [['null', '0', 'parallel'], ['0', '1', 'parallel']]);
+    assert.ok(coins[0].title.includes('麦畑・パン屋：銀行 → 街A：3コイン'));
+    assert.deepStrictEqual(animated.map(record => [record.options.duration, record.options.delay]), [[600, 0], [600, 0]]);
+    assert.strictEqual(timerDelay(), 3200, '既存cleanup方針を維持する');
+    assert.strictEqual(JSON.stringify(resolved), before);
+    assert.deepStrictEqual(CardBoardTransfers.project(resolved), canonicalProjection, '公開projectionは施設ごとを維持する');
+    controller.clear();
+});
+
+runTest('自動配置のretargetは現在時刻と開始時刻とcleanupを変えず同じ幾何では書き込まない', () => {
+    const { container, animated, setEndpointShift, timer, timerDelay, cancelled } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    const cleanup = timer();
+    const lease = timerDelay();
+    const clocks = animated.map(({ animation }) => [animation.currentTime, animation.startTime, animation.playState]);
+    assert.strictEqual(controller.retarget(), true);
+    assert.ok(animated.every(record => record.updates === 0));
+    const original = animated.map(record => JSON.stringify(record.frames));
+    setEndpointShift(25);
+    assert.strictEqual(controller.retarget(), true);
+    assert.ok(animated.every(record => record.updates === 1));
+    assert.ok(animated.every((record, index) => JSON.stringify(record.frames) !== original[index]));
+    assert.deepStrictEqual(animated.map(({ animation }) => [animation.currentTime, animation.startTime, animation.playState]), clocks);
+    assert.strictEqual(timer(), cleanup);
+    assert.strictEqual(timerDelay(), lease);
+    assert.strictEqual(controller.retarget(), true);
+    assert.ok(animated.every(record => record.updates === 1));
+    animated.forEach(({ animation }) => { animation.playState = 'finished'; });
+    assert.strictEqual(controller.retarget(), false, '完了した経路を再開しない');
+    controller.clear();
+    assert.strictEqual(cancelled(), animated.length);
+    assert.strictEqual(timer(), null);
+    assert.strictEqual(controller.retarget(), false);
+    assert.strictEqual(container.children.length, 0);
+});
+
+runTest('manualとReduced Motionはretarget対象外で設定変更時もmotionを再開しない', () => {
+    for (const reduced of [false, true]) {
+        const { container, animated, setEndpointShift } = fixture();
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: reduced, reducedMotion: reduced });
+        setEndpointShift(20);
+        assert.strictEqual(controller.retarget(), false);
+        assert.strictEqual(animated.length, reduced ? 0 : 2);
+        assert.ok(animated.every(record => record.updates === 0));
+        controller.clear();
+    }
+    const { container, animated, motion } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    motion.callback({ matches: true });
+    assert.strictEqual(controller.retarget(), false);
+    assert.ok(animated.every(record => record.animation.playState === 'idle'));
+    controller.clear();
+});
+
+runTest('自動送金bundleは共有2RAF後に一度だけ開始し待機中retargetでも時計を変えない', () => {
+    const { container, animated, frameQueue, flushFrame, setEndpointShift, timer } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    const cleanup = timer();
+    assert.strictEqual(frameQueue.size, 1, '全routeが1本の開始予約を共有');
+    assert.ok(animated.every(({ animation }) => animation.playState === 'paused' && animation.currentTime === 0));
+    setEndpointShift(30);
+    controller.retarget();
+    assert.ok(animated.every(({ animation }) => animation.currentTime === 0 && animation.startTime === 1000));
+    flushFrame();
+    assert.strictEqual(frameQueue.size, 1);
+    assert.ok(animated.every(({ animation }) => animation.playState === 'paused'));
+    flushFrame();
+    assert.strictEqual(frameQueue.size, 0);
+    assert.ok(animated.every(record => record.animation.playState === 'running' && record.plays === 1));
+    controller.retarget();
+    flushFrame();
+    assert.ok(animated.every(record => record.plays === 1));
+    assert.strictEqual(timer(), cleanup, '準備待ちでcleanupを延期しない');
+    controller.clear();
+});
+
+runTest('待機中clearや新bundleやReduced Motionは古いnative RAFの開始を無効にする', () => {
+    for (const reason of ['clear', 'replace', 'reduced', 'hidden']) {
+        const { container, animated, frameQueue, flushFrame, motion } = fixture();
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        flushFrame();
+        const [staleHandle, staleCallback] = [...frameQueue.entries()][0];
+        const old = [...animated];
+        if (reason === 'clear') controller.clear();
+        if (reason === 'replace') controller.play({ container, events, simultaneous: true });
+        if (reason === 'reduced') motion.callback({ matches: true });
+        if (reason === 'hidden') container.ownerDocument.hidden = true;
+        frameQueue.delete(staleHandle);
+        staleCallback(); // Native delivery can race cancellation; identity still guards it.
+        assert.ok(old.every(record => !record.plays), reason);
+        if (reason !== 'replace') assert.strictEqual(frameQueue.size, 0);
+        controller.clear();
+    }
+});
+
+runTest('自動送金の多人数上限は省略経路数を明示し公開明細を欠落させない', () => {
+    const f = fixture();
+    const sample = { participantNames: Array.from({ length: 10 }, (_, index) => `街${index + 1}`),
+        activations: Array.from({ length: 15 }, (_, index) => ({ from: Math.floor(index / 9),
+            to: index % 9 + 1, amount: 1, subject: `施設${index}`, facility: true, owner: index % 9 + 1 })) };
+    const projected = CardBoardTransfers.project(sample);
+    const controller = CardBoardTransfers.create();
+    controller.play({ container: f.container, events: sample, simultaneous: true });
+    const layer = f.container.children.find(child => child.className === 'cardboard-transfers');
+    const summary = layer.children.find(child => child.className === 'cardboard-transfer-summary');
+    assert.match(summary.textContent, /送金演出は12\/14経路/);
+    assert.match(summary.attributes['aria-label'], /全経路は発動・支払いの内訳/);
+    assert.deepStrictEqual(CardBoardTransfers.project(sample), projected);
+    assert.ok(f.animated.length <= 12);
     controller.clear();
 });

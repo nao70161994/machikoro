@@ -51,7 +51,7 @@ const CardBoardTransfers = (() => {
             .map((group, step) => ({ ...group, step }));
     }
 
-    function projectVisualFlows(events) {
+    function projectVisualFlows(events, parallel = false) {
         const timeline = new Map(projectFacilityTimeline(events).map(group => [JSON.stringify([group.owner, group.name]), group]));
         const groups = new Map();
         for (const event of Array.isArray(events?.activations) ? events.activations : []) {
@@ -60,8 +60,8 @@ const CardBoardTransfers = (() => {
             const owner = event.owner !== undefined && event.owner !== null ? event.owner
                 : event.to !== null ? event.to : event.from;
             const facility = event.facility === true ? timeline.get(JSON.stringify([owner, event.subject])) : null;
-            if (event.facility === true && !facility) continue;
-            const key = JSON.stringify([facility?.owner ?? null, facility?.name ?? null, route.from, route.to]);
+            if (event.facility === true && !facility && !parallel) continue;
+            const key = JSON.stringify(parallel ? [route.from, route.to] : [facility?.owner ?? null, facility?.name ?? null, route.from, route.to]);
             let flow = groups.get(key);
             if (!flow) {
                 flow = { from: route.from, to: route.to, amount: 0, subjects: new Set(), facility };
@@ -88,12 +88,23 @@ const CardBoardTransfers = (() => {
         let timeout = null;
         let view = null;
         let animations = [];
+        let actors = [];
+        let endpointReader = null;
+        let simultaneousMotion = false;
+        let startFrame = null;
+        let motionGeneration = 0;
         let motionQuery = null;
         let motionHandler = null;
         let motionObserver = null;
         function stopMotion() {
+            motionGeneration++;
+            if (startFrame !== null) view?.cancelAnimationFrame(startFrame);
+            startFrame = null;
             for (const animation of animations) animation.cancel();
             animations = [];
+            actors = [];
+            endpointReader = null;
+            simultaneousMotion = false;
             layer?.remove();
             layer = null;
         }
@@ -113,6 +124,57 @@ const CardBoardTransfers = (() => {
             motionObserver = null;
             view = null;
         }
+        function stageSimultaneous(container) {
+            const generation = motionGeneration;
+            const schedule = remaining => {
+                startFrame = view.requestAnimationFrame(() => {
+                    if (generation !== motionGeneration || !simultaneousMotion) return;
+                    startFrame = null;
+                    if (!container.isConnected || !layer?.isConnected || container.ownerDocument.hidden ||
+                            motionQuery?.matches || container.ownerDocument.body?.classList?.contains('accessibility-reduced-motion')) {
+                        stopMotion();
+                        return;
+                    }
+                    if (remaining > 0) schedule(remaining - 1);
+                    else for (const animation of animations) {
+                        // Start this bundle once, after its initial rendering
+                        // opportunity. No replay or clock reset on retarget.
+                        if (animation.playState === 'paused') animation.play();
+                    }
+                });
+            };
+            schedule(1);
+        }
+        function flightFrames(from, to, origin = from) {
+            const translate = point => point.x === origin.x && point.y === origin.y
+                ? 'translate(-50%, -50%)'
+                : `translate(calc(-50% + ${point.x - origin.x}px), calc(-50% + ${point.y - origin.y}px))`;
+            return [
+                { transform: `${translate(from)} scale(.8)`, opacity: 0, easing: 'ease-out' },
+                { transform: `${translate(from)} scale(1)`, opacity: 1, offset: .15, easing: 'ease-in-out' },
+                { transform: `${translate(to)} scale(1)`, opacity: 1, offset: .85, easing: 'ease-in' },
+                { transform: `${translate(to)} scale(.8)`, opacity: 0 },
+            ];
+        }
+        function retarget() {
+            if (!simultaneousMotion || !layer?.isConnected || !endpointReader || !actors.some(actor =>
+                actor.animation.playState !== 'finished' && actor.animation.playState !== 'idle')) return false;
+            const location = endpointReader();
+            // Batch reads before writes. Retargeting never restarts an animation
+            // or changes its currentTime, startTime, duration or cleanup lease.
+            const updates = actors.map(actor => ({ actor,
+                from: location(actor.route.from), to: location(actor.route.to) }));
+            for (const { actor, from, to } of updates) {
+                if (!actor.animation.effect || actor.animation.playState === 'finished' || actor.animation.playState === 'idle') continue;
+                const key = from && to ? `${from.x}:${from.y}:${to.x}:${to.y}` : 'hidden';
+                if (key === actor.endpointKey) continue;
+                const frames = from && to ? flightFrames(from, to, actor.origin)
+                    : flightFrames(actor.origin, actor.origin).map(frame => ({ ...frame, opacity: 0 }));
+                actor.animation.effect.setKeyframes(frames);
+                actor.endpointKey = key;
+            }
+            return true;
+        }
         function play(options) {
             clear();
             const { container, events } = options;
@@ -128,32 +190,43 @@ const CardBoardTransfers = (() => {
                 (view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true);
             const bounds = container.getBoundingClientRect();
             if (!bounds.width || !bounds.height) return false;
-            const center = { x: bounds.width / 2, y: bounds.height / 2 };
-            const viewport = container.querySelector('#cardboardTableViewport');
-            const viewportBounds = viewport?.getBoundingClientRect();
-            const intersects = (rect, clip) => rect?.width > 0 && rect.height > 0 && clip?.width > 0 && clip.height > 0 &&
-                rect.left < clip.left + clip.width && rect.left + rect.width > clip.left &&
-                rect.top < clip.top + clip.height && rect.top + rect.height > clip.top;
-            const location = index => {
-                if (index === null || index === 'pool') return center;
-                const header = container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
-                let rect = header?.getBoundingClientRect();
-                // Panning can leave an otherwise measurable header outside the
-                // visible table. Route those flights to the persistent HUD.
-                if (!rect?.width || !rect.height || viewport && !intersects(rect, viewportBounds)) {
-                    const seat = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${index}"]`);
-                    rect = seat?.getBoundingClientRect();
-                    if (viewport && !intersects(rect, bounds)) return null;
-                }
-                if (!rect?.width || !rect.height) return null;
-                const inset = 8;
-                const clamp = (value, extent) => Math.max(Math.min(inset, extent / 2),
-                    Math.min(extent - Math.min(inset, extent / 2), value));
-                return {
-                    x: clamp(rect.left + rect.width / 2 - bounds.left, bounds.width),
-                    y: clamp(rect.top + rect.height / 2 - bounds.top, bounds.height),
+            endpointReader = () => {
+                const bounds = container.getBoundingClientRect();
+                const center = { x: bounds.width / 2, y: bounds.height / 2 };
+                const viewport = container.querySelector('#cardboardTableViewport');
+                const viewportBounds = viewport?.getBoundingClientRect();
+                const intersects = (rect, clip) => rect?.width > 0 && rect.height > 0 && clip?.width > 0 && clip.height > 0 &&
+                    rect.left < clip.left + clip.width && rect.left + rect.width > clip.left &&
+                    rect.top < clip.top + clip.height && rect.top + rect.height > clip.top;
+                const location = index => {
+                    if (index === null || index === 'pool') {
+                        const market = container.querySelector('#cardboardCenter')?.getBoundingClientRect();
+                        return market && intersects(market, viewportBounds)
+                            ? { x: market.left + market.width / 2 - bounds.left, y: market.top + market.height / 2 - bounds.top } : center;
+                    }
+                    const label = container.querySelector(`.cardboard-owner-label[data-player-index="${index}"]`);
+                    const header = label && intersects(label.getBoundingClientRect(), viewportBounds) ? label
+                        : container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
+                    let rect = header?.getBoundingClientRect();
+                    // Panning can leave an otherwise measurable header outside the
+                    // visible table. Route those flights to the persistent HUD.
+                    if (!rect?.width || !rect.height || viewport && !intersects(rect, viewportBounds)) {
+                        const seat = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${index}"]`);
+                        rect = seat?.getBoundingClientRect();
+                        if (viewport && !intersects(rect, bounds)) return null;
+                    }
+                    if (!rect?.width || !rect.height) return null;
+                    const inset = 8;
+                    const clamp = (value, extent) => Math.max(Math.min(inset, extent / 2),
+                        Math.min(extent - Math.min(inset, extent / 2), value));
+                    return {
+                        x: clamp(rect.left + rect.width / 2 - bounds.left, bounds.width),
+                        y: clamp(rect.top + rect.height / 2 - bounds.top, bounds.height),
+                    };
                 };
+                return location;
             };
+            const location = endpointReader();
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';
             summaryNode = documentRef.createElement('p');
@@ -170,8 +243,17 @@ const CardBoardTransfers = (() => {
                 .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : []).join('。'));
             (options.summaryContainer?.isConnected ? options.summaryContainer : layer).appendChild(summaryNode);
             // Read endpoints first, then animate without touching game state.
-            const displayed = projectVisualFlows(events)
-                .slice(0, 8)
+            const parallel = options.simultaneous === true;
+            simultaneousMotion = parallel && !reducedMotion;
+            const visualFlows = projectVisualFlows(events, parallel);
+            const visualLimit = parallel ? 12 : 8;
+            if (parallel && visualFlows.length > visualLimit) {
+                const omitted = `送金演出は${visualLimit}/${visualFlows.length}経路。全経路は発動・支払いの内訳で確認`;
+                summaryNode.textContent += `\n${omitted}`;
+                summaryNode.setAttribute('aria-label', `${summaryNode.getAttribute('aria-label') || ''}。${omitted}`);
+            }
+            const displayed = visualFlows
+                .slice(0, visualLimit)
                 .map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
             if (!reducedMotion) {
@@ -199,10 +281,14 @@ const CardBoardTransfers = (() => {
                 coin.dataset.flow = sourceIsBank ? 'incoming' : targetIsBank ? 'outgoing' : 'between';
                 if (!targetIsBank && route.amount >= 5) coin.dataset.large = 'true';
                 if (route.facility) {
-                    coin.dataset.facility = route.facility.name;
+                    coin.dataset.facility = parallel ? route.subjects.join('・') : route.facility.name;
                     coin.dataset.owner = String(route.facility.owner);
                     coin.dataset.step = String(route.facility.step);
                 }
+                coin.dataset.subjects = JSON.stringify(route.subjects);
+                coin.dataset.from = String(route.from);
+                coin.dataset.to = String(route.to);
+                coin.dataset.mode = parallel ? 'parallel' : 'timeline';
                 coin.setAttribute('aria-hidden', 'true');
                 coin.textContent = `${route.amount}コイン`;
                 coin.dataset.route = `${route.fromName} → ${route.toName}`;
@@ -213,26 +299,27 @@ const CardBoardTransfers = (() => {
                 if (typeof coin.animate === 'function') {
                     const baseDelay = Math.max(0, Math.min(500, Number(options.delayMs) || 0));
                     const sameStep = route.facility ? stepRoutes.get(route.facility.step) || 0 : animationIndex;
-                    const delay = baseDelay + (route.facility ? route.facility.step * 700 + Math.min(80, sameStep * 20) : sameStep * 70);
-                    const duration = route.facility ? 600 : 900;
+                    const delay = parallel ? 0 : baseDelay + (route.facility ? route.facility.step * 700 + Math.min(80, sameStep * 20) : sameStep * 70);
+                    const duration = parallel || route.facility ? 600 : 900;
                     if (route.facility) stepRoutes.set(route.facility.step, sameStep + 1);
-                    const animation = coin.animate([
-                        { transform: 'translate(-50%, -50%) scale(.8)', opacity: 0, easing: 'ease-out' },
-                        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15, easing: 'ease-in-out' },
-                        { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85, easing: 'ease-in' },
-                        { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.8)`, opacity: 0 },
-                    ], { duration, delay, easing: 'linear', fill: 'both' });
+                    const animation = coin.animate(flightFrames(from, to), { duration, delay, easing: 'linear', fill: 'both' });
+                    if (parallel) {
+                        animation.pause();
+                        animation.currentTime = 0;
+                    }
                     if (!route.facility) animationIndex++;
                     lastFlightEnd = Math.max(lastFlightEnd, delay + duration);
                     animation.finished?.catch(() => {});
                     animations.push(animation);
+                    actors.push({ route, animation, origin: from, endpointKey: `${from.x}:${from.y}:${to.x}:${to.y}` });
                 } else coin.remove();
             }
+            if (simultaneousMotion && animations.length) stageSimultaneous(container);
             // Facility steps share the caption timeline; no timer advances play.
             timeout = view?.setTimeout(clear, Math.max(3200, lastFlightEnd + 100)) ?? null;
             return true;
         }
-        return Object.freeze({ play, clear });
+        return Object.freeze({ play, retarget, clear });
     }
     return Object.freeze({ project, projectFacilityTimeline, create });
 })();

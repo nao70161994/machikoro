@@ -228,7 +228,7 @@ runTest('市場closeは保存視点の有効性に応じて同taskで復帰と�
 runTest('閲覧位置の復元は最近傍pixelを使いWebKitの切捨て偏りを避ける', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
     const start = source.indexOf('        function alignPoint(point, anchor,');
-    const end = source.indexOf('        function paint()', start);
+    const end = source.indexOf('        function paint(', start);
     assert.ok(start >= 0 && end > start);
     let destination;
     const context = { worldToCanvas: point => point, scroll: (left, top) => { destination = { left, top }; } };
@@ -444,4 +444,65 @@ runTest('建設通知は320pxの購入施設と名前を避け市場の空間を
 
     const pc = context.buildNoticePosition(290, 76, { left: 4, top: 68, right: 1436, bottom: 876 }, [own], [own], market);
     assert.deepStrictEqual({ ...pc }, { left: 1138, top: 792 }, '空いているPC右下は従来位置を維持する');
+});
+
+runTest('明示した結果確認だけが逐次字幕と既定送金を呼びsession離脱後は再生しない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function validateResultReplay()');
+    const end = source.indexOf('    function updateCurrentResult(', start);
+    assert.ok(start >= 0 && end > start);
+    const classes = new Set();
+    const calls = [];
+    const game = { turnCount: 3, currentPlayerIndex: 0, players: [], log: [], phase: 'build' };
+    const events = { activations: [] };
+    const context = { replayResult: { events, game, session: 'one', turn: 3, actor: 0 },
+        activeReplayGuard: null, facts: { game }, session: 'one', mounted: true, enabled: () => true, document: { hidden: false },
+        node: () => ({ classList: { add: name => classes.add(name), remove: name => classes.delete(name) }, offsetWidth: 1 }),
+        reducedMotionEnabled: () => false,
+        activationTags: { clear() {}, play: options => calls.push(['tags', options]) },
+        transfers: { clear() {}, play: options => calls.push(['transfers', options]) } };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    context.playResultReplay();
+    assert.deepStrictEqual(calls.map(call => call[0]), ['tags', 'transfers']);
+    assert.strictEqual(calls[1][1].simultaneous, undefined, '明示確認は並列autoへ混ぜない');
+    assert.strictEqual(calls[0][1].delayMs, 0);
+    assert.strictEqual(calls[0][1].isCurrent(), true);
+    assert.ok(classes.has('cardboard-preview-playing'));
+    context.session = 'two';
+    assert.strictEqual(calls[0][1].isCurrent(), false);
+    context.playResultReplay();
+    assert.strictEqual(calls.length, 2);
+});
+
+runTest('明示再生の共通guardは不変再描画を保持しphase・reroll・ログ変更で字幕と送金を同時取消する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function validateResultReplay()');
+    const end = source.indexOf('    function updateCurrentResult(', start);
+    for (const change of [game => { game.phase = 'roll'; }, game => { game.usedReroll = true; },
+        game => { game.log = [...game.log]; }, game => { game.log[game.log.length - 1] = {}; },
+        game => { game.log.push({}); }, game => { game.turnCount++; }]) {
+        const game = { turnCount: 3, currentPlayerIndex: 0, players: [], phase: 'build', log: [{}, {}] };
+        let tagClears = 0, transferClears = 0, removed = 0;
+        const context = { replayResult: { events: {}, game, session: 'one', turn: 3, actor: 0 },
+            activeReplayGuard: null, facts: { game }, session: 'one', mounted: true, enabled: () => true,
+            document: { hidden: false }, reducedMotionEnabled: () => false,
+            node: () => ({ classList: { add() {}, remove() { removed++; } }, offsetWidth: 1 }),
+            activationTags: { clear() { tagClears++; }, play(options) { context.tagCurrent = options.isCurrent; } },
+            transfers: { clear() { transferClears++; }, play() {} } };
+        require('vm').runInNewContext(source.slice(start, end), context);
+        context.playResultReplay();
+        const baseline = [tagClears, transferClears, removed];
+        // Rendering may replace the projection object without changing the game.
+        context.replayResult = { ...context.replayResult, events: {} };
+        context.validateResultReplay();
+        assert.strictEqual(context.tagCurrent(), true);
+        assert.deepStrictEqual([tagClears, transferClears, removed], baseline);
+        change(game);
+        assert.strictEqual(context.tagCurrent(), false);
+        context.validateResultReplay();
+        assert.strictEqual(context.activeReplayGuard, null);
+        assert.deepStrictEqual([tagClears, transferClears, removed], baseline.map(value => value + 1));
+        context.validateResultReplay();
+        assert.deepStrictEqual([tagClears, transferClears, removed], baseline.map(value => value + 1), '取消は一度だけ');
+    }
 });

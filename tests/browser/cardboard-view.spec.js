@@ -1577,7 +1577,7 @@ test('建設可の絞り込みでもサイコロ前と購入後は市場を見�
 });
 
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
-test(`新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない ${viewport.width}px`, async ({ page }, testInfo) => {
+test(`明示した発動確認は全所有者を順に示し再描画とテーマ復帰で再生しない ${viewport.width}px`, async ({ page }, testInfo) => {
     await prepare(page, viewport);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
@@ -1677,7 +1677,7 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
             const deadline = performance.now() + 6500;
             const frames = [];
             const measure = rafTimestamp => {
-                const element = document.querySelector('.cardboard-transfer[data-facility="森林"][data-step="3"]');
+                const element = document.querySelector('.cardboard-transfer[data-mode="timeline"][data-facility="森林"][data-step="3"]');
                 const animation = element?.getAnimations()[0];
                 if (animation) {
                     const elapsedMs = Number(animation.currentTime) - Number(animation.effect.getTiming().delay);
@@ -1700,6 +1700,21 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         });
         document.getElementById('btnRoll').click();
     });
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    const beforeManualReview = await state(page);
+    await page.locator('#cardboardEventDetails > summary').click();
+    const replayButton = page.locator('#cardboardDiceReceipt [data-cardboard-replay-result]');
+    await expect(replayButton).toBeVisible();
+    expect(await replayButton.evaluate(button => {
+        const rect = button.getBoundingClientRect();
+        const receipt = button.closest('#cardboardDiceReceipt').getBoundingClientRect();
+        return { height: rect.height, inside: rect.left >= receipt.left && rect.right <= receipt.right &&
+            rect.top >= receipt.top && rect.bottom <= receipt.bottom, tabIndex: button.tabIndex };
+    })).toEqual(expect.objectContaining({ inside: true, tabIndex: 0, height: expect.any(Number) }));
+    expect(await replayButton.evaluate(button => button.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    await replayButton.click();
+    await expect(replayButton).toBeFocused();
+    expect(await state(page)).toEqual(beforeManualReview);
     // Capture the live 600ms caption before inspecting later chain steps.
     // No clock or production lifetime is changed: this is a real-time frame.
     const liveTag = page.locator('.cardboard-activation-tag');
@@ -1715,7 +1730,7 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     expect(await flights.evaluateAll(elements => elements.map(element => {
         const timing = element.getAnimations()[0].effect.getTiming();
         return { step: Number(element.dataset.step), delay: timing.delay, duration: timing.duration };
-    }))).toEqual([0, 1, 2, 3].map(step => ({ step, delay: 500 + step * 700, duration: 600 })));
+    }))).toEqual([0, 1, 2, 3].map(step => ({ step, delay: step * 700, duration: 600 })));
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
     const sample = await page.evaluate(() => window.chainFlightSample);
     // Preserve caption/JS-cost evidence even if the original live-frame
@@ -1757,7 +1772,7 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         const animation = card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate');
         return { delay: parseFloat(getComputedStyle(card).animationDelay), name: getComputedStyle(card).animationName,
             shadowAnimated: animation.effect.getKeyframes().some(frame => frame.boxShadow !== undefined) };
-    }))).toEqual([0.5,1.2,1.9,2.6].map(delay => ({delay,name:'cardboard-card-activate',shadowAnimated:false})));
+    }))).toEqual([0,0.7,1.4,2.1].map(delay => ({delay,name:'cardboard-card-activate',shadowAnimated:false})));
     await page.evaluate(() => {
         window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
     });

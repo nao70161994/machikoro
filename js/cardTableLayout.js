@@ -207,7 +207,12 @@ const CardTableLayout = (() => {
             // of cards alone. Multi-player seating keeps its established shape.
             if (panels.length <= 4 && marketAtHome) {
                 const sideCandidates = denseFour ? [1, 2, 3, 4, 6, 8] : wide ? shallow ? [1, 2, 3] : [2, 3, 4, 6] : [3, 4, 6];
-                const endCandidates = denseFour ? [4, 6, 8, 12, 18] : wide ? [4, 6, 8, 12] : [1, 2, 3, 4];
+                // Dense opposite portrait towns may spend unused horizontal
+                // room on fewer rows. Keep reading views and other tables intact.
+                const densePortraitOpponents = oppositeOnly && !wide && !readingSeat &&
+                    panels.some(panel => countFor(panel) >= 13);
+                const endCandidates = denseFour ? [4, 6, 8, 12, 18] : wide ? [4, 6, 8, 12]
+                    : densePortraitOpponents ? [1, 2, 3, 4, 6, 8] : [1, 2, 3, 4];
                 const marketCandidates = wide ? [6, 4] : [2, 3, 1];
                 let bestScore = -1;
                 const marketPlans = new Map();

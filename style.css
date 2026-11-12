@@ -15817,3 +15817,11 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     flex-wrap: nowrap;
     align-self: start;
 }
+
+/* Auxiliary whole-result experiment: automatic results do not imply a
+   per-facility sequence. Explicit review alone uses the existing chain. */
+html[data-design="cardboard"] #cardboardEventDetails:not(.cardboard-preview-playing) .cardboard-event-preview-card { display: none; }
+html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-result-overview { display: none; }
+html[data-design="cardboard"] #cardboardEventDetails [data-cardboard-replay-result] { min-height: 44px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .cardboard-card-activated { animation-delay: 0ms; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card.cardboard-card-additional-activation { animation-delay: 0ms; }
