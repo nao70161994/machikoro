@@ -10888,6 +10888,7 @@ html[data-design="cardboard"] .cardboard-owner-label {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+html[data-design="cardboard"] .cardboard-owner-label-income > span,
 html[data-design="cardboard"] .cardboard-owner-label-two-line > span {
     display: block;
     height: 16px;

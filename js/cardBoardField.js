@@ -29,6 +29,7 @@ const CardBoardField = (() => {
     const scrollMemory = createScrollMemory();
     const renderedHtml = new WeakMap();
     let facts = null;
+    let ownerIncome = new Map();
     let initialized = false;
     let tableCamera = null;
     let tableLayout = null;
@@ -215,6 +216,7 @@ const CardBoardField = (() => {
             .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
         const bracketCandidates = [];
+        const incomeCandidates = [];
         const marketBounds = node('cardboardCenter')?.getBoundingClientRect();
         const preferMarketHeading = panels.length === 2 && bounds.width <= 500 && window.innerHeight >= window.innerWidth;
         const shallow = bounds.height < 340;
@@ -424,6 +426,108 @@ const CardBoardField = (() => {
             layer.appendChild(label);
             panel.classList.add('cardboard-owner-labeled');
             placed.push(labelRect);
+            if (!lines && ownerIncome.has(index)) incomeCandidates.push({ label, labelRect, index, seatLabelText });
+        }
+        // Reserve every existing name before adding optional result information.
+        // A richer badge must never force another owner back to a hidden heading.
+        for (const candidate of incomeCandidates) {
+            const { label, labelRect, index, seatLabelText } = candidate;
+            const income = ownerIncome.get(index);
+            if (!income || !ownerLabelMeasure) continue;
+            const width = Math.max(labelRect.right - labelRect.left, Math.ceil(ownerLabelMeasure.measureText(income.text).width) + 16);
+            if (width > maximumWidth) continue;
+            const height = shallow ? 34 : 38;
+            const own = cardGroups.find(group => Number(/** @type {HTMLElement} */ (group.panel).dataset.playerIndex) === index)?.rects || [];
+            const others = cardGroups.filter(group => Number(/** @type {HTMLElement} */ (group.panel).dataset.playerIndex) !== index).flatMap(group => group.rects);
+            const intersects = (rect, obstacle) => rect.left < obstacle.right + clearance && rect.right > obstacle.left - clearance &&
+                rect.top < obstacle.bottom + clearance && rect.bottom > obstacle.top - clearance;
+            const nearest = (rect, cards) => cards.length ? Math.min(...cards.map(card => Math.hypot(
+                Math.max(card.left - rect.right, rect.left - card.right, 0),
+                Math.max(card.top - rect.bottom, rect.top - card.bottom, 0)))) : Infinity;
+            const otherLinks = bracketCandidates.filter(link => Number(/** @type {HTMLElement} */ (link.panel).dataset.playerIndex) !== index)
+                .map(({ segment }) => ({ left: Math.min(segment[0], segment[2]) - 1, top: Math.min(segment[1], segment[3]) - 1,
+                    right: Math.max(segment[0], segment[2]) + 1, bottom: Math.max(segment[1], segment[3]) + 1 }));
+            const existingLink = bracketCandidates.find(link => link.label === labelRect);
+            let replacementSegment = null;
+            const safeSegment = rect => {
+                const clamp = (value, low, high) => Math.max(low, Math.min(value, high));
+                const connections = own.map(card => {
+                    let x = clamp((card.left + card.right) / 2, rect.left, rect.right);
+                    let y = clamp((card.top + card.bottom) / 2, rect.top, rect.bottom);
+                    const endX = clamp(x, card.left, card.right);
+                    const endY = clamp(y, card.top, card.bottom);
+                    x = clamp(endX, rect.left, rect.right);
+                    y = clamp(endY, rect.top, rect.bottom);
+                    return { card, segment: [x, y, endX, endY], length: Math.hypot(endX - x, endY - y) };
+                }).sort((a, b) => a.length - b.length);
+                const crosses = (segment, obstacle) => {
+                    let enter = 0, exit = 1;
+                    for (const [start, delta, low, high] of [
+                        [segment[0], segment[2] - segment[0], obstacle.left - 1, obstacle.right + 1],
+                        [segment[1], segment[3] - segment[1], obstacle.top - 1, obstacle.bottom + 1],
+                    ]) {
+                        if (Math.abs(delta) < 0.001) {
+                            if (start < low || start > high) return false;
+                        } else {
+                            const a = (low - start) / delta, b = (high - start) / delta;
+                            enter = Math.max(enter, Math.min(a, b));
+                            exit = Math.min(exit, Math.max(a, b));
+                            if (enter > exit) return false;
+                        }
+                    }
+                    return true;
+                };
+                // Keep the line connected to the nearest actual owned card,
+                // under the same length and obstacle rules as the original.
+                const connection = connections[0];
+                if (!connection || connection.length < 3 || connection.length > 64) return null;
+                const blocked = [...obstacles.filter(obstacle => obstacle.left !== connection.card.left ||
+                    obstacle.top !== connection.card.top || obstacle.right !== connection.card.right || obstacle.bottom !== connection.card.bottom),
+                    ...placed.filter(other => other !== labelRect), ...otherLinks];
+                return blocked.some(obstacle => crosses(connection.segment, obstacle)) ? null : connection.segment;
+            };
+            const positions = [labelRect.left, labelRect.right - width].flatMap(left => [labelRect.top, labelRect.bottom - height]
+                .map(top => ({ left, top, right: left + width, bottom: top + height })));
+            const position = positions.find(rect => rect.left >= innerLeft + gap && rect.right <= innerRight - gap &&
+                rect.top >= innerTop + gap && rect.bottom <= innerBottom - gap &&
+                ![...obstacles, ...placed.filter(other => other !== labelRect), ...otherLinks].some(other => intersects(rect, other)) &&
+                nearest(rect, own) <= nearest(rect, others) + 0.5 &&
+                (!existingLink || Boolean(replacementSegment = safeSegment(rect))));
+            if (!position) continue;
+            // Commit the badge and its line together. An unsafe replacement
+            // leaves the original name, position and SVG completely untouched.
+            if (existingLink && replacementSegment) {
+                const segment = replacementSegment;
+                const left = Math.min(segment[0], segment[2]) - 2;
+                const top = Math.min(segment[1], segment[3]) - 2;
+                const svg = existingLink.svg;
+                svg.style.left = `${left - innerLeft}px`;
+                svg.style.top = `${top - innerTop}px`;
+                svg.setAttribute('width', String(Math.abs(segment[2] - segment[0]) + 4));
+                svg.setAttribute('height', String(Math.abs(segment[3] - segment[1]) + 4));
+                const line = svg.querySelector('line');
+                line.setAttribute('x1', String(segment[0] - left));
+                line.setAttribute('y1', String(segment[1] - top));
+                line.setAttribute('x2', String(segment[2] - left));
+                line.setAttribute('y2', String(segment[3] - top));
+                existingLink.segment = segment;
+            }
+            const name = document.createElement('span');
+            name.textContent = label.textContent;
+            const result = document.createElement('span');
+            result.className = 'cardboard-owner-income';
+            result.textContent = income.text;
+            label.replaceChildren(name, result);
+            label.classList.add('cardboard-owner-label-income');
+            label.dataset.facilityNet = String(income.net);
+            label.dataset.incomplete = String(income.incomplete);
+            label.style.height = `${height}px`;
+            label.style.width = `${width}px`;
+            label.style.left = `${position.left - innerLeft}px`;
+            label.style.top = `${position.top - innerTop}px`;
+            label.title = `${seatLabelText}。${income.text}コイン`;
+            label.setAttribute('aria-label', label.title);
+            Object.assign(labelRect, position);
         }
         // Wait until every badge is placed: a later owner's name must not be
         // crossed by an earlier owner's bracket. Unsafe groups keep the link.
@@ -1250,6 +1354,7 @@ const CardBoardField = (() => {
     }
 
     function detach() {
+        ownerIncome.clear();
         if (ownerLabelFrame !== null) window.cancelAnimationFrame(ownerLabelFrame);
         ownerLabelFrame = null;
         ownerLabelsInspecting = false;
@@ -1774,6 +1879,11 @@ const CardBoardField = (() => {
         if (!validIndex(selectedIndex)) selectedIndex = selfIndex ?? currentIndex;
         const newRoll = feedback?.refresh(facts) === true;
         const events = turnEventsFor(game, facts.display);
+        // Reconstruct static results from the shared projection, including Undo
+        // and restored games. Paint callbacks only reuse this small projection.
+        ownerIncome = new Map(events.dice ? (events.balances || []).filter(balance => Number.isSafeInteger(balance.facilityNet))
+            .map(balance => [balance.index, { net: balance.facilityNet, incomplete: events.incomplete === true,
+                text: `今回の施設${events.incomplete ? ' 確認分' : ''} ${balance.facilityNet > 0 ? '+' : balance.facilityNet === 0 ? '±' : ''}${balance.facilityNet}` }]) : []);
         updateCurrentResult(events, game, selfIndex);
         const freshResultLogs = feedback?.takeResultLogs() || [];
         const freshEvents = freshResultLogs.length ? UiTurnEvents.project(freshResultLogs, {
