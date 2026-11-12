@@ -2,7 +2,8 @@ const { test, expect } = require('@playwright/test');
 const fs = require('node:fs/promises');
 
 // Diagnostic only: a successful A/B run is not a commercial-quality claim.
-// Fresh contexts, fixed A B B A order, no retry and no screenshot in the window.
+// Fresh contexts, fixed treatment order, no retry and no screenshot in the window.
+// Order and cold/warm renderer effects remain confounded in this six-case probe.
 test.describe.configure({ mode: 'default', retries: 0 });
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
@@ -42,9 +43,31 @@ async function camera(page, command) {
     if (!await button.isVisible()) await page.locator('#cardboardMoreMenu > summary').click();
     await button.click();
 }
-for (const [order, variant] of ['A', 'B', 'B', 'A'].entries()) {
-    test(`construction paint diagnostic ${order + 1} ${variant}`, async ({ page }, testInfo) => {
+for (const [order, treatment] of ['table-art-hidden', 'normal', 'ghost-art-hidden', 'normal', 'table-art-hidden', 'ghost-art-hidden'].entries()) {
+    test(`construction paint diagnostic ${order + 1} ${treatment}`, async ({ page }, testInfo) => {
         const viewport = {width:390, height:844};
+        const variant = 'A';
+        // Install before prepare starts the game; retain all SVG DOM and boxes.
+        await page.addInitScript(treatment => {
+            const selector = treatment === 'table-art-hidden'
+                ? '#cardboardTableViewport .sunset-facility-art'
+                : treatment === 'ghost-art-hidden' ? '#cardboardBuildFlight .sunset-facility-art' : null;
+            const install = () => {
+                if (!document.documentElement) return false;
+                const style = document.createElement('style');
+                style.id = 'constructionPaintDiagnosticStyle';
+                style.textContent = selector ? `${selector} { visibility: hidden !important; }` : '';
+                document.documentElement.appendChild(style);
+                return true;
+            };
+            if (!install()) {
+                const observer = new MutationObserver(() => {
+                    if (install()) observer.disconnect();
+                });
+                observer.observe(document, {childList:true});
+            }
+            window.constructionPaintTreatment = treatment;
+        }, treatment);
         const pageErrors = [];
         page.on('pageerror', error => pageErrors.push({at:Date.now(), message:error.message, stack:error.stack}));
         let purchased = null;
@@ -86,6 +109,18 @@ for (const [order, variant] of ['A', 'B', 'B', 'A'].entries()) {
             window.constructionDiagnostic = { hitTest, heartbeat: [], heartbeatCount: 0, maxGap: 0,
                 visibility: [{at:performance.now(), hidden:document.hidden}], exceptions: [], hitTests: [] };
             const diagnostic = window.constructionDiagnostic;
+            diagnostic.treatment = window.constructionPaintTreatment;
+            diagnostic.artSamples = [];
+            const sampleArt = stage => {
+                const selectors = {table:'#cardboardTableViewport .sunset-facility-art', ghost:'#cardboardBuildFlight .sunset-facility-art', notice:'#cardboardBuildNotice .sunset-facility-art'};
+                diagnostic.artSamples.push({stage, at:performance.now(), afterClose:closedAt === null ? null : performance.now()-closedAt,
+                    targets:Object.fromEntries(Object.entries(selectors).map(([name, selector]) => {
+                        const elements = [...document.querySelectorAll(selector)];
+                        return [name, {count:elements.length, hiddenCount:elements.filter(element => getComputedStyle(element).visibility === 'hidden').length,
+                            elements:elements.map(element => ({tag:element.tagName, rect:element.getBoundingClientRect().toJSON(), visibility:getComputedStyle(element).visibility}))}];
+                    }))});
+            };
+            sampleArt('installed');
             document.addEventListener('visibilitychange', () => diagnostic.visibility.push({at:performance.now(), hidden:document.hidden}));
             window.addEventListener('error', event => diagnostic.exceptions.push({at:performance.now(), message:event.message}));
             window.addEventListener('unhandledrejection', event => diagnostic.exceptions.push({at:performance.now(), message:String(event.reason)}));
@@ -155,6 +190,7 @@ for (const [order, variant] of ['A', 'B', 'B', 'A'].entries()) {
                             document.getElementById('cardboardTableViewport').dispatchEvent(new Event('scroll'));
                             sameScrollRetained = node.isConnected;
                         }
+                        if (kind === 'add') sampleArt(node.id);
                         window.constructionTrace.mutations.push({ kind, id:node.id, at:performance.now()-startedAt, sameScrollRetained,
                             animations:node.getAnimations().map(animation => ({currentTime:animation.currentTime,playState:animation.playState,duration:animation.effect.getTiming().duration})) });
                     }
@@ -167,6 +203,7 @@ for (const [order, variant] of ['A', 'B', 'B', 'A'].entries()) {
                 window.constructionTrace.beforeClose = window.constructionGuardSnapshot();
             }, { once: true, capture: true });
             const captureNotice = element => {
+                sampleArt('capture-notice');
                 const bounds = element.getBoundingClientRect();
                 const table = document.getElementById('cardboardTableViewport').getBoundingClientRect();
                 const receiptClosed = !document.getElementById('cardboardEventDetails').open;
@@ -287,7 +324,7 @@ for (const [order, variant] of ['A', 'B', 'B', 'A'].entries()) {
             try { finalState = await state(page); }
             catch (error) { collectionError = {...collectionError, canonicalError:error.message}; }
             await fs.writeFile(testInfo.outputPath('construction-paint-diagnostic.json'), JSON.stringify({
-                variant, order, viewport, qualification:'diagnostic CPU-free fixture; not commercial or physical-device validation',
+                variant, treatment, order, orderLimitation:'fixed six-case order; cold/warm and order effects are not randomized or excluded', viewport, qualification:'diagnostic CPU-free fixture; not commercial or physical-device validation',
                 moving, notice, failure, pageErrors, collectionError, browser,
                 purchased, finalState, canonicalUnchanged:purchased !== null && finalState !== null
                     ? JSON.stringify(purchased) === JSON.stringify(finalState) : null,
