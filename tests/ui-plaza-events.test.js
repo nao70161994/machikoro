@@ -442,3 +442,91 @@ runTest('休業を除いた所有ordinalとワイナリーの休業前実収入�
     assert.strictEqual(receipt.balances[0].facilityNet, actor.coins - before);
     assert.strictEqual(receipt.incomplete, false);
 });
+
+runTest('typed森林6枚と他席2枚ずつはcompactだけ所有者ごとに合算し詳細12回を保持する', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const game = new GameManager(4);
+    game.currentPlayerIndex = 0;
+    game.players.forEach((player, index) => {
+        player.name = `街${index + 1}`;
+        player.coins = 30;
+        player.cards = Array.from({ length: index ? 2 : 6 }, () => createCardByName('森林'));
+    });
+    game.rollDice(5);
+    const receipt = UiTurnEvents.project(game.log, { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
+    assert.strictEqual(receipt.activations.length, 12);
+    assert.deepStrictEqual(Array.from(receipt.balances, balance => balance.facilityNet), [6, 2, 2, 2]);
+    const original = JSON.stringify(receipt);
+    const html = UiTurnReceipt.buildHtml(receipt, escape);
+    const compact = html.match(/<p class="plaza-receipt-featured">([\s\S]*?)<\/p>/u)[1];
+    assert.ok(compact.includes('施設発動12回'));
+    assert.strictEqual((compact.match(/class="plaza-receipt-transfer"/gu) || []).length, 3);
+    for (const [seat, amount] of [[1, 6], [2, 2], [3, 2]]) {
+        assert.ok(compact.includes(`<strong>席${seat}・森林</strong> 銀行 → 席${seat} <b>+${amount}コイン</b>（${amount}回）`));
+    }
+    assert.ok(!compact.includes('席4・森林'), 'first3は所有者順の3groups');
+    assert.strictEqual((html.match(/class="plaza-receipt-activation"/gu) || []).length, 12);
+    assert.ok(html.includes('街4：受け取り2 / 支払い0（施設効果 +2）'));
+    assert.strictEqual(JSON.stringify(receipt), original);
+    // Reorder only the input sample to expose the fourth compact group without
+    // changing the renderer's three-slot limit or the original detail order.
+    const reordered = { ...receipt, activations: [...receipt.activations.filter(event => event.owner === 3),
+        ...receipt.activations.filter(event => event.owner !== 3)] };
+    assert.ok(UiTurnReceipt.buildHtml(reordered, escape).includes('<strong>席4・森林</strong> 銀行 → 席4 <b>+2コイン</b>（2回）'));
+});
+
+runTest('compact合算はlegacy件数と紫の共有activation数を変えずsafe integerを超えない', () => {
+    const legacy = project([entry('dice', '🎲 5 が出ました'),
+        ...Array.from({ length: 6 }, () => entry('gain', '🌾 あなたの街の森林発動 → +1コイン'))]);
+    assert.ok(UiTurnReceipt.buildHtml(legacy, escape).includes('<b>+6コイン</b>（6件）'));
+    const options = { players: [{ name: 'A', cards: [] }, { name: 'B', cards: [] }, { name: 'C', cards: [] }], turnPlayerIndex: 0, logTypes: types, cardNames: ['スタジアム'] };
+    const typed = UiTurnEvents.project([entry('dice', '🎲 6 が出ました'),
+        { type: types.SPECIAL, message: '紫の確定結果', coinResolution: { owner: 0, subject: 'スタジアム', activation: 0,
+            transfers: [{ from: 1, to: 0, amount: 2 }, { from: 2, to: 0, amount: 2 }] } }], options);
+    const html = UiTurnReceipt.buildHtml(typed, escape);
+    assert.ok(html.includes('施設発動1回'));
+    assert.ok(!html.includes('施設発動2回'));
+    assert.strictEqual((html.match(/class="plaza-receipt-activation"/gu) || []).length, 2);
+    const overflow = { ...typed, activations: [
+        { ...typed.activations[0], amount: Number.MAX_SAFE_INTEGER, activation: 'large-1' },
+        { ...typed.activations[0], amount: 1, activation: 'large-2' },
+    ] };
+    const overflowHtml = UiTurnReceipt.buildHtml(overflow, escape);
+    assert.ok(overflowHtml.includes(`>→${Number.MAX_SAFE_INTEGER}コイン</b>`));
+    assert.ok(!overflowHtml.includes(`${Number.MAX_SAFE_INTEGER + 1}コイン`));
+    assert.ok(overflowHtml.includes('施設発動2回'));
+});
+
+runTest('10人の赤27施設とパン屋は上限1000のreceiptで0額を含む全28発動を保持する', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const game = new GameManager(10);
+    game.currentPlayerIndex = 0;
+    game.players.forEach((player, index) => {
+        player.name = `街${index + 1}`;
+        player.coins = index ? 30 : 5;
+        player.cards = Array.from({ length: index ? 3 : 1 }, () => createCardByName(index ? 'カフェ' : 'パン屋'));
+    });
+    const before = Array.from(game.players, player => player.coins);
+    game.rollDice(3);
+    const receipt = UiTurnEvents.project(game.log, { players: game.players, turnPlayerIndex: 0,
+        logTypes: LOG_TYPES, maxActivations: 1000 });
+    const net = Array.from(game.players, (player, index) => player.coins - before[index]);
+    assert.deepStrictEqual(net, [-4, 0, 0, 0, 0, 0, 0, 0, 2, 3]);
+    assert.strictEqual(receipt.activations.length, 28);
+    assert.strictEqual(receipt.omittedActivations, 0);
+    assert.strictEqual(receipt.incomplete, false);
+    assert.deepStrictEqual(Array.from(game.players, (_, index) => receipt.balances.find(balance => balance.index === index)?.facilityNet || 0), net);
+    const streetTwo = receipt.activations.filter(event => event.owner === 1 && event.subject === 'カフェ');
+    assert.strictEqual(streetTwo.length, 3);
+    assert.ok(streetTwo.every(event => event.from === 0 && event.to === 1 && event.amount === 0));
+    const html = UiTurnReceipt.buildHtml(receipt, escape);
+    assert.ok(html.includes('施設発動28回'));
+    assert.strictEqual((html.match(/class="plaza-receipt-activation"/gu) || []).length, 28);
+    assert.ok(html.includes('街1 → 街2：街2のカフェ 0コイン'));
+    assert.ok(html.includes('街1：受け取り1 / 支払い5（施設効果 -4）'));
+    assert.ok(html.includes('街10：受け取り3 / 支払い0（施設効果 +3）'));
+    assert.ok(html.includes('街9：受け取り2 / 支払い0（施設効果 +2）'));
+    const compact = html.match(/<p class="plaza-receipt-featured">([\s\S]*?)<\/p>/u)[1];
+    assert.ok(compact.includes('<strong>席10・カフェ</strong> 席1 → 席10 <b>→3コイン</b>（3回）'));
+    assert.ok(compact.includes('<strong>席9・カフェ</strong> 席1 → 席9 <b>→2コイン</b>（3回）'));
+});

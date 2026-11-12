@@ -216,7 +216,9 @@ function renderLog() {
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     const receipt = document.getElementById('plazaDiceReceipt');
     if (receipt && typeof UiTurnEvents !== 'undefined') {
-        const projected = plazaTurnEventsFor(currentGame);
+        // Typed logs retain every owned-card activation. Keep all player
+        // routes in the scrollable details, including late zero payments.
+        const projected = plazaTurnEventsFor(currentGame, 1000);
         const html = UiTurnReceipt.buildHtml(projected, escapeHtml);
         const diceKey = JSON.stringify(projected.dice);
         const session = uiGameRuntimeSnapshot().cpuPlayers;
