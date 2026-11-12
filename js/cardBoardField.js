@@ -250,10 +250,11 @@ const CardBoardField = (() => {
             let placement = null;
             // Short names can fit narrow owner gaps without shrinking text.
             // Retain the established compact fallback for longer names.
-            const widths = [...new Set([preferredWidth, fallbackWidth])];
+            const fullNameWidth = Math.ceil(ownerLabelMeasure?.measureText(labelText).width || maximumWidth) + 16;
+            const widths = [...new Set([preferredWidth, fallbackWidth])].filter(width => width >= fullNameWidth);
             const layouts = [false, true].flatMap(inset => widths.map(width => ({ width, inset, height: baseHeight, lines: /** @type {string[] | null} */ (null) })));
-            // Only a standard, unambiguous CPU name may try two complete lines,
-            // after every established single-line placement has failed.
+            // Never use a narrow single line which would ellipsize an owner.
+            // Try the familiar CPU split before balancing any other full name.
             const cpuName = !duplicateName && labelText.match(/^(CPU（(?:弱|普通|強|最強)）)(\s*・\s*\d+)$/);
             if (cpuName && ownerLabelMeasure) {
                 const lines = [cpuName[1], cpuName[2]];
@@ -261,6 +262,43 @@ const CardBoardField = (() => {
                 const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
                 if (width < preferredWidth) {
                     for (const inset of [false, true]) layouts.push({ width, inset, height: shallow ? 34 : 38, lines });
+                }
+            }
+            if (ownerLabelMeasure) {
+                const measure = ownerLabelMeasure;
+                const segmenter = typeof Intl.Segmenter === 'function'
+                    ? new Intl.Segmenter('ja', { granularity: 'grapheme' }) : null;
+                const characters = segmenter ? Array.from(segmenter.segment(labelText), part => part.segment) : Array.from(labelText);
+                const candidates = [];
+                if (duplicateName) candidates.push([`席${index + 1} · `, displayName]);
+                let balanced = null;
+                let balancedWidth = Infinity;
+                for (let split = 1; split < characters.length; split++) {
+                    const lines = [characters.slice(0, split).join(''), characters.slice(split).join('')];
+                    const width = Math.max(...lines.map(line => measure.measureText(line).width));
+                    if (width < balancedWidth) { balanced = lines; balancedWidth = width; }
+                }
+                if (balanced) candidates.push(balanced);
+                for (const lines of candidates) {
+                    const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
+                    if (width > maximumWidth || lines.join('') !== labelText) continue;
+                    for (const inset of [false, true]) layouts.push({ width, inset, height: shallow ? 34 : 38, lines });
+                }
+            }
+            // At the narrowest viewport, a rotated side can leave a tall
+            // pocket narrower than even the balanced two-line CPU name. Keep
+            // all preceding placements, then try semantic CPU/level/seat lines
+            // without reducing the font or dropping the duplicate-seat prefix.
+            if (bounds.width <= 340 && ownerLabelMeasure) {
+                const compactCpu = displayName.match(/^(CPU)(（(?:弱|普通|強|最強)）)(\s*・\s*\d+)?$/);
+                if (compactCpu && (!duplicateName || !compactCpu[3])) {
+                    const lines = duplicateName ? [`席${index + 1} · `, compactCpu[1], compactCpu[2]]
+                        : [compactCpu[1], compactCpu[2], compactCpu[3]].filter(Boolean);
+                    const measure = ownerLabelMeasure;
+                    const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
+                    if (lines.length === 3 && lines.join('') === labelText && width <= maximumWidth) {
+                        for (const inset of [false, true]) layouts.push({ width, inset, height: baseHeight + 32, lines });
+                    }
                 }
             }
             for (const { width, inset, height, lines } of layouts) {
