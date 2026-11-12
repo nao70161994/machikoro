@@ -1,0 +1,442 @@
+[
+  {
+    "mode": "automated-human-seat-ui",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "playerCount": 10,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "lastTurn": 177,
+    "humanActions": 70,
+    "clicks": 127,
+    "keyboardActions": 17,
+    "cpuWaitMs": 1174157,
+    "elapsedMs": 1452895,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 17,
+      "targetIndex": 8,
+      "initialScale": "0.210",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.210",
+        "angle": "0",
+        "mode": "overview",
+        "width": 374,
+        "height": 660,
+        "worldWidth": 1782,
+        "worldHeight": 2436,
+        "frames": [
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1782,
+            "worldHeight": 2436
+          },
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1782,
+            "worldHeight": 2436
+          },
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1782,
+            "worldHeight": 2436
+          },
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1782,
+            "worldHeight": 2436
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.210",
+        "angle": "0",
+        "width": 374,
+        "height": 660,
+        "worldWidth": 1782,
+        "worldHeight": 2436
+      },
+      "clicks": 2,
+      "readableScale": "1.404",
+      "elapsedMs": 1313
+    },
+    "diceMotion": [
+      {
+        "index": 0,
+        "targetMs": 0,
+        "elapsedMs": 573
+      },
+      {
+        "index": 1,
+        "targetMs": 180,
+        "elapsedMs": 1517
+      },
+      {
+        "index": 2,
+        "targetMs": 450,
+        "elapsedMs": 1997
+      },
+      {
+        "index": 3,
+        "targetMs": 800,
+        "elapsedMs": 2448
+      },
+      {
+        "index": 4,
+        "targetMs": 1200,
+        "elapsedMs": 2899
+      }
+    ]
+  },
+  {
+    "mode": "automated-human-seat-ui",
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "playerCount": 10,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "lastTurn": 160,
+    "humanActions": 70,
+    "clicks": 126,
+    "keyboardActions": 17,
+    "cpuWaitMs": 957973,
+    "elapsedMs": 1139990,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 18,
+      "targetIndex": 9,
+      "initialScale": "0.139",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.139",
+        "angle": "0",
+        "mode": "overview",
+        "width": 824,
+        "height": 250,
+        "worldWidth": 2726,
+        "worldHeight": 1794,
+        "frames": [
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2726,
+            "worldHeight": 1794
+          },
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2726,
+            "worldHeight": 1794
+          },
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2726,
+            "worldHeight": 1794
+          },
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2726,
+            "worldHeight": 1794
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.139",
+        "angle": "0",
+        "width": 824,
+        "height": 250,
+        "worldWidth": 2726,
+        "worldHeight": 1794
+      },
+      "clicks": 2,
+      "readableScale": "1.160",
+      "elapsedMs": 950
+    },
+    "diceMotion": [
+      {
+        "index": 0,
+        "targetMs": 0,
+        "elapsedMs": 647
+      },
+      {
+        "index": 1,
+        "targetMs": 180,
+        "elapsedMs": 1287
+      },
+      {
+        "index": 2,
+        "targetMs": 450,
+        "elapsedMs": 1727
+      },
+      {
+        "index": 3,
+        "targetMs": 800,
+        "elapsedMs": 2094
+      },
+      {
+        "index": 4,
+        "targetMs": 1200,
+        "elapsedMs": 2475
+      }
+    ]
+  },
+  {
+    "mode": "automated-human-seat-ui",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "playerCount": 5,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "lastTurn": 73,
+    "humanActions": 70,
+    "clicks": 118,
+    "keyboardActions": 14,
+    "cpuWaitMs": 381056,
+    "elapsedMs": 563185,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 13,
+      "targetIndex": 4,
+      "initialScale": "0.394",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.394",
+        "angle": "0",
+        "mode": "overview",
+        "width": 1420,
+        "height": 760,
+        "worldWidth": 1718,
+        "worldHeight": 1930,
+        "frames": [
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1718,
+            "worldHeight": 1930
+          },
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1718,
+            "worldHeight": 1930
+          },
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1718,
+            "worldHeight": 1930
+          },
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1718,
+            "worldHeight": 1930
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.394",
+        "angle": "0",
+        "width": 1420,
+        "height": 760,
+        "worldWidth": 1718,
+        "worldHeight": 1930
+      },
+      "clicks": 2,
+      "readableScale": "1.600",
+      "elapsedMs": 1464
+    },
+    "diceMotion": [
+      {
+        "index": 0,
+        "targetMs": 0,
+        "elapsedMs": 1347
+      },
+      {
+        "index": 1,
+        "targetMs": 180,
+        "elapsedMs": 2700
+      },
+      {
+        "index": 2,
+        "targetMs": 450,
+        "elapsedMs": 3822
+      },
+      {
+        "index": 3,
+        "targetMs": 800,
+        "elapsedMs": 4940
+      },
+      {
+        "index": 4,
+        "targetMs": 1200,
+        "elapsedMs": 6061
+      }
+    ]
+  },
+  {
+    "mode": "automated-human-seat-ui",
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "playerCount": 5,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "lastTurn": 116,
+    "humanActions": 100,
+    "clicks": 164,
+    "keyboardActions": 23,
+    "cpuWaitMs": 671985,
+    "elapsedMs": 876467,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 16,
+      "targetIndex": 2,
+      "initialScale": "0.163",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.163",
+        "angle": "0",
+        "mode": "overview",
+        "width": 304,
+        "height": 384,
+        "worldWidth": 924,
+        "worldHeight": 2358,
+        "frames": [
+          {
+            "scale": "0.163",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 924,
+            "worldHeight": 2358
+          },
+          {
+            "scale": "0.163",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 924,
+            "worldHeight": 2358
+          },
+          {
+            "scale": "0.163",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 924,
+            "worldHeight": 2358
+          },
+          {
+            "scale": "0.163",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 924,
+            "worldHeight": 2358
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.163",
+        "angle": "0",
+        "width": 304,
+        "height": 384,
+        "worldWidth": 924,
+        "worldHeight": 2358
+      },
+      "clicks": 2,
+      "readableScale": "1.591",
+      "elapsedMs": 1011
+    },
+    "diceMotion": [
+      {
+        "index": 0,
+        "targetMs": 0,
+        "elapsedMs": 508
+      },
+      {
+        "index": 1,
+        "targetMs": 180,
+        "elapsedMs": 1313
+      },
+      {
+        "index": 2,
+        "targetMs": 450,
+        "elapsedMs": 1750
+      },
+      {
+        "index": 3,
+        "targetMs": 800,
+        "elapsedMs": 2229
+      },
+      {
+        "index": 4,
+        "targetMs": 1200,
+        "elapsedMs": 2666
+      }
+    ]
+  }
+]
