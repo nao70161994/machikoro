@@ -233,7 +233,7 @@ jobs:
                   fi
                   git -c safe.directory="$GITHUB_WORKSPACE" fetch --depth=1 origin cce52ce1791583c9faba1a8f5069adaa134adad0
                   git -c safe.directory="$GITHUB_WORKSPACE" show cce52ce1791583c9faba1a8f5069adaa134adad0:js/cardBoardField.js > "$RUNNER_TEMP/owner-income-before.js"
-                  OWNER_INCOME_BEFORE_FIELD="$RUNNER_TEMP/owner-income-before.js" npx playwright test cardboard-owner-income.spec.js cardboard-hud-space.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/owner-income
+                  npx playwright test cardboard-construction-paint-diagnostic.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-paint
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
