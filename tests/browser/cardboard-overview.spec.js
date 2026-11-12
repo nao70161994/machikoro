@@ -164,6 +164,10 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         test(`共通カード卓で全員の施設と中央市場を見渡せる ${viewport.width}`, async ({page}, testInfo) => {
             await prepare(page, viewport, 4);
             await expectWholeTable(page,4);
+            const viewHint = page.locator('#cardboardViewHint > span');
+            await expect(viewHint).toHaveText('上の名前で正面へ · 全体で俯瞰');
+            expect(await viewHint.evaluate(element => element.scrollWidth <= element.clientWidth),
+                '正面閲覧の入口を省略せずに案内する').toBe(true);
             await expectOwnedCards(page);
             await expect.poll(() => page.locator('#cardboardMarket .compact-market-header h2').getAttribute('data-scroll-hint')).toBe('↓ 下に施設');
             expect(await page.locator('.cardboard-roster-seat').evaluateAll(seats => seats.every(seat => {
@@ -200,6 +204,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 await expect(camera).toHaveAttribute('data-table-angle', '0');
                 await expect(page.locator('[data-cardboard-camera="back"]')).toBeDisabled();
                 await expect(page.locator('#cardboardViewHint strong')).toHaveText('カード卓');
+                await expect(viewHint).toHaveText('上の名前で正面へ · 全体で俯瞰');
                 await expect(camera).toHaveAttribute('data-table-scale', fittedScale.toFixed(3));
                 await expectWholeTable(page, 4);
             }

@@ -571,7 +571,7 @@ const CardBoardField = (() => {
             label.setAttribute('aria-live', 'polite');
             label.setAttribute('aria-atomic', 'true');
             const explanation = document.createElement('span');
-            explanation.textContent = '名前で正面へ · 全体で俯瞰';
+            explanation.textContent = '上の名前で正面へ · 全体で俯瞰';
             hint.appendChild(label);
             hint.appendChild(explanation);
             hint.title = `${label.textContent} · ${explanation.textContent}`;
@@ -624,7 +624,7 @@ const CardBoardField = (() => {
                     const explanation = hint.querySelector('span');
                     const direction = pan === 'both' ? '上下左右に移動' : pan === 'x' ? '左右に移動'
                         : pan === 'y' ? '上下に移動' : '施設カードを確認';
-                    const text = playerIndex === null ? '名前で正面へ · 全体で俯瞰'
+                    const text = playerIndex === null ? '上の名前で正面へ · 全体で俯瞰'
                         : `${direction} · 戻るで元の卓`;
                     if (heading && heading.textContent !== label) heading.textContent = label;
                     if (explanation && explanation.textContent !== text) explanation.textContent = text;
