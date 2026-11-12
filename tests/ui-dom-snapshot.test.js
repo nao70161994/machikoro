@@ -79,3 +79,24 @@ runTest('UI DOM snapshotはaction HTML fallbackとcomputed style失敗を既存�
         querySelectorAll: () => { throw new Error('invalid selector'); },
     })), { total: 0, usable: 0 });
 });
+
+runTest('shallow snapshotはshell状態を保ち子走査とHTML文字列取得を省く', () => {
+    let childReads = 0, htmlReads = 0, textReads = 0;
+    const element = createElement({ style: { display: 'block', pointerEvents: 'none' }, inert: true,
+        querySelectorAll() { childReads++; return []; } });
+    Object.defineProperty(element, 'innerHTML', { get() { htmlReads++; return '<button>施設</button>'; } });
+    Object.defineProperty(element, 'textContent', { get() { textReads++; return '施設'; } });
+    const runtime = UiDomSnapshot.createRuntime({ getDocument: () => ({ getElementById: () => element }),
+        getComputedStyle: () => ({ display: 'block', visibility: 'visible', pointerEvents: 'none' }) });
+    const shallow = runtime.snapshotById('gameScreen', { shallow: true });
+    assert.strictEqual(shallow.inert, true);
+    assert.strictEqual(shallow.computedDisplay, 'block');
+    assert.strictEqual(shallow.computedPointerEvents, 'none');
+    assert.strictEqual(shallow.totalInteractiveChildren, null, '未計測を0件と断定しない');
+    assert.strictEqual(shallow.htmlLength, null);
+    assert.deepStrictEqual([childReads, htmlReads, textReads], [0, 0, 0]);
+    const full = runtime.snapshotById('gameScreen');
+    assert.strictEqual(full.htmlLength, '<button>施設</button>'.length);
+    assert.strictEqual(full.text, '施設');
+    assert.ok(childReads > 0 && htmlReads > 0 && textReads > 0, '既定の完全snapshotは維持');
+});

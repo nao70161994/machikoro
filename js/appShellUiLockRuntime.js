@@ -194,7 +194,7 @@ const AppShellUiLockRuntime = (() => {
         }
 
         function stabilizePostBuildNextTurnUi(reason = 'post-build-ui-stabilizer') {
-            const snapshot = buildSnapshot(reason);
+            const snapshot = buildSnapshot(reason, { purpose: 'post-build' });
             if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
             const btnSkip = getElementById('btnSkip');
             if (!btnSkip) return false;
@@ -214,7 +214,7 @@ const AppShellUiLockRuntime = (() => {
 
         function schedulePostBuildUiStabilizer(reason = 'post-build-ui-stabilizer') {
             if (postBuildBatch.snapshot().pending) return false;
-            const snapshot = buildSnapshot(reason + '-schedule');
+            const snapshot = buildSnapshot(reason + '-schedule', { purpose: 'post-build' });
             if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
             if (!postBuildBatch.begin(POST_BUILD_DELAYS.length)) return false;
             const run = () => {
