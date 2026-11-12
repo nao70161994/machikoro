@@ -3339,3 +3339,67 @@ runTest('詳細のため停止した市場も手渡し待機時に破棄し詳�
     context.acceptHotseatHandoff();
     assert.strictEqual(elements.gameScreen.inert, false);
 });
+
+runTest('広場収支cacheは同長の実振り直しログとsnapshot置換と端更新で失効し純表示では再利用する', () => {
+    const { context } = loadUiRuntime();
+    const { GameManager, createCardByName, GAME_PHASES, LOG_TYPES } = loadGameRuntime();
+    const landmarkNames = vm.runInContext('LANDMARK_NAMES', context);
+    const projection = require('../js/uiTurnEvents');
+    let calls = 0;
+    context.UiTurnEvents = { project(...args) { calls++; return projection.project(...args); } };
+    const game = new GameManager(2);
+    game.currentPlayerIndex = 0;
+    game.players.forEach((player, index) => { player.name = `街${index + 1}`; player.coins = 30; player.cards = []; });
+    game.players[0].cards = ['麦畑', '貸金業'].map(createCardByName);
+    game.players[0].landmarks[landmarkNames.RADIO_TOWER] = true;
+    game.log = [];
+    game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+    game.rollDice(5);
+    game.skipReroll();
+    const originalLog = game.log;
+    const originalLength = game.log.length;
+    const first = context.plazaTurnEventsFor(game);
+    assert.strictEqual(first.dice.base, 5);
+    assert.strictEqual(context.plazaTurnEventsFor(game), first);
+    assert.strictEqual(calls, 1);
+    // Match the regression's actual GM reroll path with a controlled admission
+    // phase; do not replace rollDice or generate a synthetic dice log.
+    game.phase = GAME_PHASES.REROLL_CONFIRM;
+    game.rerollDice(1);
+    assert.strictEqual(game.log.length, originalLength);
+    assert.notStrictEqual(game.log, originalLog);
+    const rerolled = context.plazaTurnEventsFor(game);
+    assert.notStrictEqual(rerolled, first);
+    assert.strictEqual(rerolled.dice.base, 1);
+    assert.strictEqual(rerolled.dice.rerolled, true);
+    assert.strictEqual(calls, 2);
+    assert.strictEqual(context.plazaTurnEventsFor(game), rerolled);
+    // A recreated snapshot uses new entries and a new array of equal length.
+    game.log = JSON.parse(JSON.stringify(game.log));
+    const restored = context.plazaTurnEventsFor(game);
+    assert.notStrictEqual(restored, rerolled);
+    assert.strictEqual(restored.dice.base, 1);
+    assert.strictEqual(calls, 3);
+    const sameArray = game.log;
+    game.log[game.log.length - 1] = { ...game.log.at(-1) };
+    const replacedTail = context.plazaTurnEventsFor(game);
+    assert.strictEqual(game.log, sameArray);
+    assert.notStrictEqual(replacedTail, restored);
+    assert.strictEqual(calls, 4);
+    game.log[0] = { ...game.log[0] };
+    const replacedHead = context.plazaTurnEventsFor(game);
+    assert.notStrictEqual(replacedHead, replacedTail);
+    assert.strictEqual(calls, 5, '同じ長さ/配列で先頭entryだけ替わる場合も失効');
+    // Capped-log shift/push can preserve both array identity and total length.
+    game.log.shift();
+    game.log.push({ type: LOG_TYPES.SYSTEM, message: '表示用通知' });
+    const capped = context.plazaTurnEventsFor(game);
+    assert.strictEqual(game.log, sameArray);
+    assert.strictEqual(game.log.length, originalLength);
+    assert.notStrictEqual(capped, replacedHead);
+    assert.strictEqual(calls, 6);
+    assert.strictEqual(context.plazaTurnEventsFor(game), capped);
+    assert.strictEqual(calls, 6);
+    assert.notStrictEqual(context.plazaTurnEventsFor(game, 1000), capped);
+    assert.strictEqual(calls, 7, '上限を含む従来cache keyも維持する');
+});

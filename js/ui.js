@@ -16,14 +16,17 @@ const plazaTurnEventsCache = new WeakMap();
 function plazaTurnEventsFor(game, maxActivations = 12) {
     if (!game || typeof game !== 'object') return null;
     const key = `${game.turnCount}:${game.currentPlayerIndex}:${game.log?.length || 0}:${maxActivations}`;
+    const log = game.log;
+    const first = log?.[0];
+    const last = log?.[log.length - 1];
     const cached = plazaTurnEventsCache.get(game);
-    if (cached?.key === key) return cached.events;
+    if (cached?.key === key && cached.log === log && cached.first === first && cached.last === last) return cached.events;
     const events = UiTurnEvents.project(game.log || [], {
         players: game.players, turnPlayerIndex: game.currentPlayerIndex,
         display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
         landmarkNames: Player.landmarkNames(), maxActivations,
     });
-    plazaTurnEventsCache.set(game, { key, events });
+    plazaTurnEventsCache.set(game, { key, log, first, last, events });
     return events;
 }
 const plazaIncomePreviewPanel = typeof UiIncomePreviewPanel !== 'undefined' ? UiIncomePreviewPanel.create({
