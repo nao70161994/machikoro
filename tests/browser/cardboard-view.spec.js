@@ -1650,6 +1650,8 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
                 const rect = node.getBoundingClientRect();
                 const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
                 const source = document.querySelector('#cardboardSeats .cardboard-card.cardboard-resolving').getBoundingClientRect();
+                const resolvingOwner = document.querySelector('.cardboard-roster-seat.cardboard-resolving');
+                const turnOwner = document.querySelector('.cardboard-roster-seat[aria-current="true"]');
                 const art = node.querySelector('.cardboard-activation-art');
                 const artBounds = art?.getBoundingClientRect();
                 window.boardTagRecords.push({ text: node.textContent, pointerEvents: getComputedStyle(node).pointerEvents,
@@ -1662,6 +1664,8 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
                     sourceCovered: rect.left < source.right && rect.right > source.left && rect.top < source.bottom && rect.bottom > source.top,
                     highlightedCards: document.querySelectorAll('#cardboardSeats .cardboard-card.cardboard-resolving').length,
                     highlightedOwners: document.querySelectorAll('.cardboard-roster-seat.cardboard-resolving').length,
+                    resolvingOwnerShadow: resolvingOwner ? getComputedStyle(resolvingOwner).boxShadow : '',
+                    turnOutline: turnOwner ? getComputedStyle(turnOwner).outlineColor : '',
                     contained: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1 &&
                         rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1 });
             }
@@ -1772,6 +1776,8 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     expect(tagRecords.some(record => record.presentation === 'illustrated' && record.artWidth === 100 && record.artHeight === 65), JSON.stringify(tagRecords)).toBe(true);
     await testInfo.attach('activation-presentation', { body: JSON.stringify(tagRecords), contentType: 'application/json' });
     expect(tagRecords.every(record => record.highlightedCards === 1 && record.highlightedOwners === 1)).toBe(true);
+    expect(tagRecords.every(record => record.resolvingOwnerShadow.includes('rgb(73, 127, 145)'))).toBe(true);
+    expect(tagRecords.every(record => record.turnOutline === 'rgb(189, 134, 20)')).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
     await page.evaluate(() => render());
     await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);

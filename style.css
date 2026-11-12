@@ -15224,8 +15224,12 @@ html[data-design="cardboard"] #cardboardSeats .cardboard-card.cardboard-resolvin
     outline-offset: 3px;
     box-shadow: var(--cardboard-activation-shadow);
 }
-html[data-design="cardboard"] :is(.cardboard-header, .cardboard-roster-seat).cardboard-resolving {
+html[data-design="cardboard"] .cardboard-header.cardboard-resolving {
     box-shadow: inset 0 0 0 2px #d79221;
+}
+/* The currently resolving owner is not necessarily the turn owner. */
+html[data-design="cardboard"] #cardboardRoster .cardboard-roster-seat.cardboard-resolving {
+    box-shadow: inset 0 0 0 2px #497f91;
 }
 html[data-design="cardboard"] .cardboard-transfer::after {
     content: attr(data-route);
