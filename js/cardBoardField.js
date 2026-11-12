@@ -287,6 +287,22 @@ const CardBoardField = (() => {
                     for (const inset of [false, true]) layouts.push({ width, inset, height: shallow ? 34 : 38, lines });
                 }
             }
+            // At the narrowest viewport, a rotated side can leave a tall
+            // pocket narrower than even the balanced two-line CPU name. Keep
+            // all preceding placements, then try semantic CPU/level/seat lines
+            // without reducing the font or dropping the duplicate-seat prefix.
+            if (bounds.width <= 340 && ownerLabelMeasure) {
+                const compactCpu = displayName.match(/^(CPU)(（(?:弱|普通|強|最強)）)(\s*・\s*\d+)?$/);
+                if (compactCpu && (!duplicateName || !compactCpu[3])) {
+                    const lines = duplicateName ? [`席${index + 1} · `, compactCpu[1], compactCpu[2]]
+                        : [compactCpu[1], compactCpu[2], compactCpu[3]].filter(Boolean);
+                    const measure = ownerLabelMeasure;
+                    const width = Math.max(44, Math.ceil(Math.max(...lines.map(line => measure.measureText(line).width))) + 16);
+                    if (lines.length === 3 && lines.join('') === labelText && width <= maximumWidth) {
+                        for (const inset of [false, true]) layouts.push({ width, inset, height: baseHeight + 32, lines });
+                    }
+                }
+            }
             for (const { width, inset, height, lines } of layouts) {
                 const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
                     top < rect.bottom + clearance && top + height > rect.top - clearance;
@@ -624,7 +640,7 @@ const CardBoardField = (() => {
             label.setAttribute('aria-live', 'polite');
             label.setAttribute('aria-atomic', 'true');
             const explanation = document.createElement('span');
-            explanation.textContent = '名前で正面へ · 全体で俯瞰';
+            explanation.textContent = '上の名前で正面へ · 全体で俯瞰';
             hint.appendChild(label);
             hint.appendChild(explanation);
             hint.title = `${label.textContent} · ${explanation.textContent}`;
@@ -677,7 +693,7 @@ const CardBoardField = (() => {
                     const explanation = hint.querySelector('span');
                     const direction = pan === 'both' ? '上下左右に移動' : pan === 'x' ? '左右に移動'
                         : pan === 'y' ? '上下に移動' : '施設カードを確認';
-                    const text = playerIndex === null ? '名前で正面へ · 全体で俯瞰'
+                    const text = playerIndex === null ? '上の名前で正面へ · 全体で俯瞰'
                         : `${direction} · 戻るで元の卓`;
                     if (heading && heading.textContent !== label) heading.textContent = label;
                     if (explanation && explanation.textContent !== text) explanation.textContent = text;

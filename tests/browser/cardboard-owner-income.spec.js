@@ -12,6 +12,11 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
         const beforeField = process.env.OWNER_INCOME_BEFORE_FIELD
             ? await fs.readFile(process.env.OWNER_INCOME_BEFORE_FIELD) : null;
         const evidence = { viewport, controlled: true, physicalDevice: false, scenes: [], measurements: [] };
+        const evidenceFile = testInfo.outputPath(`owner-income-${viewport.width}.json`);
+        const saveEvidence = () => fs.writeFile(evidenceFile, JSON.stringify(evidence, null, 2));
+        // Replace any older artifact immediately, then persist each measurement
+        // before assertions/context cleanup can fail or exhaust the test budget.
+        await saveEvidence();
         async function run(scene, variant) {
             const context = await browser.newContext({ ...devices['iPhone 13'], viewport,
                 baseURL: testInfo.project.use.baseURL || 'http://127.0.0.1:3210', serviceWorkers: 'block' });
@@ -132,6 +137,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                         };
                     });
                     evidence.measurements.push({ scene, variant, stage, resolvedNet, result });
+                    await saveEvidence();
                     if (variant === 'after') expect(result.labels).toHaveLength(4);
                     for (const expected of result.expected) {
                         expect(expected.net).toBe(resolvedNet[expected.index]);
@@ -207,7 +213,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                 }
             }
         } finally {
-            await fs.writeFile(testInfo.outputPath(`owner-income-${viewport.width}.json`), JSON.stringify(evidence, null, 2));
+            await saveEvidence();
         }
     });
 }
