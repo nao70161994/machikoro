@@ -401,6 +401,19 @@ for (const count of [2,3,5,10]) {
         await expectWholeTable(page,count);
         await expectOwnedCards(page);
         await page.screenshot({path:testInfo.outputPath(`card-table-${count}.png`)});
+        // Legacy multi-seat min-height must not leave a blank 52px row on phones.
+        // Exercise the product CSS directly, without injected style overrides.
+        for (const width of [320, 390]) {
+            await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
+            await expect.poll(() => page.locator('.cardboard-roster').evaluate(roster => ({
+                height: roster.getBoundingClientRect().height,
+                minHeight: getComputedStyle(roster).minHeight,
+            }))).toEqual({ height: 44, minHeight: '44px' });
+            await expectWholeTable(page, count);
+            await expectOwnedCards(page);
+        }
+        await page.setViewportSize({ width: 844, height: 390 });
+        await expectWholeTable(page, count);
         const before=await snapshot(page);
         await page.locator(`.cardboard-roster-seat[data-cardboard-player-index="${count-1}"]`).click();
         await expect(page.locator('.cardboard-player-selected')).toHaveAttribute('data-player-index',String(count-1));
