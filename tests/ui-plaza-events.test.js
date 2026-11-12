@@ -380,3 +380,65 @@ runTest('建設だけの通知は空の収支ラベルを追加しない', () =>
     assert.ok(html.includes('<summary>今回の出来事</summary>'));
     assert.strictEqual(JSON.stringify(receipt), before);
 });
+
+runTest('同名4人の赤青緑は確定座席と実額から施設収支を復元し旧文字ログだけは未集計にする', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const validation = require('../js/savedGameValidation');
+    for (const initialCoins of [30, 1, 0]) {
+        const game = new GameManager(4);
+        game.currentPlayerIndex = 0;
+        game.players.forEach(player => {
+            player.name = 'CPU（弱）';
+            player.coins = initialCoins;
+            player.cards = ['コーン畑', 'パン屋', 'カフェ', 'カフェ'].map(name => createCardByName(name));
+        });
+        const before = game.players.map(player => player.coins);
+        game.rollDice(3);
+        const options = { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES };
+        const receipt = UiTurnEvents.project(game.log, options);
+        const delta = Array.from(game.players, (player, index) => player.coins - before[index]);
+        assert.deepStrictEqual(Array.from(game.players, (_, index) => receipt.balances.find(balance => balance.index === index)?.facilityNet || 0), delta);
+        assert.strictEqual(receipt.incomplete, false);
+        const amounts = game.log.filter(log => log.coinResolution);
+        assert.strictEqual(amounts.length, 11, '赤6・青4・緑1の全実額ログ');
+        for (const log of amounts) {
+            const resolution = log.coinResolution;
+            assert.strictEqual(game.players[resolution.owner].cards[resolution.activation].name, resolution.subject);
+            assert.ok(resolution.transfers.every(transfer => Number.isSafeInteger(transfer.amount) && transfer.amount >= 0));
+        }
+        for (const owner of [1, 2, 3]) {
+            assert.deepStrictEqual(Array.from(amounts.filter(log => log.coinResolution.owner === owner && log.coinResolution.subject === 'カフェ'),
+                log => log.coinResolution.activation), [2, 3]);
+        }
+        if (initialCoins === 0) assert.strictEqual(amounts.filter(log => log.coinResolution.subject === 'カフェ')
+            .every(log => log.coinResolution.transfers[0].amount === 0), true);
+        const normalized = validation.normalizeSavedLog(JSON.parse(JSON.stringify(game.log)));
+        const restored = UiTurnEvents.project(normalized, options);
+        assert.deepStrictEqual(Array.from(game.players, (_, index) => restored.balances.find(balance => balance.index === index)?.facilityNet || 0), delta);
+        assert.strictEqual(restored.incomplete, false);
+        const legacy = game.log.map(({ coinResolution, ...log }) => log);
+        assert.strictEqual(UiTurnEvents.project(legacy, options).incomplete, true,
+            '同名旧ログの曖昧さを座席推定で隠さない');
+    }
+});
+
+runTest('休業を除いた所有ordinalとワイナリーの休業前実収入をmetadataへ保存する', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const game = new GameManager(4);
+    game.currentPlayerIndex = 0;
+    game.players.forEach(player => { player.name = '同名'; player.coins = 30; player.cards = []; });
+    const actor = game.players[0];
+    actor.cards = ['パン屋', 'ワイナリー', 'ワイナリー', 'ブドウ園'].map(name => createCardByName(name));
+    actor.makeDormant(actor.cards[1]);
+    const before = actor.coins;
+    game.rollDice(9);
+    const winery = game.log.filter(log => log.coinResolution?.subject === 'ワイナリー');
+    assert.strictEqual(winery.length, 1, 'この出目で復帰した休業カードは発動しない');
+    assert.strictEqual(winery[0].coinResolution.activation, 2, '稼働カードの元所有順を保持');
+    assert.strictEqual(winery[0].coinResolution.owner, 0);
+    assert.strictEqual(winery[0].coinResolution.transfers[0].amount, actor.coins - before);
+    assert.strictEqual(actor.isDormant(actor.cards[2]), true);
+    const receipt = UiTurnEvents.project(game.log, { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
+    assert.strictEqual(receipt.balances[0].facilityNet, actor.coins - before);
+    assert.strictEqual(receipt.incomplete, false);
+});
