@@ -173,8 +173,13 @@ function densityCase(viewport, count, scene) {
             expect(geometry.labels).toHaveLength(count);
             expect(geometry.labels.every(label=>label.complete)).toBe(true);
             await page.screenshot({path:testInfo.outputPath(`density-${treatment}.png`)});
-            await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
-            await expect(page.locator('#cardboardTableViewport')).not.toHaveAttribute('data-table-angle', '0');
+            const opposite = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(panels => {
+                const panel = panels.find(element => Number(element.dataset.tableAngle) !== 0);
+                return panel ? { index: Number(panel.dataset.playerIndex), angle: Number(panel.dataset.tableAngle) } : null;
+            });
+            expect(opposite, '実際に正面以外を向く相手席を確認する').not.toBeNull();
+            await page.locator(`#cardboardRoster [data-cardboard-player-index="${opposite.index}"]`).click();
+            await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-angle', String((360 - opposite.angle) % 360));
             await cameraCommand(page, 'back');
             await expectWholeTable(page,count);
             await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-angle', geometry.angle);
