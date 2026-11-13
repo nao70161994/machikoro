@@ -1795,6 +1795,8 @@ test(`明示した発動確認は全所有者を順に示し再描画とテー�
     expect(tagRecords.every(record => record.turnOutline === 'rgb(189, 134, 20)')).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
     await page.evaluate(() => render());
+    await expect(replayButton).toHaveCount(1);
+    await expect(replayButton).toBeFocused();
     await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
     await expect(page.locator('.cardboard-resolving')).toHaveCount(0);
     expect(await page.evaluate(() => window.boardTagRecords.length)).toBe(4);

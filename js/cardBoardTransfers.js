@@ -82,6 +82,52 @@ const CardBoardTransfers = (() => {
             : left.facility ? -1 : right.facility ? 1 : right.amount - left.amount);
     }
 
+    function projectOwnerNets(events) {
+        const nets = new Map();
+        for (const event of Array.isArray(events?.activations) ? events.activations : []) {
+            const route = project({ ...events, activations: [event] })[0];
+            if (!route) continue;
+            for (const [owner, sign] of [[route.from, -1], [route.to, 1]]) {
+                if (!Number.isInteger(owner)) continue;
+                const net = (nets.get(owner) || 0) + sign * route.amount;
+                if (!Number.isSafeInteger(net)) return null;
+                nets.set(owner, net);
+            }
+        }
+        return [...nets].map(([owner, net]) => ({ owner, net }));
+    }
+
+    // All-or-none: never leave only the winners visible when one label cannot fit.
+    function placeNetBadges(owners, bounds, obstacles) {
+        const overlap = (a, b) => a.left < b.right + 2 && a.right > b.left - 2 && a.top < b.bottom + 2 && a.bottom > b.top - 2;
+        const distance = (rect, anchor) => Math.hypot((rect.left + rect.right) / 2 - (anchor.left + anchor.right) / 2,
+            (rect.top + rect.bottom) / 2 - (anchor.top + anchor.bottom) / 2);
+        const candidates = owners.map(owner => {
+            const a = owner.anchor, w = owner.width, h = 26;
+            const positions = [];
+            for (const gap of [4, 12, 24]) {
+                positions.push([a.left, a.top - h - gap], [a.right - w, a.bottom + gap],
+                    [a.left - w - gap, a.top], [a.right + gap, a.bottom - h]);
+            }
+            return positions.map(([left, top]) => ({ ...owner, left, top, right: left + w, bottom: top + h, height: h }))
+                .filter(rect => rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom &&
+                    !obstacles.some(obstacle => overlap(rect, obstacle)) &&
+                    owners.every(other => other === owner || distance(rect, owner.anchor) <= distance(rect, other.anchor)));
+        });
+        let budget = 2000;
+        const search = (index, placed) => {
+            if (!budget--) return null;
+            if (index === owners.length) return placed;
+            for (const candidate of candidates[index]) {
+                if (placed.some(rect => overlap(candidate, rect))) continue;
+                const result = search(index + 1, [...placed, candidate]);
+                if (result) return result;
+            }
+            return null;
+        };
+        return search(0, []);
+    }
+
     function create() {
         let layer = null;
         let summaryNode = null;
@@ -91,6 +137,8 @@ const CardBoardTransfers = (() => {
         let actors = [];
         let endpointReader = null;
         let simultaneousMotion = false;
+        let badgeContext = null;
+        let badges = [];
         let startFrame = null;
         let motionGeneration = 0;
         let motionQuery = null;
@@ -105,6 +153,8 @@ const CardBoardTransfers = (() => {
             actors = [];
             endpointReader = null;
             simultaneousMotion = false;
+            badgeContext = null;
+            badges = [];
             layer?.remove();
             layer = null;
         }
@@ -156,9 +206,52 @@ const CardBoardTransfers = (() => {
                 { transform: `${translate(to)} scale(.8)`, opacity: 0 },
             ];
         }
+        function positionBadges() {
+            if (!badgeContext || !layer) return;
+            const { container, events, nets } = badgeContext;
+            const rect = container.getBoundingClientRect();
+            const viewport = container.querySelector('#cardboardTableViewport')?.getBoundingClientRect() || rect;
+            const valid = box => box?.width > 0 && box.height > 0;
+            const inside = box => valid(box) && box.left >= viewport.left && box.right <= viewport.right && box.top >= viewport.top && box.bottom <= viewport.bottom;
+            const obstacles = Array.from(container.querySelectorAll?.('.cardboard-owner-label, .cardboard-card, .cardboard-landmark, #cardboardCenter, #cardboardControls, #cardboardCameraTools, #cardboardRoster, #cardboardViewHint') || [])
+                .map(element => element.getBoundingClientRect()).filter(valid);
+            const owners = (nets || []).map(entry => {
+                const label = container.querySelector(`.cardboard-owner-label[data-player-index="${entry.owner}"]`);
+                const header = container.querySelector(`[data-player-index="${entry.owner}"] .cardboard-header`);
+                const hud = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${entry.owner}"]`);
+                const anchor = [label, header, hud].map(element => element?.getBoundingClientRect()).find(inside);
+                const text = `${events.incomplete ? '確認分' : '収支'} ${entry.net > 0 ? '+' : ''}${entry.net}`;
+                return { ...entry, text, anchor, width: Math.max(78, text.length * 12 + 16) };
+            });
+            const bounds = { left: Math.max(rect.left, viewport.left), right: Math.min(rect.right, viewport.right),
+                top: Math.max(rect.top, viewport.top), bottom: Math.min(rect.bottom, viewport.bottom) };
+            const plan = nets && owners.every(owner => owner.anchor) ? placeNetBadges(owners, bounds, obstacles) : null;
+            layer.dataset.netBadges = plan ? 'complete' : nets ? 'unplaced' : 'overflow';
+            const key = plan ? JSON.stringify(plan.map(item => [item.owner, item.net, item.left, item.top, item.width])) : 'none';
+            if (layer.dataset.netBadgeGeometry === key) return;
+            layer.dataset.netBadgeGeometry = key;
+            badges.forEach(badge => badge.remove());
+            badges = [];
+            if (!plan) return;
+            for (const placement of plan) {
+                const badge = container.ownerDocument.createElement('span');
+                badge.className = 'cardboard-owner-net';
+                badge.dataset.playerIndex = String(placement.owner);
+                badge.dataset.net = String(placement.net);
+                badge.dataset.incomplete = String(events.incomplete === true);
+                badge.textContent = placement.text;
+                badge.setAttribute('aria-label', `${participantName(events, placement.owner)}の${placement.text}`);
+                badge.style.left = `${placement.left - rect.left}px`;
+                badge.style.top = `${placement.top - rect.top}px`;
+                badge.style.width = `${placement.width}px`;
+                layer.appendChild(badge);
+                badges.push(badge);
+            }
+        }
         function retarget() {
             if (!simultaneousMotion || !layer?.isConnected || !endpointReader || !actors.some(actor =>
                 actor.animation.playState !== 'finished' && actor.animation.playState !== 'idle')) return false;
+            positionBadges();
             const location = endpointReader();
             // Batch reads before writes. Retargeting never restarts an animation
             // or changes its currentTime, startTime, duration or cleanup lease.
@@ -181,8 +274,9 @@ const CardBoardTransfers = (() => {
             if (!container?.isConnected || !events) return false;
             // Zero-value activations belong in the dice receipt, but a coin
             // flight for them reads as movement and duplicates that receipt.
-            const routes = project(events).filter(route => route.amount > 0);
-            if (!routes.length && !events.incomplete) return false;
+            const allRoutes = project(events);
+            const routes = allRoutes.filter(route => route.amount > 0);
+            if (!routes.length && !events.incomplete && !(options.simultaneous && projectOwnerNets(events)?.length)) return false;
             const documentRef = container.ownerDocument;
             view = documentRef.defaultView;
             const reducedMotion = options.reducedMotion === true ||
@@ -256,6 +350,10 @@ const CardBoardTransfers = (() => {
                 .slice(0, visualLimit)
                 .map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
+            if (parallel && !reducedMotion) {
+                badgeContext = { container, events, nets: projectOwnerNets(events) };
+                positionBadges();
+            }
             if (!reducedMotion) {
                 motionQuery = view?.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
                 motionHandler = event => { if (event.matches) stopMotion(); };
@@ -290,7 +388,8 @@ const CardBoardTransfers = (() => {
                 coin.dataset.to = String(route.to);
                 coin.dataset.mode = parallel ? 'parallel' : 'timeline';
                 coin.setAttribute('aria-hidden', 'true');
-                coin.textContent = `${route.amount}コイン`;
+                coin.textContent = parallel ? '●' : `${route.amount}コイン`;
+                coin.dataset.amount = String(route.amount);
                 coin.dataset.route = `${route.fromName} → ${route.toName}`;
                 coin.title = route.title;
                 coin.style.left = `${from.x}px`;
@@ -321,6 +420,6 @@ const CardBoardTransfers = (() => {
         }
         return Object.freeze({ play, retarget, clear });
     }
-    return Object.freeze({ project, projectFacilityTimeline, create });
+    return Object.freeze({ project, projectFacilityTimeline, projectOwnerNets, placeNetBadges, create });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardTransfers;

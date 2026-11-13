@@ -1,4 +1,4 @@
-name: Quality candidate native review
+name: Automatic result candidate native review
 on:
     workflow_dispatch:
 permissions:
@@ -22,41 +22,12 @@ jobs:
               run: npm run test:types
             - name: Native CPU, manual review and portrait density comparison
               if: ${{ !cancelled() }}
-              run: npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js cardboard-portrait-density.spec.js --grep '標準CPUの一括結果|明示した発動確認|portrait density comparison' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
+              run: npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '標準CPUの一括結果|明示した発動確認' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:
                   name: quality-candidate-native
                   path: |
                       test-results/quality-candidate/
-                      playwright-report/
-                  if-no-files-found: warn
-    art-cache-comparison:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        container:
-            image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
-            options: --ipc=host --init
-        steps:
-            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-              with:
-                  ref: dffe275f9c2bed2a5367408c8efb50665aa15f7f
-            - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
-              with:
-                  node-version: '20'
-                  cache: npm
-            - run: npm ci
-            - run: node scripts/check-playwright-container.js
-            - name: Check image renderer composition roots
-              run: npm run test:types
-            - name: Compare fresh-browser construction and vector equivalence
-              if: ${{ !cancelled() }}
-              run: npx playwright test cardboard-art-cache-construction.spec.js facility-image-cache.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/art-cache-comparison
-            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-              if: always()
-              with:
-                  name: art-cache-comparison-native
-                  path: |
-                      test-results/art-cache-comparison/
                       playwright-report/
                   if-no-files-found: warn

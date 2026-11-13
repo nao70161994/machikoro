@@ -360,7 +360,8 @@ runTest('自動送金は同じ送受信者の全施設を合算し並列600msで
     controller.play({ container, events: resolved, simultaneous: true, delayMs: 500 });
     const coins = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
     assert.strictEqual(coins.length, 2);
-    assert.deepStrictEqual(coins.map(coin => coin.textContent), ['3コイン', '3コイン']);
+    assert.deepStrictEqual(coins.map(coin => coin.textContent), ['●', '●']);
+    assert.deepStrictEqual(coins.map(coin => coin.dataset.amount), ['3', '3']);
     assert.deepStrictEqual(coins.map(coin => JSON.parse(coin.dataset.subjects)), [['麦畑', 'パン屋'], ['カフェ']]);
     assert.deepStrictEqual(coins.map(coin => [coin.dataset.from, coin.dataset.to, coin.dataset.mode]),
         [['null', '0', 'parallel'], ['0', '1', 'parallel']]);
@@ -478,4 +479,29 @@ runTest('自動送金の多人数上限は省略経路数を明示し公開明�
     assert.deepStrictEqual(CardBoardTransfers.project(sample), projected);
     assert.ok(f.animated.length <= 12);
     controller.clear();
+});
+
+runTest('一括結果のowner収支は正負0を全件から計上し上限省略とoverflowを混同しない', () => {
+    assert.deepStrictEqual(CardBoardTransfers.projectOwnerNets({ participantNames: ['A', 'B', 'C'], activations: [
+        { from: 0, to: 1, amount: 3 }, { from: null, to: 0, amount: 2 }, { from: null, to: 2, amount: 0 },
+    ] }), [{ owner: 0, net: -1 }, { owner: 1, net: 3 }, { owner: 2, net: 0 }]);
+    assert.strictEqual(CardBoardTransfers.projectOwnerNets({ participantNames: ['A'], activations: [
+        { from: null, to: 0, amount: Number.MAX_SAFE_INTEGER }, { from: null, to: 0, amount: 1 },
+    ] }), null, 'projectの同経路加算上限を含め不正な部分金額を表示しない');
+});
+
+runTest('owner金額の一括配置は名前と障害物と他badgeを避け全員配置できない時全件失敗する', () => {
+    const box = (left, top, width, height) => ({ left, top, right: left + width, bottom: top + height, width, height });
+    const owners = [{ owner: 0, width: 78, anchor: box(40, 70, 80, 22) },
+        { owner: 1, width: 78, anchor: box(340, 70, 80, 22) }];
+    const bounds = box(0, 0, 500, 250);
+    const obstacles = owners.map(owner => owner.anchor);
+    const plan = CardBoardTransfers.placeNetBadges(owners, bounds, obstacles);
+    assert.strictEqual(plan.length, 2);
+    assert.deepStrictEqual(plan.map(entry => entry.owner), [0, 1]);
+    const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    for (const placed of plan) assert.ok(obstacles.every(obstacle => !intersects(placed, obstacle)));
+    assert.ok(!intersects(plan[0], plan[1]));
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, [bounds]), null);
+    assert.deepStrictEqual(CardBoardTransfers.placeNetBadges([], bounds, []), []);
 });

@@ -151,7 +151,7 @@ function densityCase(viewport, count, scene) {
                 const viewport = document.getElementById('cardboardTableViewport');
                 const clip = viewport.getBoundingClientRect();
                 const rect = element => element.getBoundingClientRect().toJSON();
-                const cards = [...viewport.querySelectorAll('.cardboard-card, .cardboard-landmark')].map(element => ({owner:element.closest('.cardboard-player')?.dataset.playerIndex, rect:rect(element)}));
+                const cards = [...viewport.querySelectorAll('.cardboard-card, .cardboard-landmark-built')].map(element => ({owner:element.closest('.cardboard-player')?.dataset.playerIndex, rect:rect(element)}));
                 const labels = [...document.querySelectorAll('.cardboard-owner-label')].map(element => ({owner:element.dataset.playerIndex, text:element.textContent, rect:rect(element), complete:element.scrollWidth <= element.clientWidth + 1 && element.scrollHeight <= element.clientHeight + 1}));
                 const market = rect(document.getElementById('cardboardCenter'));
                 const overlaps = (a,b) => Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;

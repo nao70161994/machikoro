@@ -635,7 +635,7 @@ const CardBoardField = (() => {
                     const title = `${label} · ${text}`;
                     if (hint.title !== title) hint.title = title;
                 },
-                onViewChange: ({ reason } = {}) => {
+                onViewChange: ({ reason } = { reason: 'navigation' }) => {
                     activeReplayGuard = null;
                     scheduleOwnerLabels();
                     if (buildFlight) clearBuildFlight();
@@ -2064,14 +2064,9 @@ const CardBoardField = (() => {
         }) : '';
         // This enhances the current-turn receipt, without replaying a transient
         // construction event on redraw, Undo, restore, or theme changes.
-        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }));
-        if (events.dice && events.activations?.some(event => event.facility)) {
-            const replay = document.createElement('button');
-            replay.type = 'button';
-            replay.dataset.cardboardReplayResult = '';
-            replay.textContent = '発動を順に確認';
-            receipt.appendChild(replay);
-        }
+        const replayHtml = events.dice && events.activations?.some(event => event.facility)
+            ? '<button type="button" data-cardboard-replay-result>発動を順に確認</button>' : '';
+        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }) + replayHtml);
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.scrollTop = freshResultLogs.length || previousDice !== dice ? 0 : previousReceiptScroll;

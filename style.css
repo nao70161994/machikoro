@@ -15825,3 +15825,23 @@ html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .
 html[data-design="cardboard"] #cardboardEventDetails [data-cardboard-replay-result] { min-height: 44px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .cardboard-card-activated { animation-delay: 0ms; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card.cardboard-card-additional-activation { animation-delay: 0ms; }
+
+/* Parallel routes carry coins, while readable amounts belong to owners.
+   Ordinary explicit review keeps its original amount-bearing route label. */
+html[data-design="cardboard"] .cardboard-transfer[data-mode="parallel"] {
+    box-sizing: border-box; width: 16px; height: 16px; min-width: 0;
+    padding: 0; border: 1px solid #986d13; border-radius: 50%;
+    background: #f8d675; color: #775019; box-shadow: 0 1px 3px #5e420044;
+    font-size: 11px; line-height: 14px; text-align: center;
+}
+html[data-design="cardboard"] .cardboard-owner-net {
+    position: absolute; box-sizing: border-box; height: 26px;
+    padding: 3px 7px; border: 1px solid #8a6c28; border-radius: 6px;
+    background: #fff5cb; color: #49370c; font-size: 12px; line-height: 18px;
+    font-weight: 800; white-space: nowrap; pointer-events: none;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-owner-net {
+    border-color: #fff; background: #000; color: #ffeb3b;
+}
+
+html[data-design="cardboard"] .cardboard-transfer[data-mode="parallel"]::after { display: none; }

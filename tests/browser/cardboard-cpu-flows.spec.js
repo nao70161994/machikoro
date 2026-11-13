@@ -109,7 +109,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         const data = { owner: element.dataset.owner, name: element.dataset.facility,
                             step: element.dataset.step, route: element.dataset.route,
                             from: element.dataset.from, to: element.dataset.to,
-                            mode: element.dataset.mode,
+                            amount: Number(element.dataset.amount), mode: element.dataset.mode, routeLabelDisplay: getComputedStyle(element, '::after').display,
                             subjects: JSON.parse(element.dataset.subjects || '[]'), text: element.textContent };
                         record('transfer-created', { ...data, delay: timing?.delay, duration: timing?.duration });
                         resolveFirstTransfer();
@@ -174,7 +174,26 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
                             ? [{ route: [actor.from, actor.to], owner: label.owner }] : [];
                     }));
-                    trace.geometry.push({ at: performance.now() - trace.startedAt, actors, overlaps, labelOverlaps });
+                    const badgeElements = [...document.querySelectorAll('.cardboard-owner-net')];
+                    const protectedElements = [...document.querySelectorAll('.cardboard-owner-label, .cardboard-card, .cardboard-landmark, #cardboardCenter, #cardboardControls, #cardboardCameraTools, #cardboardRoster, #cardboardViewHint')];
+                    const badges = badgeElements.map(badge => ({ owner: Number(badge.dataset.playerIndex), net: Number(badge.dataset.net),
+                        text: badge.textContent, rect: badge.getBoundingClientRect().toJSON(), aria: badge.getAttribute('aria-label') }));
+                    const collides = (a, b) => a.width > 0 && a.height > 0 && b.width > 0 && b.height > 0 &&
+                        a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+                    const badgeOverlaps = badges.flatMap((badge, index) => [
+                        ...badges.slice(index + 1).filter(other => collides(badge.rect, other.rect)).map(other => ({ owner: badge.owner, otherOwner: other.owner })),
+                        ...protectedElements.filter(element => collides(badge.rect, element.getBoundingClientRect()))
+                            .map(element => ({ owner: badge.owner, obstacle: element.id || element.className })),
+                    ]);
+                    const labelRects = labels.map(label => ({ ...label, owner: Number(label.owner) }));
+                    const badgeOwners = badges.every(badge => {
+                        const distance = label => Math.hypot((badge.rect.left + badge.rect.right) / 2 - (label.rect.left + label.rect.right) / 2,
+                            (badge.rect.top + badge.rect.bottom) / 2 - (label.rect.top + label.rect.bottom) / 2);
+                        const own = labelRects.find(label => label.owner === badge.owner);
+                        return own && labelRects.every(label => distance(own) <= distance(label));
+                    });
+                    trace.geometry.push({ at: performance.now() - trace.startedAt, actors, overlaps, labelOverlaps, badges, badgeOverlaps, badgeOwners,
+                        badgeStatus: document.querySelector('.cardboard-transfers')?.dataset.netBadges });
                     if (!captured) { captured = true; resolve(); }
                 }
                 requestAnimationFrame(sample);
@@ -214,8 +233,10 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         expect(finished.map(routeKey).sort()).toEqual(expectedRoutes);
         expect(evidence.events.filter(event => event.kind === 'transfer-cancelled')).toEqual([]);
         expect(created.every(event => event.delay === 0 && event.duration === 600 && event.mode === 'parallel')).toBe(true);
+        expect(created.every(event => event.routeLabelDisplay === 'none'), '飛行coinに読み取り用の経路文字を重ねない').toBe(true);
         for (const event of created) {
-            expect(event.text).toBe(`${event.from === 'null' && event.to === '0' ? 2 : 1}コイン`);
+            expect(event.text).toBe('●');
+            expect(event.amount).toBe(event.from === 'null' && event.to === '0' ? 2 : 1);
             expect(event.subjects.slice().sort()).toEqual((event.from === 'null'
                 ? event.to === '0' ? ['コーン畑', 'パン屋'] : ['コーン畑'] : ['カフェ']).sort());
         }
@@ -223,8 +244,17 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         expect(evidence.snapshot).toBeTruthy();
         expect(evidence.diceRngCalls).toBeGreaterThan(0);
         expect(evidence.geometry.length, '実時間が進んだrouteの矩形を採取する').toBeGreaterThan(0);
-        expect(evidence.geometry.flatMap(sample => sample.overlaps), JSON.stringify(evidence.geometry)).toEqual([]);
-        expect(evidence.geometry.flatMap(sample => sample.labelOverlaps), JSON.stringify(evidence.geometry)).toEqual([]);
+        // Coins can physically share their source. Readable owner amounts,
+        // rather than the tiny coin glyphs, must remain separate and unobscured.
+        for (const sample of evidence.geometry) {
+            expect(sample.badgeStatus, JSON.stringify(sample)).toBe('complete');
+            expect(sample.badges.map(({ owner, net }) => ({ owner, net })).sort((a, b) => a.owner - b.owner))
+                .toEqual([{ owner: 0, net: -1 }, { owner: 1, net: 2 }, { owner: 2, net: 2 }, { owner: 3, net: 2 }]);
+            expect(sample.badges.map(badge => badge.text)).toEqual(['収支 -1', '収支 +2', '収支 +2', '収支 +2']);
+            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の${badge.text}`)).toBe(true);
+            expect(sample.badgeOwners, JSON.stringify(sample)).toBe(true);
+            expect(sample.badgeOverlaps, JSON.stringify(sample)).toEqual([]);
+        }
         expect([...new Set(evidence.geometry.flatMap(sample => sample.actors.filter(actor => actor.opacity > 0.5)
             .map(routeKey)))].sort(), '全7経路に実時間60〜540msの描画frameが必要').toEqual(expectedRoutes);
         for (const key of expectedRoutes) {
