@@ -1245,6 +1245,32 @@ test('縦持ち2人戦の終盤は所有者名を市場と施設群の境界で�
     const duplicateBefore = await snapshot(page);
     await expect(labels).toHaveText(['席1 · 街', '席2 · 街']);
     expect(await snapshot(page)).toEqual(duplicateBefore);
+    // Spend the spare width on a mature opposite collection, while retaining
+    // every card and the existing inspection/market controls.
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach((player, index) => {
+            player.name = `プレイヤー${index + 1}`;
+            player.cards = CARDS.slice(0, index ? 24 : 14).map(card => createCardByName(card.name));
+        });
+        render();
+    });
+    const denseBefore = await snapshot(page);
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    await expect.poll(() => page.locator('#cardboardSeats > .cardboard-player').evaluateAll(panels =>
+        panels.every(panel => Number(panel.style.getPropertyValue('--table-owner-columns')) >= 6))).toBe(true);
+    expect(Number(await page.locator('#cardboardTableViewport').getAttribute('data-table-scale'))).toBeGreaterThanOrEqual(0.21);
+    expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+        cards.every(card => card.offsetWidth === 160 && card.offsetHeight === 128))).toBe(true);
+    const overviewScale = await page.locator('#cardboardTableViewport').getAttribute('data-table-scale');
+    await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+    await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-angle', '180');
+    await cameraCommand(page, 'back');
+    await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-scale', overviewScale);
+    expect(await snapshot(page)).toEqual(denseBefore);
+    await page.screenshot({ path: testInfo.outputPath('dense-opponents-320-568.png') });
+
 });
 
 for (const width of [390, 844]) test(`終盤の所属ラベルで通常の名前を全文読める ${width}px`, async ({ page }) => {
