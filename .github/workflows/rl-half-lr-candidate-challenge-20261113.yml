@@ -1,0 +1,124 @@
+name: RL Stable Half-LR Models vs Adopted AI — Holdout
+on:
+  push:
+    branches: [research/rl-half-lr-candidate-challenge-20261113]
+    paths: ['.github/workflows/rl-half-lr-candidate-challenge-20261113.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {label: 'seed81-best-vs-adopted', mode: adopted, artifact: 'stability-5000-81-half-lr-42314271984', file: 'best_model.browser.json', expected: '54e78292505ae0a609878b15340bc93a0658e85cd6c3d7aaab4356de0569b040'}
+          - {label: 'seed82-last-vs-adopted', mode: adopted, artifact: 'stability-5000-82-half-lr-42314271984', file: 'model.progress.browser.json', expected: 'e3bf6ac830d13dd38cf3659e7af7bff246aee8dbf7a1c0a25e42601a90288145'}
+          - {label: 'seed81-best-vs-seed82-last', mode: peer, artifact: 'stability-5000-81-half-lr-42314271984', file: 'best_model.browser.json', expected: '54e78292505ae0a609878b15340bc93a0658e85cd6c3d7aaab4356de0569b040'}
+    env:
+      LABEL: ${{ matrix.label }}
+      MODE: ${{ matrix.mode }}
+      MODEL_ARTIFACT: ${{ matrix.artifact }}
+      MODEL_FILE: ${{ matrix.file }}
+      EXPECTED_SHA: ${{ matrix.expected }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with: {node-version: '20', cache: npm}
+      - run: npm ci
+      - name: Download experiment model and holdout evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          run-id: '42314271984'
+          github-token: ${{ github.token }}
+          path: artifacts/rl-stable-challenge/candidate
+      - name: Download other stable candidate for independent peer match
+        if: ${{ matrix.mode == 'peer' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: stability-5000-82-half-lr-42314271984
+          run-id: '42314271984'
+          github-token: ${{ github.token }}
+          path: artifacts/rl-stable-challenge/peer
+      - name: Verify model checkpoint provenance against heldout evaluation
+        shell: bash
+        run: |
+          set -euo pipefail
+          model="artifacts/rl-stable-challenge/candidate/$MODEL_FILE"
+          test -s "$model"
+          printf '%s  %s\n' "$EXPECTED_SHA" "$model" | sha256sum -c -
+          test -s "artifacts/rl-stable-challenge/candidate/heldout-evaluation.json"
+          if [[ "$MODE" == peer ]]; then
+            other="artifacts/rl-stable-challenge/peer/model.progress.browser.json"
+            test -s "$other"
+            printf '%s  %s\n' 'e3bf6ac830d13dd38cf3659e7af7bff246aee8dbf7a1c0a25e42601a90288145' "$other" | sha256sum -c -
+          fi
+      - name: Direct paired-seat comparisons with adopted models
+        if: ${{ matrix.mode == 'adopted' }}
+        shell: bash
+        timeout-minutes: 130
+        run: |
+          set -euo pipefail
+          out="artifacts/rl-stable-challenge/results/$LABEL"
+          mkdir -p "$out"
+          model="artifacts/rl-stable-challenge/candidate/$MODEL_FILE"
+          for seed in 73 76; do
+            if [[ "$seed" == 73 ]]; then existing="models/rl_model/portfolio/natural-seed73-top3.browser.json"; else existing="models/rl_model/portfolio/natural-seed76-top2.browser.json"; fi
+            node scripts/eval-rl-head-to-head.js \
+              --candidate "$model" --baseline "$existing" \
+              --games 400 --seed 20261113 --max-steps 1500 \
+              --bootstrap-iterations 600 --abort-on-exhaustion --format json \
+              --output "$out/direct-vs-seed$seed.json" --progress-every 100
+          done
+          node scripts/eval-rl-models.js \
+            --model-paths "$model" --games 120 --seed 20261114 --max-steps 1500 \
+            --paired-seats --opponents weak,normal,strong,expert \
+            --format json --output "$out/js-cpu-holdout.json"
+      - name: Compare independent stable candidates against one another
+        if: ${{ matrix.mode == 'peer' }}
+        shell: bash
+        timeout-minutes: 70
+        run: |
+          set -euo pipefail
+          out="artifacts/rl-stable-challenge/results/$LABEL"
+          mkdir -p "$out"
+          node scripts/eval-rl-head-to-head.js \
+            --candidate "artifacts/rl-stable-challenge/candidate/$MODEL_FILE" \
+            --baseline "artifacts/rl-stable-challenge/peer/model.progress.browser.json" \
+            --games 400 --seed 20261115 --max-steps 1500 \
+            --bootstrap-iterations 600 --abort-on-exhaustion --format json \
+            --output "$out/direct-peer.json" --progress-every 100
+      - name: Summarize actual results, avoiding model-promotion side effects
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="artifacts/rl-stable-challenge/results/$LABEL"
+          node - "$out" <<'NODE'
+          const fs=require('fs'); const p=require('path'),dir=process.argv[2];
+          for(const f of fs.readdirSync(dir).filter(f=>f.endsWith('.json'))){
+            const v=JSON.parse(fs.readFileSync(p.join(dir,f),'utf8'));
+            if(Array.isArray(v)){
+              console.log(f,JSON.stringify(v.map(m=>({model:p.basename(m.path),cpu:m.summaries.map(s=>({name:s.opponent,wins:s.rlWins,games:s.games}))}))));
+            } else {
+              console.log(f,JSON.stringify({
+                a:p.basename(v.candidate),b:p.basename(v.baseline),
+                candidate:v.totals.candidateWins,baseline:v.totals.baselineWins,
+                paired95:v.entries?.[0]?.pairedBlockBootstrap?.confidenceInterval
+              }));
+            }
+          }
+          NODE
+      - name: Archive evidence for future promotion review
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-half-lr-challenge-${{ matrix.label }}-${{ github.run_id }}
+          path: artifacts/rl-stable-challenge/results/${{ matrix.label }}/
+          if-no-files-found: warn
+          retention-days: 30
