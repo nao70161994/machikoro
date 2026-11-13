@@ -16,13 +16,17 @@ test('生成した施設画像はSW保存後にオフライン再起動でも全
         const assets = (await fs.readdir(path.resolve('icons/facility-art-images'))).filter(name => name.endsWith('.svg')).sort();
         const cached = await page.evaluate(async assets => {
             const keys = await caches.keys();
-            const cache = await caches.open('machikoro-v367-art-candidate');
+            const { hash } = await (await fetch('/api/version')).json();
+            const activeCache = `machikoro-${hash}`;
+            if (!keys.includes(activeCache)) throw new Error(`Active build cache missing: ${activeCache}`);
+            const cache = await caches.open(activeCache);
             const entries = await Promise.all(assets.map(async name => {
                 const response = await cache.match(`/icons/facility-art-images/${name}`);
                 return { name, status: response?.status, svg: (await response?.text())?.includes('<svg') };
             }));
-            return { keys, entries };
+            return { keys, activeCache, entries };
         }, assets);
+        await fs.writeFile(testInfo.outputPath('facility-images-cache.json'), JSON.stringify(cached, null, 2));
         expect(cached.entries).toHaveLength(50);
         expect(cached.entries.every(entry => entry.status === 200 && entry.svg)).toBe(true);
         await context.setOffline(true);
