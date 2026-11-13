@@ -1,0 +1,63 @@
+name: RL Production Read-only Smoke - Render
+on:
+  push:
+    branches: [research/rl-half-lr-candidate-challenge-20261113]
+    paths: ['.github/workflows/rl-production-readonly-smoke-20261113.yml']
+permissions:
+  contents: read
+jobs:
+  public-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Inspect the documented public origin without changing production
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin='https://machikoro-9jv2.onrender.com'
+          mkdir -p artifacts/rl-public-smoke
+          for entry in 'index:/' 'version:/api/version' 'catalog:/js/rlModelCatalog.js' 'local:/js/localPlayerSettings.js' 'online:/js/onlinePlayerSettings.js'; do
+            label="${entry%%:*}"
+            endpoint="${entry#*:}"
+            # Render free-tier instances may need waking up. Do not publish credentials or query strings.
+            http="$(curl --location --retry 3 --retry-all-errors --retry-delay 3 \
+              --connect-timeout 15 --max-time 90 --silent --show-error \
+              --output "artifacts/rl-public-smoke/$label.body" \
+              --write-out '%{http_code}' "$origin$endpoint" || true)"
+            echo "$endpoint status=$http bytes=$(wc -c < "artifacts/rl-public-smoke/$label.body" 2>/dev/null || echo 0)" \
+              | tee -a artifacts/rl-public-smoke/summary.txt
+            [[ "$http" == 200 ]] || { echo "::error::Documented production endpoint $endpoint returned $http"; exit 1; }
+          done
+          node - <<'NODE'
+          const fs=require('fs');
+          const dir='artifacts/rl-public-smoke/';
+          const catalog=fs.readFileSync(dir+'catalog.body','utf8');
+          const local=fs.readFileSync(dir+'local.body','utf8');
+          const online=fs.readFileSync(dir+'online.body','utf8');
+          const ver=fs.readFileSync(dir+'version.body','utf8');
+          const checks={
+            seed73:catalog.includes('natural-selfplay-2p-seed73-20261101'),
+            seed76:catalog.includes('natural-selfplay-2p-seed76-20261101'),
+            seed104:catalog.includes('natural-selfplay-4p-seed104-20261101'),
+            localManual:local.includes('modelOptionText'),
+            onlineManual:online.includes('modelOptionText'),
+            localHints:local.includes('モデル欄で戦略を固定できます'),
+            onlineHints:online.includes('モデル欄で戦略を固定できます'),
+          };
+          const result={origin:'https://machikoro-9jv2.onrender.com',checks,
+            versionRaw:ver.slice(0,500)};
+          fs.writeFileSync(dir+'result.json',JSON.stringify(result,null,2)+'\n');
+          console.log(JSON.stringify(result,null,2));
+          if(Object.values(checks).some(v=>v===false))process.exitCode=1;
+          NODE
+      - name: Preserve read-only smoke evidence
+        if: ${{ always() }}}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-production-readonly-smoke-${{ github.run_id }}}
+          path: |
+            artifacts/rl-public-smoke/summary.txt
+            artifacts/rl-public-smoke/result.json
+          if-no-files-found: warn
+          retention-days: 14
