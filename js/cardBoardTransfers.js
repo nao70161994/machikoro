@@ -109,23 +109,30 @@ const CardBoardTransfers = (() => {
                 positions.push([a.left, a.top - h - gap], [a.right - w, a.bottom + gap],
                     [a.left - w - gap, a.top], [a.right + gap, a.bottom - h]);
             }
+            // Search measured geometry, without further DOM reads.
+            for (let top = bounds.top; top + h <= bounds.bottom; top += 12) {
+                for (let left = bounds.left; left + w <= bounds.right; left += 12) positions.push([left, top]);
+            }
             return positions.map(([left, top]) => ({ ...owner, left, top, right: left + w, bottom: top + h, height: h }))
                 .filter(rect => rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom &&
                     !obstacles.some(obstacle => overlap(rect, obstacle)) &&
-                    owners.every(other => other === owner || distance(rect, owner.anchor) <= distance(rect, other.anchor)));
+                    owners.every(other => other === owner || distance(rect, owner.anchor) <= distance(rect, other.anchor)))
+                .sort((left, right) => distance(left, owner.anchor) - distance(right, owner.anchor));
         });
+        const order = owners.map((_, index) => index).sort((a, b) => candidates[a].length - candidates[b].length);
         let budget = 2000;
         const search = (index, placed) => {
             if (!budget--) return null;
             if (index === owners.length) return placed;
-            for (const candidate of candidates[index]) {
+            for (const candidate of candidates[order[index]]) {
                 if (placed.some(rect => overlap(candidate, rect))) continue;
                 const result = search(index + 1, [...placed, candidate]);
                 if (result) return result;
             }
             return null;
         };
-        return search(0, []);
+        const plan = search(0, []);
+        return plan ? owners.map(owner => plan.find(placed => placed.owner === owner.owner)) : null;
     }
 
     function create() {

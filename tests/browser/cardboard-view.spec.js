@@ -1700,6 +1700,7 @@ test(`明示した発動確認は全所有者を順に示し再描画とテー�
         });
         document.getElementById('btnRoll').click();
     });
+    await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase === GAME_PHASES.BUILD)).toBe(true);
     await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
     const beforeManualReview = await state(page);
     await page.locator('#cardboardEventDetails > summary').click();

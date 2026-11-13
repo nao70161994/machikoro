@@ -2066,7 +2066,7 @@ const CardBoardField = (() => {
         // construction event on redraw, Undo, restore, or theme changes.
         const replayHtml = events.dice && events.activations?.some(event => event.facility)
             ? '<button type="button" data-cardboard-replay-result>発動を順に確認</button>' : '';
-        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }) + replayHtml);
+        replaceHtml(receipt, replayHtml + UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }));
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.scrollTop = freshResultLogs.length || previousDice !== dice ? 0 : previousReceiptScroll;
