@@ -114,7 +114,7 @@ runTest('遅延したOSのreduce通知は現在値が戻っていても演出を
     assert.strictEqual(cleared, 3, '次回のreduce遷移も取り消す');
 });
 
-runTest('建設通知の1200msは最初の描画更新から数え取消後に再開しない', () => {
+runTest('建設通知の1200msは初回描画機会の後から数え取消後に再開しない', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
     const clearStart = source.indexOf('    function clearBuildNotice()');
     const showStart = source.indexOf('    function showBuildNotice(card)', clearStart);
@@ -143,6 +143,8 @@ runTest('建設通知の1200msは最初の描画更新から数え取消後に�
     };
     context.scheduleNotice();
     assert.strictEqual(timers.size, 0, '描画前に寿命を消費しない');
+    paint();
+    assert.strictEqual(timers.size, 0, '初回RAF後の遅いpaintで表示寿命を使い切らない');
     paint();
     assert.strictEqual(timers.size, 1);
     assert.strictEqual([...timers.values()][0].delay, 1200, '表示寿命を延長しない');

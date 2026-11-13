@@ -959,19 +959,23 @@ const CardBoardField = (() => {
         positionBuildNotice(card);
         const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex, card };
         buildNoticeContext = context;
-        // Start the readable lifetime at the rendering update, like the flight.
-        // A busy first paint must not consume the whole notice before it appears.
-        buildNoticeFrame = globalThis.requestAnimationFrame(() => {
-            if (buildNoticeContext !== context) return;
-            buildNoticeFrame = null;
-            if (!notice.isConnected || !enabled() || !mounted || document.hidden || facts?.replaying ||
-                    session !== context.session || facts.game.turnCount !== context.turn ||
-                    facts.game.currentPlayerIndex !== context.actor || facts.game.phase !== GAME_PHASES.BUILD) {
-                clearBuildNotice();
-                return;
-            }
-            buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
-        });
+        // The first RAF runs before painting. Keep the 1200ms readable lifetime
+        // intact when that paint is slow, and start it at the following update.
+        const schedule = remaining => {
+            buildNoticeFrame = globalThis.requestAnimationFrame(() => {
+                if (buildNoticeContext !== context) return;
+                buildNoticeFrame = null;
+                if (!notice.isConnected || !enabled() || !mounted || document.hidden || facts?.replaying ||
+                        session !== context.session || facts.game.turnCount !== context.turn ||
+                        facts.game.currentPlayerIndex !== context.actor || facts.game.phase !== GAME_PHASES.BUILD) {
+                    clearBuildNotice();
+                    return;
+                }
+                if (remaining > 0) schedule(remaining - 1);
+                else buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+            });
+        };
+        schedule(1);
         return true;
     }
 
