@@ -4,6 +4,12 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
 
+### 補助offlineの切り分け続報
+
+004ae915 /43346167116はWebKitでoffline fetchが失敗し、clone画素比較は成功。Chromium対照は既存projectのtestMatchがseeded/onlineのみで対象を収集せず失敗したため、53971b9dの補助configだけにofflineを追加し [43346571047](https://github.com/nao70161994/machikoro/actions/runs/43346571047) で同一契約を比較中。主373件のconfig/期待値は変えていない。既に成功した画像比較を再度回さず、このrunはofflineだけに限定する。
+
+[Playwright公式資料](https://playwright.dev/docs/service-workers)はSW用機能のChromium制限を記載し、[upstream報告42775](https://github.com/microsoft/playwright/issues/42775)はWebKitのsetOffline後のSW navigation失敗とorigin停止対照の成功を記録している。自分の実行結果と同じ原因とまでは断定せず、WebKit+setOffline成功を画像方式の証拠に使わない。実サーバー停止や実機Safariのofflineは未検証のまま。
+
 ### v366主製品の一括検証完了
 
 製品193d2edd（SW v366）の [Release43343690449](https://github.com/nao70161994/machikoro/actions/runs/43343690449)、[16画面/操作43343690441](https://github.com/nao70161994/machikoro/actions/runs/43343690441)、[Nightly43343707150](https://github.com/nao70161994/machikoro/actions/runs/43343707150) が全て成功。6分割の統合原本で373実行（WebKit371/Chromium2）、許可skip1、retry0、stable=true、欠落・重複なしを確認：[coverage原本](assets/nightly-quality/v366/nightly-browser-coverage.json)。新しい縦持ち高密度case、通知2RAF、既存ルール/保存/PWA/オンライン/CPU回帰を含む。前版の失敗事実は維持し、冷間描画の稀な遅延まで根絶したとは断定しない。
