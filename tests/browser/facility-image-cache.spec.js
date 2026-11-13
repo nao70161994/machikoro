@@ -56,6 +56,32 @@ test('施設のSVG画像は元の共有symbolと同じ画素を描く', async ({
             await testInfo.attach(`cache-${index}-candidate.png`, { body: await fixture.screenshot(), contentType: 'image/png' });
         }
     }
+    // Compare the cloned image used by the purchase flight at actual table
+    // orientations and zoom levels, including the special artwork framing.
+    for (const entry of entries.filter(entry => ['麦畑', 'マグロ漁船', '空港'].includes(entry.name))) {
+        for (const angle of [0, 90, 180, -90]) {
+            for (const zoom of [0.6, 1.2]) {
+                const name = `clone-${entries.indexOf(entry)}-${angle}-${zoom}.png`;
+                await page.evaluate(({ entry, angle, zoom }) => {
+                    const fixture = document.getElementById('facilityImageFixture');
+                    fixture.style.transform = `rotate(${angle}deg) scale(${zoom})`;
+                    fixture.innerHTML = UiBuildMenu.renderFacilityArt(entry.name, entry.landmark, entry.category);
+                }, { entry, angle, zoom });
+                await expect.poll(() => fixture.locator('use').evaluate(use => use.getBBox().width)).toBeGreaterThan(0);
+                const reference = await fixture.screenshot();
+                expect(reference).toMatchSnapshot(name, { threshold: 0, maxDiffPixels: 0 });
+                await page.evaluate(entry => {
+                    const fixture = document.getElementById('facilityImageFixture');
+                    const template = document.createElement('div');
+                    template.innerHTML = UiBuildMenu.renderTableFacilityArt(entry.name, entry.landmark, entry.category);
+                    fixture.replaceChildren(template.firstElementChild.cloneNode(true));
+                }, entry);
+                await expect(fixture.locator('image')).toHaveCount(1);
+                expect.soft(await fixture.screenshot(), `${entry.name} ${angle}° ${zoom}`).toMatchSnapshot(name, { threshold: 0, maxDiffPixels: 0 });
+            }
+        }
+    }
+    await fixture.evaluate(element => { element.style.transform = ''; });
     await page.route('**/icons/facility-art-images/unavailable.svg', route => route.fulfill({ status: 404, body: '' }));
     await page.evaluate(() => {
         const fixture = document.getElementById('facilityImageFixture');

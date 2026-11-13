@@ -114,7 +114,22 @@ def main():
             destination.mkdir(parents=True, exist_ok=True)
             for name, content in generated.items():
                 (destination / name).write_bytes(content)
-        print(f'{"Checked" if args.check else "Generated"} {len(generated)} self-contained SVG images')
+        worker = repository / 'sw.js'
+        worker_source = worker.read_text(encoding='utf-8')
+        start = '  // BEGIN GENERATED FACILITY ART IMAGES\n'
+        end = '  // END GENERATED FACILITY ART IMAGES\n'
+        if worker_source.count(start) != 1 or worker_source.count(end) != 1:
+            raise ValueError('Service Worker requires one generated image asset block')
+        head, tail = worker_source.split(start)
+        _, tail = tail.split(end)
+        asset_lines = ''.join(f"  '/icons/facility-art-images/{name}',\n" for name in sorted(generated))
+        updated_worker = head + start + asset_lines + end + tail
+        if args.check:
+            if updated_worker != worker_source:
+                raise ValueError('Service Worker image precache list differs from generated assets')
+        elif updated_worker != worker_source:
+            worker.write_text(updated_worker, encoding='utf-8')
+        print(f'{"Checked" if args.check else "Generated"} {len(generated)} self-contained SVG images and precache entries')
     except (OSError, ET.ParseError, ValueError) as error:
         print(f'Facility art generation failed: {error}', file=sys.stderr)
         return 1
