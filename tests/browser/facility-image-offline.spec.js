@@ -30,6 +30,20 @@ test('生成した施設画像はSW保存後にオフライン再起動でも全
         expect(cached.entries).toHaveLength(50);
         expect(cached.entries.every(entry => entry.status === 200 && entry.svg)).toBe(true);
         await context.setOffline(true);
+        const offlineProbe = await page.evaluate(async () => {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            const urls = ['/', '/index.html', '/icons/facility-art-images/field.svg'];
+            const probes = await Promise.all(urls.map(async url => {
+                try {
+                    const response = await fetch(url, { cache: 'no-store' });
+                    return { url, status: response.status, length: (await response.text()).length };
+                } catch (error) { return { url, error: String(error) }; }
+            }));
+            return { controller: navigator.serviceWorker.controller?.scriptURL,
+                workers: registrations.map(item => ({ active: item.active?.state, scope: item.scope })), probes };
+        });
+        await fs.writeFile(testInfo.outputPath('facility-images-offline-probe.json'), JSON.stringify(offlineProbe, null, 2));
+        expect(offlineProbe.probes.every(probe => probe.status === 200)).toBe(true);
         await page.reload();
         const decoded = await page.evaluate(async assets => Promise.all(assets.map(async name => {
             const image = new Image();
