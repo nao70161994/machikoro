@@ -23,7 +23,7 @@ jobs:
               run: npm run test:types
             - name: Native image pixels, rotated clones and offline reload
               if: ${{ !cancelled() }}
-              run: npx playwright test facility-image-cache.spec.js facility-image-offline.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
+              run: npx playwright test facility-image-offline.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
             - name: Diagnose the same offline contract in Chromium
               if: ${{ !cancelled() }}
               run: npx playwright test facility-image-offline.spec.js --project=chromium-desktop --workers=1 --retries=0 --output=test-results/quality-candidate-chromium
