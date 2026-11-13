@@ -1,0 +1,64 @@
+name: Promote Verified Stable Half-LR Seed82
+on:
+  push:
+    branches: [feature/rl-stable-seed82-adopt-20261113]
+    paths: ['.github/workflows/rl-promote-stable-seed82-20261113.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  import:
+    name: Validate source, promote verified model, check and commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/rl/requirements-ci.txt
+      - name: Install verification dependencies
+        run: |
+          npm ci
+          python -m pip install -r scripts/rl/requirements-ci.txt
+      - name: Retrieve original 5000-game final model and training holdout
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: stability-5000-82-half-lr-42314271984
+          run-id: '42314271984'
+          github-token: ${{ github.token }}
+          path: artifacts/rl-stable-seed82-source/train
+      - name: Retrieve fresh incumbent comparisons and CPU holdout
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rl-half-lr-challenge-seed82-last-vs-adopted-43347888967
+          run-id: '43347888967'
+          github-token: ${{ github.token }}
+          path: artifacts/rl-stable-seed82-source/eval
+      - name: Enforce architecture, SHA-256 and statistical promotion thresholds
+        run: node scripts/promote-rl-stable-seed82-20261113.js
+      - name: Verify new model registry and complete RL + static tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/validate-rl-registry.js
+          npm run test:rl
+          npm run test:static
+      - name: Inspect model and commit on feature branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s models/rl_model/portfolio/stable-seed82-lr1e5-final.browser.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/rlModelCatalog.js models/rl_model/registry.json models/rl_model/portfolio/stable-seed82-lr1e5-final.browser.json
+          git diff --cached --check
+          git commit -m "feat(rl): add seed82 stable half-LR checkpoint to production portfolio"
+          git push origin HEAD:feature/rl-stable-seed82-adopt-20261113

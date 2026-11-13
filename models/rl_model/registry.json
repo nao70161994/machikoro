@@ -1,13 +1,14 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-07",
+  "updatedAt": "2026-11-13",
   "primaryMetric": "jsWinRateVsWeakNormalStrong",
   "notes": [
     "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
     "Promotion decisions should use post-training JS evaluations, not training-time top-k scores. 20-game checks are smoke tests only.",
     "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful.",
     "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker.",
-    "2026-11-07: Natural self-play seeds 73/76/104 promoted after paired-seat heldout and head-to-head audits; 4p seed104 is 4p-only."
+    "2026-11-07: Natural self-play seeds 73/76/104 promoted after paired-seat heldout and head-to-head audits; 4p seed104 is 4p-only.",
+    "2026-11-13: Adopted stable half-LR seed82 final checkpoint after 400-game heldout paired-seat wins over seed73 and seed76. Existing diversified models remain active."
   ],
   "evaluationPolicy": {
     "smokeGamesPerOpponent": 20,
@@ -105,6 +106,12 @@
         "role": "adopted-4p-specialist",
         "style": "natural-4p-vineyard-ranch-loan",
         "reason": "4人戦2,000局の独立自己対戦。seed103/145両方に直接対決で勝ち越し、seed106にも600戦284勝182敗（残りはCPU勝利）。4人限定採用。"
+      },
+      {
+        "id": "stable-selfplay-2p-seed82-lr1e5-5000-20261107",
+        "role": "adopted-2p-main",
+        "style": "stable-flowers-vineyard-loan",
+        "reason": "半分の学習率で5,000局を完走。現行seed73に231勝169敗、seed76に304勝96敗（各400試合、席順補正95%区間の下限 > 50%）。花畑・ブドウ園・フラワーショップを中心とする自然学習型。"
       }
     ],
     "archiveGuidance": "Archive candidates only when both strength and strategy overlap with a better model. Keep weaker models if they provide clearly different build behavior."
@@ -3068,6 +3075,96 @@
           "checkpointRank": 1,
           "pairedSeats": true,
           "artifact": "GitHub Actions 41281719490"
+        }
+      ]
+    },
+    {
+      "id": "stable-selfplay-2p-seed82-lr1e5-5000-20261107",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/stable-seed82-lr1e5-final.browser.json",
+      "sourceRun": "models/rl_model/runs/stability5000-seed82-half-lr-42314271984",
+      "training": {
+        "games": 5000,
+        "players": 2,
+        "hidden": 256,
+        "lr": 0.00001,
+        "seed": 82,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "imitation": false,
+        "warmStart": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "initialEpsilon": 0.2,
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointType": "model.progress.browser.json",
+        "sourceWorkflowRun": 42314271984,
+        "challengeWorkflowRun": 43347888967
+      },
+      "style": {
+        "label": "stable-flowers-vineyard-loan",
+        "summary": "半分の学習率で5,000局を完走。現行seed73に231勝169敗、seed76に304勝96敗（各400試合、席順補正95%区間の下限 > 50%）。花畑・ブドウ園・フラワーショップを中心とする自然学習型。",
+        "topCards": [
+          "花畑",
+          "ブドウ園",
+          "フラワーショップ",
+          "貸金業",
+          "出版社"
+        ],
+        "primary": "資産エンジン型"
+      },
+      "evals": [
+        {
+          "date": "2026-11-13",
+          "type": "js",
+          "gamesPerOpponent": 120,
+          "opponents": {
+            "weak": {
+              "wins": 119,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.9916666666666667,
+              "firstSeatWinRate": 0.9833333333333333,
+              "secondSeatWinRate": 1,
+              "avgTurns": 52.625,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 70,
+              "losses": 50,
+              "draws": 0,
+              "winRate": 0.5833333333333334,
+              "firstSeatWinRate": 0.7166666666666667,
+              "secondSeatWinRate": 0.45,
+              "avgTurns": 51.666666666666664,
+              "passRate": 0
+            },
+            "strong": {
+              "wins": 96,
+              "losses": 24,
+              "draws": 0,
+              "winRate": 0.8,
+              "firstSeatWinRate": 0.8833333333333333,
+              "secondSeatWinRate": 0.7166666666666667,
+              "avgTurns": 52.43333333333333,
+              "passRate": 0
+            },
+            "expert": {
+              "wins": 91,
+              "losses": 29,
+              "draws": 0,
+              "winRate": 0.7583333333333333,
+              "firstSeatWinRate": 0.7833333333333333,
+              "secondSeatWinRate": 0.7333333333333333,
+              "avgTurns": 50.475,
+              "passRate": 0
+            }
+          },
+          "pairedSeats": true,
+          "artifact": "GitHub Actions 43347888967"
         }
       ]
     }
