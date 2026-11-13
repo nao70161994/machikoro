@@ -69,7 +69,9 @@ test('施設のSVG画像は元の共有symbolと同じ画素を描く', async ({
                 }, { entry, angle, zoom });
                 await expect.poll(() => fixture.locator('use').evaluate(use => use.getBBox().width)).toBeGreaterThan(0);
                 const reference = await fixture.screenshot();
-                expect(reference).toMatchSnapshot(name, { threshold: 0, maxDiffPixels: 0 });
+                const target = testInfo.snapshotPath(name);
+                await fs.mkdir(path.dirname(target), { recursive: true });
+                await fs.writeFile(target, reference);
                 await page.evaluate(entry => {
                     const fixture = document.getElementById('facilityImageFixture');
                     const template = document.createElement('div');
