@@ -4,6 +4,12 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
 
+### v366検証途中の記録（2026-11-13 10:30 JST頃）
+
+通常Release43343690449は成功。Nightly43343707150はルール/PWA/オンライン・simulation・inventory・soakとWebKit第1/2/4/5分割が成功し、第3/6は実行中。前回不安定だった建設を含む第5の成功だけで全件安定とは判定せず、終了後のcoverage照合を待つ。画面/操作43343690441も実行中。
+
+画像候補1cb12a32の43344756668は失敗。独立レビューで発見したclone基準の保存漏れを14bc992cで修正。offline試験はサーバーのinjectServiceWorkerBuildHashがcache名をmachikoro-${buildHash}へ置換する仕様を見落としており、専用template名の空cacheを検査していた。54a00c72でapi/versionの実hashから既存cacheを特定し、cache存在と50件の200/SVG、offline decodeの条件は維持した。これはテスト修正で、製品の欠落を隠す期待値緩和ではない。中間14bcの43345474519は実行中のため再起動せず、その結果を確認してから修正版を一括実行する。
+
 ### 画像方式候補の互換性補完（補助ブランチ・未採用）
 
 1cb12a32 / [43344756668](https://github.com/nao70161994/machikoro/actions/runs/43344756668) では、正本からの50 SVG生成とSW precache一覧を同じgeneratorで検査する。補助cache名を専用化し、主製品のSWは変更しない。元symbolと画像cloneを麦畑/マグロ漁船/空港×4方向×2倍率で画素比較し、50件のSW保存とオフラインreload後のdecodeを検証する。構文・生成一致のローカル検査は成功、native結果待ち。これが成功しても冷間RAF遅延の因果やPWA更新通知まで証明したとは扱わない。
