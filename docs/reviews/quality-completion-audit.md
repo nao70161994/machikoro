@@ -4,6 +4,12 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
 
+### v366主製品の一括検証完了
+
+製品193d2edd（SW v366）の [Release43343690449](https://github.com/nao70161994/machikoro/actions/runs/43343690449)、[16画面/操作43343690441](https://github.com/nao70161994/machikoro/actions/runs/43343690441)、[Nightly43343707150](https://github.com/nao70161994/machikoro/actions/runs/43343707150) が全て成功。6分割の統合原本で373実行（WebKit371/Chromium2）、許可skip1、retry0、stable=true、欠落・重複なしを確認：[coverage原本](assets/nightly-quality/v366/nightly-browser-coverage.json)。新しい縦持ち高密度case、通知2RAF、既存ルール/保存/PWA/オンライン/CPU回帰を含む。前版の失敗事実は維持し、冷間描画の稀な遅延まで根絶したとは断定しない。
+
+補助画像54a00c72の43345749881では全施設/回転clone画素比較が成功し、50画像の実build cache保存も確認できた。一方、WebKitはoffline reloadでinternal errorとなり、採用条件未達。004ae915で同一条件のSW fetch診断とChromium対照を追加して原因を切り分ける。主製品は画像方式を採用していない。実プレイ証拠・公式との演出/奥行き差、物理端末未確認を含めGoal未完了、マージ保留。
+
 ### v366検証途中の記録（2026-11-13 10:30 JST頃）
 
 通常Release43343690449は成功。Nightly43343707150はルール/PWA/オンライン・simulation・inventory・soakとWebKit第1/2/4/5分割が成功し、第3/6は実行中。前回不安定だった建設を含む第5の成功だけで全件安定とは判定せず、終了後のcoverage照合を待つ。画面/操作43343690441も実行中。
