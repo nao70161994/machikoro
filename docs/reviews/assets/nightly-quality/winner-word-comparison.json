@@ -1,0 +1,51 @@
+{
+  "fixture": "Same controlled two-human winner with 18 facility types and six landmarks; before dedc82d2 CSS/UiCardBoard, after working tree. Sequential Termux Chromium contexts; not naturally played match or physical-device validation.",
+  "records": [
+    {
+      "width": 390,
+      "version": "before",
+      "landmarkRows": 3,
+      "minimumCardWidth": 143,
+      "mallFontSize": "13px",
+      "mallLines": [
+        "ショッピングモール"
+      ],
+      "canonicalUnchanged": true
+    },
+    {
+      "width": 390,
+      "version": "after",
+      "landmarkRows": 3,
+      "minimumCardWidth": 143,
+      "mallFontSize": "13px",
+      "mallLines": [
+        "ショッピングモール"
+      ],
+      "canonicalUnchanged": true
+    },
+    {
+      "width": 1440,
+      "version": "before",
+      "landmarkRows": 2,
+      "minimumCardWidth": 118.375,
+      "mallFontSize": "13px",
+      "mallLines": [
+        "ショッピ",
+        "ングモール"
+      ],
+      "canonicalUnchanged": true
+    },
+    {
+      "width": 1440,
+      "version": "after",
+      "landmarkRows": 1,
+      "minimumCardWidth": 97.3125,
+      "mallFontSize": "13px",
+      "mallLines": [
+        "ショッピング",
+        "モール"
+      ],
+      "canonicalUnchanged": true
+    }
+  ]
+}

@@ -105,7 +105,7 @@ runTest('小型市場は状態を変更せず既存filter・Undo・補充状態�
     assert.ok(html.includes('山札3枚'));
     assert.ok(html.includes('compact-market-refilled'));
     assert.ok(html.includes('残り3枚 · 補充'));
-    assert.ok(html.includes('data-short-stock="残3"'));
+    assert.ok(html.includes('data-short-stock="残3 · 補充"'));
     assert.ok(!html.includes('class="card-btn'));
     assert.ok(html.includes('<details class="compact-market-filter-disclosure"><summary>絞込：全て</summary>'));
     assert.ok(html.includes('<details class="compact-market-goal-disclosure"><summary>目標</summary>'));
@@ -140,13 +140,13 @@ runTest('建設できない間も建設可フィルタで市場一覧と無効�
 
 runTest('市場の金額は収益ではなく建設価格と視覚的にも明示する', () => {
     const html = UiCompactMarket.buildFacilitiesHtml(fixture());
-    assert.ok(html.includes('class="compact-market-price-full">建設2コイン'));
+    assert.ok(html.includes('class="compact-market-price-cost">建設2コイン</span>'));
     assert.ok(html.includes('建設7コイン'));
     assert.ok(!html.includes('class="compact-market-price-full">2コイン'));
     assert.ok(html.includes('<span>不足4コ</span><span>建設7コ</span>'));
     const owned = UiCompactMarket.buildFacilitiesHtml(fixture({ current: {
         coins: 30, countCardIncludingDormant: () => 1 } }));
-    assert.ok(owned.includes('所有済み・建設7コイン'));
+    assert.ok(owned.replace(/<[^>]*>/g, '').includes('所有済み・建設7コイン'));
     const landmarks = UiCompactMarket.buildLandmarksHtml(fixture());
     assert.ok(landmarks.includes('不足1コイン・建設4コイン'));
     assert.ok(landmarks.includes('class="compact-market-price-full">建設済'));

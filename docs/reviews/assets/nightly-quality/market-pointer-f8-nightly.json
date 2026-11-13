@@ -1,0 +1,74 @@
+{
+  "total": 361,
+  "skipped": 1,
+  "projects": {
+    "mobile-webkit": 359,
+    "chromium-desktop": 2
+  },
+  "stable": true,
+  "retries": 0,
+  "head": "f8e7a1706ac66d9f3a344b82a4b30c297144dd68",
+  "run": 41673128837,
+  "selected": [
+    {
+      "id": "mobile-webkit:9d097dec498e45ba08e9-c688c3b17fccbe183c90",
+      "project": "mobile-webkit",
+      "file": "visual-art-review.spec.js",
+      "title": "夕暮れのランドマーク詳細も専用施設アートをスマホとデスクトップで記録する",
+      "expectedStatus": "passed",
+      "optInSkipAllowed": false,
+      "annotations": [],
+      "outcomes": [
+        "passed"
+      ]
+    },
+    {
+      "id": "mobile-webkit:9d097dec498e45ba08e9-7a43ca63eb10582526af",
+      "project": "mobile-webkit",
+      "file": "visual-art-review.spec.js",
+      "title": "市場の詳細ボタンは購入再描画をまたぐ押下でも開く classic",
+      "expectedStatus": "passed",
+      "optInSkipAllowed": false,
+      "annotations": [],
+      "outcomes": [
+        "passed"
+      ]
+    },
+    {
+      "id": "mobile-webkit:9d097dec498e45ba08e9-115b62cce6ea0814341f",
+      "project": "mobile-webkit",
+      "file": "visual-art-review.spec.js",
+      "title": "市場の詳細ボタンは購入再描画をまたぐ押下でも開く sunset",
+      "expectedStatus": "passed",
+      "optInSkipAllowed": false,
+      "annotations": [],
+      "outcomes": [
+        "passed"
+      ]
+    },
+    {
+      "id": "mobile-webkit:9d097dec498e45ba08e9-44212168d486adabcc0f",
+      "project": "mobile-webkit",
+      "file": "visual-art-review.spec.js",
+      "title": "市場の詳細ボタンは購入再描画をまたぐ押下でも開く plaza",
+      "expectedStatus": "passed",
+      "optInSkipAllowed": false,
+      "annotations": [],
+      "outcomes": [
+        "passed"
+      ]
+    },
+    {
+      "id": "mobile-webkit:9d097dec498e45ba08e9-88daf0e83657234ca3c8",
+      "project": "mobile-webkit",
+      "file": "visual-art-review.spec.js",
+      "title": "市場の詳細ボタンは購入再描画をまたぐ押下でも開く cardboard",
+      "expectedStatus": "passed",
+      "optInSkipAllowed": false,
+      "annotations": [],
+      "outcomes": [
+        "passed"
+      ]
+    }
+  ]
+}

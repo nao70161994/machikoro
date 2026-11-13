@@ -1,0 +1,239 @@
+{
+  "viewport": {
+    "width": 320,
+    "height": 568
+  },
+  "scene": "early",
+  "stage": "resolved",
+  "beforeLabelCount": 3,
+  "afterLabelCount": 4,
+  "ownedCardGeometryUnchanged": true,
+  "beforeLabels": [
+    {
+      "owner": 1,
+      "name": "席2 · CPU（弱）",
+      "text": "席2 · CPU（弱）",
+      "aria": "席2 · CPU（弱）",
+      "rect": {
+        "x": 18.015625,
+        "y": 166.265625,
+        "width": 60,
+        "height": 38,
+        "top": 166.265625,
+        "right": 78.015625,
+        "bottom": 204.265625,
+        "left": 18.015625
+      },
+      "ink": {
+        "x": 27.015625,
+        "y": 169.265625,
+        "width": 45,
+        "height": 32,
+        "top": 169.265625,
+        "right": 72.015625,
+        "bottom": 201.265625,
+        "left": 27.015625
+      },
+      "complete": true,
+      "ownDistance": 4.0106658935546875,
+      "otherDistance": 4.2606658935546875,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    },
+    {
+      "owner": 2,
+      "name": "席3 · CPU（弱）",
+      "text": "席3 · CPU（弱）",
+      "aria": "席3 · CPU（弱）",
+      "rect": {
+        "x": 241.71875,
+        "y": 144.015625,
+        "width": 60,
+        "height": 38,
+        "top": 144.015625,
+        "right": 301.71875,
+        "bottom": 182.015625,
+        "left": 241.71875
+      },
+      "ink": {
+        "x": 250.71875,
+        "y": 147.015625,
+        "width": 45,
+        "height": 32,
+        "top": 147.015625,
+        "right": 295.71875,
+        "bottom": 179.015625,
+        "left": 250.71875
+      },
+      "complete": true,
+      "ownDistance": 3.9950408935546875,
+      "otherDistance": 26.260665893554688,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    },
+    {
+      "owner": 3,
+      "name": "CPU（弱）・4",
+      "text": "CPU（弱）・4",
+      "aria": "席4 · CPU（弱）・4",
+      "rect": {
+        "x": 241.96875,
+        "y": 367.71875,
+        "width": 60,
+        "height": 38,
+        "top": 367.71875,
+        "right": 301.96875,
+        "bottom": 405.71875,
+        "left": 241.96875
+      },
+      "ink": {
+        "x": 250.96875,
+        "y": 370.71875,
+        "width": 45,
+        "height": 32,
+        "top": 370.71875,
+        "right": 295.96875,
+        "bottom": 402.71875,
+        "left": 250.96875
+      },
+      "complete": true,
+      "ownDistance": 3.995025634765625,
+      "otherDistance": 4.2450408935546875,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    }
+  ],
+  "afterLabels": [
+    {
+      "owner": 0,
+      "name": "あいうえおかきくけこさし",
+      "text": "あいうえおかきくけこさし",
+      "aria": "席1 · あいうえおかきくけこさし",
+      "rect": {
+        "x": 12.265625,
+        "y": 387.84375,
+        "width": 66,
+        "height": 54,
+        "top": 387.84375,
+        "right": 78.265625,
+        "bottom": 441.84375,
+        "left": 12.265625
+      },
+      "ink": {
+        "x": 21.265625,
+        "y": 390.84375,
+        "width": 51,
+        "height": 48,
+        "top": 390.84375,
+        "right": 72.265625,
+        "bottom": 438.84375,
+        "left": 21.265625
+      },
+      "complete": true,
+      "ownDistance": 4.0106658935546875,
+      "otherDistance": 24.120025634765625,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    },
+    {
+      "owner": 1,
+      "name": "席2 · CPU（弱）",
+      "text": "席2 · CPU（弱）",
+      "aria": "席2 · CPU（弱）",
+      "rect": {
+        "x": 18.015625,
+        "y": 150.265625,
+        "width": 52,
+        "height": 54,
+        "top": 150.265625,
+        "right": 70.015625,
+        "bottom": 204.265625,
+        "left": 18.015625
+      },
+      "ink": {
+        "x": 27.015625,
+        "y": 153.265625,
+        "width": 37,
+        "height": 48,
+        "top": 153.265625,
+        "right": 64.015625,
+        "bottom": 201.265625,
+        "left": 27.015625
+      },
+      "complete": true,
+      "ownDistance": 4.0106658935546875,
+      "otherDistance": 12.260665893554688,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    },
+    {
+      "owner": 2,
+      "name": "席3 · CPU（弱）",
+      "text": "席3 · CPU（弱）",
+      "aria": "席3 · CPU（弱）",
+      "rect": {
+        "x": 241.71875,
+        "y": 144.015625,
+        "width": 52,
+        "height": 54,
+        "top": 144.015625,
+        "right": 293.71875,
+        "bottom": 198.015625,
+        "left": 241.71875
+      },
+      "ink": {
+        "x": 250.71875,
+        "y": 147.015625,
+        "width": 37,
+        "height": 48,
+        "top": 147.015625,
+        "right": 287.71875,
+        "bottom": 195.015625,
+        "left": 250.71875
+      },
+      "complete": true,
+      "ownDistance": 3.9950408935546875,
+      "otherDistance": 10.260665893554688,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    },
+    {
+      "owner": 3,
+      "name": "CPU（弱）・4",
+      "text": "CPU（弱）・4",
+      "aria": "席4 · CPU（弱）・4",
+      "rect": {
+        "x": 249.96875,
+        "y": 367.71875,
+        "width": 52,
+        "height": 54,
+        "top": 367.71875,
+        "right": 301.96875,
+        "bottom": 421.71875,
+        "left": 249.96875
+      },
+      "ink": {
+        "x": 258.96875,
+        "y": 370.71875,
+        "width": 37,
+        "height": 48,
+        "top": 370.71875,
+        "right": 295.96875,
+        "bottom": 418.71875,
+        "left": 258.96875
+      },
+      "complete": true,
+      "ownDistance": 3.995025634765625,
+      "otherDistance": 12.245040893554688,
+      "insideViewport": true,
+      "animationCount": 0,
+      "overlaps": []
+    }
+  ]
+}

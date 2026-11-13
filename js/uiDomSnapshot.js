@@ -89,13 +89,13 @@ const UiDomSnapshot = (() => {
             });
         }
 
-        function snapshotById(id) {
+        function snapshotById(id, options = {}) {
             const documentRef = getDocument();
             const element = documentRef && typeof documentRef.getElementById === 'function'
                 ? documentRef.getElementById(id) : null;
             if (!element) return null;
             const computed = computedStyle(element);
-            const childState = interactiveState(element);
+            const childState = options.shallow ? { total: null, usable: null } : interactiveState(element);
             return {
                 id,
                 display: element.style ? element.style.display || '' : '',
@@ -110,10 +110,10 @@ const UiDomSnapshot = (() => {
                 ancestorBlocked: hasBlockingAncestor(id, element),
                 ariaHidden: typeof element.getAttribute === 'function' ? element.getAttribute('aria-hidden') : null,
                 className: element.className || '',
-                htmlLength: typeof element.innerHTML === 'string' ? element.innerHTML.length : 0,
+                htmlLength: options.shallow ? null : typeof element.innerHTML === 'string' ? element.innerHTML.length : 0,
                 totalInteractiveChildren: childState.total,
                 usableInteractiveChildren: childState.usable,
-                text: typeof element.textContent === 'string' ? truncateText(element.textContent, 120) : '',
+                text: options.shallow ? '' : typeof element.textContent === 'string' ? truncateText(element.textContent, 120) : '',
             };
         }
 

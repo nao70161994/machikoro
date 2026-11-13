@@ -1,0 +1,332 @@
+{
+  "commit": "7ecac7a45642c6bf2fd7bf36edd337356e0c3433",
+  "mode": "automated-human-seat-ui",
+  "cpuSpeedMs": 1500,
+  "seeded": false,
+  "runs": [
+    41172005824,
+    41172008495
+  ],
+  "games": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "completed": true,
+      "humanActions": 251,
+      "clicks": 376,
+      "keyboardActions": 45,
+      "cpuWaitMs": 338699,
+      "elapsedMs": 1117530,
+      "lastTurn": 90,
+      "pageErrors": [],
+      "cameraReview": {
+        "turn": 12,
+        "targetIndex": 1,
+        "initialScale": "0.721",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.721",
+          "angle": "0",
+          "mode": "overview",
+          "width": 1420,
+          "height": 760,
+          "worldWidth": 1064,
+          "worldHeight": 1054,
+          "frames": [
+            {
+              "scale": "0.721",
+              "angle": "0",
+              "mode": "overview",
+              "width": 1420,
+              "height": 760,
+              "worldWidth": 1064,
+              "worldHeight": 1054
+            },
+            {
+              "scale": "0.721",
+              "angle": "0",
+              "mode": "overview",
+              "width": 1420,
+              "height": 760,
+              "worldWidth": 1064,
+              "worldHeight": 1054
+            },
+            {
+              "scale": "0.721",
+              "angle": "0",
+              "mode": "overview",
+              "width": 1420,
+              "height": 760,
+              "worldWidth": 1064,
+              "worldHeight": 1054
+            },
+            {
+              "scale": "0.721",
+              "angle": "0",
+              "mode": "overview",
+              "width": 1420,
+              "height": 760,
+              "worldWidth": 1064,
+              "worldHeight": 1054
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.721",
+          "angle": "0",
+          "width": 1420,
+          "height": 760,
+          "worldWidth": 1064,
+          "worldHeight": 1054
+        },
+        "clicks": 2,
+        "readableScale": "1.600",
+        "elapsedMs": 1966
+      }
+    },
+    {
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "completed": true,
+      "humanActions": 174,
+      "clicks": 269,
+      "keyboardActions": 37,
+      "cpuWaitMs": 277733,
+      "elapsedMs": 610222,
+      "lastTurn": 75,
+      "pageErrors": [],
+      "cameraReview": {
+        "turn": 13,
+        "targetIndex": 0,
+        "initialScale": "0.333",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.333",
+          "angle": "0",
+          "mode": "overview",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 1376,
+          "worldHeight": 750,
+          "frames": [
+            {
+              "scale": "0.333",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 1376,
+              "worldHeight": 750
+            },
+            {
+              "scale": "0.333",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 1376,
+              "worldHeight": 750
+            },
+            {
+              "scale": "0.333",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 1376,
+              "worldHeight": 750
+            },
+            {
+              "scale": "0.333",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 1376,
+              "worldHeight": 750
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.333",
+          "angle": "0",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 1376,
+          "worldHeight": 750
+        },
+        "clicks": 2,
+        "readableScale": "0.925",
+        "elapsedMs": 1014
+      }
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "completed": true,
+      "humanActions": 180,
+      "clicks": 290,
+      "keyboardActions": 38,
+      "cpuWaitMs": 287310,
+      "elapsedMs": 579788,
+      "lastTurn": 77,
+      "pageErrors": [],
+      "cameraReview": {
+        "turn": 13,
+        "targetIndex": 0,
+        "initialScale": "0.310",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.310",
+          "angle": "0",
+          "mode": "overview",
+          "width": 304,
+          "height": 384,
+          "worldWidth": 728,
+          "worldHeight": 1237,
+          "frames": [
+            {
+              "scale": "0.310",
+              "angle": "0",
+              "mode": "overview",
+              "width": 304,
+              "height": 384,
+              "worldWidth": 728,
+              "worldHeight": 1237
+            },
+            {
+              "scale": "0.310",
+              "angle": "0",
+              "mode": "overview",
+              "width": 304,
+              "height": 384,
+              "worldWidth": 728,
+              "worldHeight": 1237
+            },
+            {
+              "scale": "0.310",
+              "angle": "0",
+              "mode": "overview",
+              "width": 304,
+              "height": 384,
+              "worldWidth": 728,
+              "worldHeight": 1237
+            },
+            {
+              "scale": "0.310",
+              "angle": "0",
+              "mode": "overview",
+              "width": 304,
+              "height": 384,
+              "worldWidth": 728,
+              "worldHeight": 1237
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.310",
+          "angle": "0",
+          "width": 304,
+          "height": 384,
+          "worldWidth": 728,
+          "worldHeight": 1237
+        },
+        "clicks": 2,
+        "readableScale": "1.591",
+        "elapsedMs": 802
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "completed": true,
+      "humanActions": 214,
+      "clicks": 327,
+      "keyboardActions": 42,
+      "cpuWaitMs": 335146,
+      "elapsedMs": 638674,
+      "lastTurn": 83,
+      "pageErrors": [],
+      "cameraReview": {
+        "turn": 13,
+        "targetIndex": 0,
+        "initialScale": "0.534",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.534",
+          "angle": "0",
+          "mode": "overview",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 560,
+          "worldHeight": 1237,
+          "frames": [
+            {
+              "scale": "0.534",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 560,
+              "worldHeight": 1237
+            },
+            {
+              "scale": "0.534",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 560,
+              "worldHeight": 1237
+            },
+            {
+              "scale": "0.534",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 560,
+              "worldHeight": 1237
+            },
+            {
+              "scale": "0.534",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 560,
+              "worldHeight": 1237
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.534",
+          "angle": "0",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 560,
+          "worldHeight": 1237
+        },
+        "clicks": 2,
+        "readableScale": "1.017",
+        "elapsedMs": 546
+      }
+    }
+  ]
+}

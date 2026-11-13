@@ -20,6 +20,10 @@ test.afterEach(async ({ page }, testInfo) => {
                 ? GameRuntimeState.runtime.snapshot().game : null;
             return {
                 seed: window.__matchSeed,
+                diceRngSeed: window.__matchDiceRngSeed,
+                diceRngSalt: window.__matchDiceRngSalt,
+                diceRngCalls: window.__matchDiceRngCalls,
+                diceRngState: window.__matchDiceRngState,
                 history: window.__browserMatchHistory || [],
                 state: game && typeof GameSnapshot !== 'undefined'
                     ? GameSnapshot.serializeUndoState(game, SHOP_STOCK, 100) : null,
@@ -48,6 +52,24 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
         Math.random = () => {
             state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
             return state / 0x100000000;
+        };
+        // The real die prefers a one-byte crypto sample and rejects 252..255.
+        // Keep its rejection/mapping intact, with a stream independent of CPU
+        // choices and setup shuffling. Every other crypto request stays native.
+        const diceSalt = 0x44494345; // ASCII "DICE" distinguishes the die stream.
+        let diceState = (seed ^ diceSalt) >>> 0;
+        const nativeGetRandomValues = window.crypto.getRandomValues.bind(window.crypto);
+        window.__matchDiceRngSeed = diceState;
+        window.__matchDiceRngSalt = diceSalt;
+        window.__matchDiceRngCalls = 0;
+        window.__matchDiceRngState = diceState;
+        window.crypto.getRandomValues = array => {
+            if (!(array instanceof Uint8Array) || array.length !== 1) return nativeGetRandomValues(array);
+            diceState = (Math.imul(diceState, 1664525) + 1013904223) >>> 0;
+            array[0] = diceState >>> 24;
+            window.__matchDiceRngCalls++;
+            window.__matchDiceRngState = diceState;
+            return array;
         };
         window.__matchSeed = seed;
         window.__browserMatchHistory = [];
@@ -178,6 +200,10 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
         const game = GameRuntimeState.runtime.snapshot().game;
         return {
             seed: window.__matchSeed,
+            diceRngSeed: window.__matchDiceRngSeed,
+            diceRngSalt: window.__matchDiceRngSalt,
+            diceRngCalls: window.__matchDiceRngCalls,
+            diceRngState: window.__matchDiceRngState,
             playerCount: game.players.length,
             design: document.documentElement.dataset.design,
             presentation: window.__matchPresentation,
@@ -189,6 +215,8 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
         };
     });
     expect(result.turns).toBeGreaterThan(0);
+    expect(result.diceRngSeed).toBe((MATCH_SEED ^ 0x44494345) >>> 0);
+    expect(result.diceRngCalls, '実サイコロが専用seedのbyte streamを使う').toBeGreaterThan(0);
     expect(result.design).toBe(MATCH_DESIGN);
     expect(result.playerCount).toBe(MATCH_PLAYER_COUNT);
     expect(result.winner).toBeTruthy();

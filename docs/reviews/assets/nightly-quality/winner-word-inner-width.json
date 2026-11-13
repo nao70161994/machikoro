@@ -1,0 +1,108 @@
+{
+  "scope": "Controlled winner diagnosis; not a natural playthrough",
+  "baseline": {
+    "card": {
+      "width": 97.3125,
+      "height": 126.78125,
+      "font": "800 15px \"Helvetica Neue\", sans-serif",
+      "padding": "6px"
+    },
+    "copy": {
+      "width": 83.3125,
+      "height": 44.78125,
+      "font": "800 15px \"Helvetica Neue\", sans-serif",
+      "padding": "0px"
+    },
+    "name": {
+      "width": 83.3125,
+      "height": 33.78125,
+      "font": "800 13px / 16.9px \"Helvetica Neue\", sans-serif",
+      "padding": "0px 2px"
+    },
+    "words": [
+      {
+        "text": "ショッピング",
+        "width": 78.015625,
+        "height": 16.890625,
+        "font": "800 13px / 16.9px \"Helvetica Neue\", sans-serif",
+        "padding": "0px",
+        "lines": [
+          {
+            "x": 750.0625,
+            "y": 254,
+            "width": 78.015625,
+            "height": 19
+          }
+        ]
+      },
+      {
+        "text": "モール",
+        "width": 39.015625,
+        "height": 16.890625,
+        "font": "800 13px / 16.9px \"Helvetica Neue\", sans-serif",
+        "padding": "0px",
+        "lines": [
+          {
+            "x": 769.5625,
+            "y": 270.890625,
+            "width": 39.015625,
+            "height": 19
+          }
+        ]
+      }
+    ]
+  },
+  "corrected": {
+    "card": {
+      "width": 97.3125,
+      "height": 126.78125,
+      "font": "800 15px \"Helvetica Neue\", sans-serif",
+      "padding": "6px"
+    },
+    "copy": {
+      "width": 83.3125,
+      "height": 44.78125,
+      "font": "800 15px \"Helvetica Neue\", sans-serif",
+      "padding": "0px"
+    },
+    "name": {
+      "width": 83.3125,
+      "height": 33.78125,
+      "font": "800 13px / 16.9px \"Helvetica Neue\", sans-serif",
+      "padding": "0px"
+    },
+    "words": [
+      {
+        "text": "ショッピング",
+        "width": 78.015625,
+        "height": 16.890625,
+        "font": "800 13px / 16.9px \"Helvetica Neue\", sans-serif",
+        "padding": "0px",
+        "lines": [
+          {
+            "x": 750.0625,
+            "y": 254,
+            "width": 78.015625,
+            "height": 19
+          }
+        ]
+      },
+      {
+        "text": "モール",
+        "width": 39.015625,
+        "height": 16.890625,
+        "font": "800 13px / 16.9px \"Helvetica Neue\", sans-serif",
+        "padding": "0px",
+        "lines": [
+          {
+            "x": 769.5625,
+            "y": 270.890625,
+            "width": 39.015625,
+            "height": 19
+          }
+        ]
+      }
+    ]
+  },
+  "pageErrors": []
+}

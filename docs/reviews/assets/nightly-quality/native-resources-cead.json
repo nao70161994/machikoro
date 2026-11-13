@@ -1,0 +1,931 @@
+{
+  "commit": "ceadc4e2",
+  "run": 41190117722,
+  "artifact": 13038906143,
+  "result": "20 passed; retries0;5.8min",
+  "scope": "Successful diagnostic run only. Prior668ed18pass/2fail remains unresolved; current counters do not prove prior environment or root cause. Samples add observational overhead.",
+  "environment": {
+    "kind": "environment",
+    "at": 1793440091301,
+    "cpuMax": "max 100000\n",
+    "cpuset": "0-3\n"
+  },
+  "resourceSummary": {
+    "samples": 692,
+    "maxSampleMs": 19,
+    "cpuSomeAvg10Range": [
+      1.57,
+      37.99
+    ],
+    "memorySomeAvg10Max": 1.84,
+    "throttledUsecDelta": 0,
+    "oomKillDelta": 0
+  },
+  "cases": [
+    {
+      "case": "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-320px-mobile-webkit",
+      "caption": {
+        "at": 1793440328879,
+        "timeOrigin": 1793440319357,
+        "records": [
+          {
+            "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          }
+        ],
+        "timerTasks": [
+          {
+            "started": 6124,
+            "duration": 363,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7129,
+            "duration": 18,
+            "delay": 500,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7629,
+            "duration": 1,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7634,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7634,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7634,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7634,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7747,
+            "duration": 0,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7830,
+            "duration": 6,
+            "delay": 1200,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8438,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8530,
+            "duration": 7,
+            "delay": 1900,
+            "callback": "anonymous"
+          },
+          {
+            "started": 9137,
+            "duration": 0,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 9232,
+            "duration": 8,
+            "delay": 2600,
+            "callback": "anonymous"
+          }
+        ]
+      },
+      "flight": {
+        "rafTimestamp": 9481,
+        "measuredAt": 9483,
+        "elapsedMs": 394,
+        "currentTime": 2994,
+        "startTime": 6487,
+        "playState": "running",
+        "progress": 0.6566666666666662,
+        "localTime": 2994,
+        "delay": 2600,
+        "duration": 600,
+        "opacity": 1,
+        "frames": [
+          {
+            "rafTimestamp": 6957,
+            "measuredAt": 6960,
+            "elapsedMs": -2130,
+            "currentTime": 470,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 470,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7505,
+            "measuredAt": 7507,
+            "elapsedMs": -1582,
+            "currentTime": 1018,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1018,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7605,
+            "measuredAt": 7607,
+            "elapsedMs": -1482,
+            "currentTime": 1118,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1118,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7641,
+            "measuredAt": 7642,
+            "elapsedMs": -1446,
+            "currentTime": 1154,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1154,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7732,
+            "measuredAt": 7734,
+            "elapsedMs": -1355,
+            "currentTime": 1245,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1245,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7862,
+            "measuredAt": 7864,
+            "elapsedMs": -1225,
+            "currentTime": 1375,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1375,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8177,
+            "measuredAt": 8178,
+            "elapsedMs": -910,
+            "currentTime": 1690,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1690,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8303,
+            "measuredAt": 8305,
+            "elapsedMs": -784,
+            "currentTime": 1816,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1816,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8338,
+            "measuredAt": 8339,
+            "elapsedMs": -749,
+            "currentTime": 1851,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1851,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8427,
+            "measuredAt": 8428,
+            "elapsedMs": -660,
+            "currentTime": 1940,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1940,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8578,
+            "measuredAt": 8580,
+            "elapsedMs": -509,
+            "currentTime": 2091,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2091,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8837,
+            "measuredAt": 8839,
+            "elapsedMs": -250,
+            "currentTime": 2350,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2350,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8954,
+            "measuredAt": 8955,
+            "elapsedMs": -133,
+            "currentTime": 2467,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2467,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 9050,
+            "measuredAt": 9051,
+            "elapsedMs": -37,
+            "currentTime": 2563,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2563,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 9174,
+            "measuredAt": 9176,
+            "elapsedMs": 87,
+            "currentTime": 2687,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0.14499999999999885,
+            "localTime": 2687,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0.99977
+          },
+          {
+            "rafTimestamp": 9481,
+            "measuredAt": 9483,
+            "elapsedMs": 394,
+            "currentTime": 2994,
+            "startTime": 6487,
+            "playState": "running",
+            "progress": 0.6566666666666662,
+            "localTime": 2994,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 1
+          }
+        ],
+        "route": "銀行 → 街4",
+        "bounds": {
+          "x": 197.59286499023438,
+          "y": 265.38250732421875,
+          "width": 70,
+          "height": 40.5,
+          "top": 265.38250732421875,
+          "right": 267.5928649902344,
+          "bottom": 305.88250732421875,
+          "left": 197.59286499023438
+        }
+      },
+      "nearbyResources": [
+        {
+          "startedAt": 1793440324743,
+          "finishedAt": 1793440324746,
+          "load": [
+            5.73,
+            3.4,
+            1.45
+          ],
+          "cpuPressure": "some avg10=29.65 avg60=26.04 avg300=13.30 total=57598752\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.23 avg60=0.33 avg300=0.20 total=1146898\nfull avg10=0.23 avg60=0.30 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 586253016\nuser_usec 511045306\nsystem_usec 75207710\nnice_usec 66000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2852401152\n",
+          "memory": "MemAvailable:   11425556 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440325243,
+          "finishedAt": 1793440325244,
+          "load": [
+            5.73,
+            3.4,
+            1.45
+          ],
+          "cpuPressure": "some avg10=29.65 avg60=26.04 avg300=13.30 total=57783853\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.23 avg60=0.33 avg300=0.20 total=1146898\nfull avg10=0.23 avg60=0.30 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 587492732\nuser_usec 512053589\nsystem_usec 75439142\nnice_usec 66000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2677604352\n",
+          "memory": "MemAvailable:   11545328 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440325743,
+          "finishedAt": 1793440325752,
+          "load": [
+            5.73,
+            3.4,
+            1.45
+          ],
+          "cpuPressure": "some avg10=29.65 avg60=26.04 avg300=13.30 total=57807671\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.23 avg60=0.33 avg300=0.20 total=1146898\nfull avg10=0.23 avg60=0.30 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 587983109\nuser_usec 512441467\nsystem_usec 75541641\nnice_usec 67000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2607452160\n",
+          "memory": "MemAvailable:   11649036 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440326244,
+          "finishedAt": 1793440326250,
+          "load": [
+            5.73,
+            3.4,
+            1.45
+          ],
+          "cpuPressure": "some avg10=29.65 avg60=26.04 avg300=13.30 total=57972010\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.23 avg60=0.33 avg300=0.20 total=1146898\nfull avg10=0.23 avg60=0.30 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 589112912\nuser_usec 513212108\nsystem_usec 75900804\nnice_usec 67000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2106884096\n",
+          "memory": "MemAvailable:   12493896 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440326746,
+          "finishedAt": 1793440326755,
+          "load": [
+            5.73,
+            3.4,
+            1.45
+          ],
+          "cpuPressure": "some avg10=28.99 avg60=26.04 avg300=13.38 total=58186130\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.18 avg60=0.32 avg300=0.20 total=1146898\nfull avg10=0.18 avg60=0.29 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 590492708\nuser_usec 514175507\nsystem_usec 76317201\nnice_usec 67000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2153242624\n",
+          "memory": "MemAvailable:   12748236 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440327248,
+          "finishedAt": 1793440327250,
+          "load": [
+            5.73,
+            3.4,
+            1.45
+          ],
+          "cpuPressure": "some avg10=28.99 avg60=26.04 avg300=13.38 total=58346898\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.18 avg60=0.32 avg300=0.20 total=1146898\nfull avg10=0.18 avg60=0.29 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 591879530\nuser_usec 515295403\nsystem_usec 76584127\nnice_usec 68000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2187636736\n",
+          "memory": "MemAvailable:   12976048 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440327750,
+          "finishedAt": 1793440327763,
+          "load": [
+            6.15,
+            3.53,
+            1.5
+          ],
+          "cpuPressure": "some avg10=28.99 avg60=26.04 avg300=13.38 total=58521015\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.18 avg60=0.32 avg300=0.20 total=1146898\nfull avg10=0.18 avg60=0.29 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 593378389\nuser_usec 516608486\nsystem_usec 76769902\nnice_usec 68000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2194059264\n",
+          "memory": "MemAvailable:   13048412 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440328250,
+          "finishedAt": 1793440328252,
+          "load": [
+            6.15,
+            3.53,
+            1.5
+          ],
+          "cpuPressure": "some avg10=28.99 avg60=26.04 avg300=13.38 total=58667752\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.18 avg60=0.32 avg300=0.20 total=1146898\nfull avg10=0.18 avg60=0.29 avg300=0.17 total=1020215\n",
+          "cpuStat": "usage_usec 594916534\nuser_usec 518048726\nsystem_usec 76867807\nnice_usec 68000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2194997248\n",
+          "memory": "MemAvailable:   13088132 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440328750,
+          "finishedAt": 1793440328753,
+          "load": [
+            6.15,
+            3.53,
+            1.5
+          ],
+          "cpuPressure": "some avg10=29.89 avg60=26.30 avg300=13.52 total=58810950\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.15 avg60=0.31 avg300=0.19 total=1146898\nfull avg10=0.15 avg60=0.28 avg300=0.16 total=1020215\n",
+          "cpuStat": "usage_usec 596558339\nuser_usec 519578080\nsystem_usec 76980258\nnice_usec 68000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2195873792\n",
+          "memory": "MemAvailable:   13128812 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440329252,
+          "finishedAt": 1793440329258,
+          "load": [
+            6.15,
+            3.53,
+            1.5
+          ],
+          "cpuPressure": "some avg10=29.89 avg60=26.30 avg300=13.52 total=58985864\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.15 avg60=0.31 avg300=0.19 total=1146898\nfull avg10=0.15 avg60=0.28 avg300=0.16 total=1020215\n",
+          "cpuStat": "usage_usec 598216814\nuser_usec 521098703\nsystem_usec 77118111\nnice_usec 68000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2226298880\n",
+          "memory": "MemAvailable:   13112196 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440329753,
+          "finishedAt": 1793440329754,
+          "load": [
+            6.15,
+            3.53,
+            1.5
+          ],
+          "cpuPressure": "some avg10=29.89 avg60=26.30 avg300=13.52 total=59103877\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.15 avg60=0.31 avg300=0.19 total=1146898\nfull avg10=0.15 avg60=0.28 avg300=0.16 total=1020215\n",
+          "cpuStat": "usage_usec 599370374\nuser_usec 522095557\nsystem_usec 77274816\nnice_usec 68000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2253107200\n",
+          "memory": "MemAvailable:   13110148 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        }
+      ]
+    },
+    {
+      "case": "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-844px-mobile-webkit",
+      "caption": {
+        "at": 1793440311035,
+        "timeOrigin": 1793440301335,
+        "records": [
+          {
+            "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          }
+        ],
+        "timerTasks": [
+          {
+            "started": 6442,
+            "duration": 391,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7384,
+            "duration": 9,
+            "delay": 500,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7993,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8080,
+            "duration": 2,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8084,
+            "duration": 7,
+            "delay": 1200,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8092,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8092,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8092,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8092,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8691,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8784,
+            "duration": 7,
+            "delay": 1900,
+            "callback": "anonymous"
+          },
+          {
+            "started": 9391,
+            "duration": 0,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 9484,
+            "duration": 6,
+            "delay": 2600,
+            "callback": "anonymous"
+          }
+        ]
+      },
+      "flight": {
+        "rafTimestamp": 9675,
+        "measuredAt": 9679,
+        "elapsedMs": 203,
+        "currentTime": 2803,
+        "startTime": 6872,
+        "playState": "running",
+        "progress": 0.3383333333333346,
+        "localTime": 2803,
+        "delay": 2600,
+        "duration": 600,
+        "opacity": 1,
+        "frames": [
+          {
+            "rafTimestamp": 8257,
+            "measuredAt": 8259,
+            "elapsedMs": -1215,
+            "currentTime": 1385,
+            "startTime": 6872,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1385,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 9171,
+            "measuredAt": 9178,
+            "elapsedMs": -301,
+            "currentTime": 2299,
+            "startTime": 6872,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2299,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 9443,
+            "measuredAt": 9444,
+            "elapsedMs": -29,
+            "currentTime": 2571,
+            "startTime": 6872,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2571,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 9675,
+            "measuredAt": 9679,
+            "elapsedMs": 203,
+            "currentTime": 2803,
+            "startTime": 6872,
+            "playState": "running",
+            "progress": 0.3383333333333346,
+            "localTime": 2803,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 1
+          }
+        ],
+        "route": "銀行 → 街4",
+        "bounds": {
+          "x": 412.9348449707031,
+          "y": 175.26712036132812,
+          "width": 70,
+          "height": 40.5,
+          "top": 175.26712036132812,
+          "right": 482.9348449707031,
+          "bottom": 215.76712036132812,
+          "left": 412.9348449707031
+        }
+      },
+      "nearbyResources": [
+        {
+          "startedAt": 1793440307211,
+          "finishedAt": 1793440307212,
+          "load": [
+            6.03,
+            3.29,
+            1.37
+          ],
+          "cpuPressure": "some avg10=31.50 avg60=24.89 avg300=12.27 total=52474151\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.36 avg60=0.31 avg300=0.18 total=1047242\nfull avg10=0.36 avg60=0.27 avg300=0.15 total=926084\n",
+          "cpuStat": "usage_usec 546614912\nuser_usec 477805347\nsystem_usec 68809564\nnice_usec 58000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2729025536\n",
+          "memory": "MemAvailable:   12781336 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440307712,
+          "finishedAt": 1793440307716,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=31.50 avg60=24.89 avg300=12.27 total=52755496\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.36 avg60=0.31 avg300=0.18 total=1054324\nfull avg10=0.36 avg60=0.27 avg300=0.15 total=932899\n",
+          "cpuStat": "usage_usec 547895757\nuser_usec 478890472\nsystem_usec 69005285\nnice_usec 58000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2690068480\n",
+          "memory": "MemAvailable:   12850428 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440308213,
+          "finishedAt": 1793440308218,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=31.50 avg60=24.89 avg300=12.27 total=52964830\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.36 avg60=0.31 avg300=0.18 total=1069543\nfull avg10=0.36 avg60=0.27 avg300=0.15 total=946235\n",
+          "cpuStat": "usage_usec 549003656\nuser_usec 479670293\nsystem_usec 69333363\nnice_usec 58000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2712551424\n",
+          "memory": "MemAvailable:   12862432 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440308714,
+          "finishedAt": 1793440308715,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=33.94 avg60=25.54 avg300=12.50 total=53055263\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.65 avg60=0.37 avg300=0.19 total=1084330\nfull avg10=0.65 avg60=0.33 avg300=0.16 total=960840\n",
+          "cpuStat": "usage_usec 550276963\nuser_usec 480703074\nsystem_usec 69573889\nnice_usec 58000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2738114560\n",
+          "memory": "MemAvailable:   12844912 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440309216,
+          "finishedAt": 1793440309218,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=33.94 avg60=25.54 avg300=12.50 total=53123105\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.65 avg60=0.37 avg300=0.19 total=1096006\nfull avg10=0.65 avg60=0.33 avg300=0.16 total=972420\n",
+          "cpuStat": "usage_usec 551234783\nuser_usec 481491745\nsystem_usec 69743038\nnice_usec 59000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2738855936\n",
+          "memory": "MemAvailable:   12838024 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440309717,
+          "finishedAt": 1793440309720,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=33.94 avg60=25.54 avg300=12.50 total=53177084\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.65 avg60=0.37 avg300=0.19 total=1106039\nfull avg10=0.65 avg60=0.33 avg300=0.16 total=982366\n",
+          "cpuStat": "usage_usec 552212067\nuser_usec 482276471\nsystem_usec 69935596\nnice_usec 59000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2793652224\n",
+          "memory": "MemAvailable:   12779328 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440310217,
+          "finishedAt": 1793440310218,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=33.94 avg60=25.54 avg300=12.50 total=53294832\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.65 avg60=0.37 avg300=0.19 total=1114454\nfull avg10=0.65 avg60=0.33 avg300=0.16 total=989360\n",
+          "cpuStat": "usage_usec 553398186\nuser_usec 483309734\nsystem_usec 70088452\nnice_usec 59000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2819653632\n",
+          "memory": "MemAvailable:   12746520 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440310718,
+          "finishedAt": 1793440310722,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=30.15 avg60=25.13 avg300=12.50 total=53368393\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.72 avg60=0.39 avg300=0.20 total=1121016\nfull avg10=0.72 avg60=0.35 avg300=0.17 total=995892\n",
+          "cpuStat": "usage_usec 554453469\nuser_usec 484230169\nsystem_usec 70223300\nnice_usec 60000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2831187968\n",
+          "memory": "MemAvailable:   12731352 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440311220,
+          "finishedAt": 1793440311223,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=30.15 avg60=25.13 avg300=12.50 total=53559043\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.72 avg60=0.39 avg300=0.20 total=1135115\nfull avg10=0.72 avg60=0.35 avg300=0.17 total=1009737\n",
+          "cpuStat": "usage_usec 555989134\nuser_usec 485612887\nsystem_usec 70376247\nnice_usec 60000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2866167808\n",
+          "memory": "MemAvailable:   12720520 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        },
+        {
+          "startedAt": 1793440311721,
+          "finishedAt": 1793440311723,
+          "load": [
+            6.03,
+            3.33,
+            1.4
+          ],
+          "cpuPressure": "some avg10=30.15 avg60=25.13 avg300=12.50 total=53633998\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "memoryPressure": "some avg10=0.72 avg60=0.39 avg300=0.20 total=1141954\nfull avg10=0.72 avg60=0.35 avg300=0.17 total=1016521\n",
+          "cpuStat": "usage_usec 557216409\nuser_usec 486682840\nsystem_usec 70533569\nnice_usec 61000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryCurrent": "2885144576\n",
+          "memory": "MemAvailable:   12699716 kB\nSwapTotal:       3145724 kB\nSwapFree:        3145648 kB"
+        }
+      ]
+    }
+  ]
+}

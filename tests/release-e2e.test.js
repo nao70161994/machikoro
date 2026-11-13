@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+const { loadScriptsWithStringMarket } = require('./helpers/string-market-runtime');
 process.env.RESTORE_AUDIT_SECRET = process.env.RESTORE_AUDIT_SECRET || 'test-restore-audit-secret';
 const releaseAsyncTests = [];
 
@@ -192,7 +193,7 @@ function loadUiModalRuntime() {
     elements.rulesModal.focus = () => { elements.rulesModal.focused = true; context.document.activeElement = elements.rulesModal; };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiScreenFocus.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
+    loadScriptsWithStringMarket(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiScreenFocus.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
     return { context, elements, opener, first, last };
 }
 
@@ -524,7 +525,8 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(nightlyWorkflow.includes('npm run test:sim'));
     assert.ok(nightlyWorkflow.includes('npm run test:cpu-regression'));
     assert.ok(nightlyWorkflow.includes('npm run test:soak'));
-    assert.ok(nightlyWorkflow.includes('npx playwright install --with-deps webkit'));
+    assert.ok(nightlyWorkflow.includes('node scripts/check-playwright-container.js'));
+    assert.ok(!nightlyWorkflow.includes('npx playwright install --with-deps'));
     assert.ok(nightlyWorkflow.includes('npm run test:browser-e2e'));
     const browserSpec = readRepoFile('tests/browser/mobile-webkit.spec.js');
     assert.ok(browserSpec.includes('mobile WebKitでapp shellとService Workerが実動作する'));

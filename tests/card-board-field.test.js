@@ -38,3 +38,412 @@ runTest('新sessionでは前対局のscroll記録を破棄する', () => {
     memory.capture('missing', null);
     memory.restore('missing', null);
 });
+
+runTest('市場をnative dialogへ移した後も卓と市場の補助disclosureを排他に閉じる', () => {
+    const previous = global.document;
+    const filter = { open: true }, goals = { open: true }, guide = { open: true };
+    const roots = {
+        cardboardBoard: { querySelectorAll: () => [guide] },
+        cardboardMarketDialog: { querySelectorAll: () => [filter, goals] },
+    };
+    global.document = { getElementById: id => roots[id] || null };
+    try {
+        CardBoardField.closeDisclosures(goals);
+        assert.strictEqual(goals.open, true);
+        assert.strictEqual(filter.open, false);
+        assert.strictEqual(guide.open, false);
+        CardBoardField.closeDisclosures();
+        assert.strictEqual(goals.open, false);
+    } finally {
+        if (previous === undefined) delete global.document;
+        else global.document = previous;
+    }
+});
+
+runTest('収支の内訳を開いても祖先の出目パネルは閉じない', () => {
+    const previous = global.document;
+    const inner = { open: true };
+    const outer = { open: true, contains: target => target === inner };
+    const other = { open: true };
+    global.document = { getElementById: id => id === 'cardboardBoard'
+        ? { querySelectorAll: () => [outer, inner, other] } : null };
+    try {
+        CardBoardField.closeDisclosures(inner);
+        assert.strictEqual(outer.open, true);
+        assert.strictEqual(inner.open, true);
+        assert.strictEqual(other.open, false);
+        CardBoardField.closeDisclosures();
+        assert.strictEqual(outer.open, false);
+        assert.strictEqual(inner.open, false);
+    } finally {
+        if (previous === undefined) delete global.document;
+        else global.document = previous;
+    }
+});
+
+runTest('遅延したOSのreduce通知は現在値が戻っていても演出を取り消す', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('        let wasReducedMotion = reducedMotionEnabled();');
+    const end = source.indexOf('        new MutationObserver(clearHiddenFeedback)', start);
+    assert.ok(start >= 0 && end > start, '実際に登録する設定監視処理を検証する');
+    let current = false, cleared = 0, mediaChanged;
+    const observers = [];
+    const context = {
+        reducedMotionEnabled: () => current,
+        clearFeedback: () => { cleared++; },
+        window: { matchMedia: () => ({ addEventListener: (type, listener) => { mediaChanged = listener; } }) },
+        document: { body: {} },
+        MutationObserver: class {
+            constructor(callback) { observers.push(callback); }
+            observe() {}
+        },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    mediaChanged({ matches: true });
+    assert.strictEqual(cleared, 1, '現在値falseでも配信済みのreduce遷移を尊重する');
+    mediaChanged({ matches: false });
+    assert.strictEqual(cleared, 1, '設定を戻しても過去の演出を作らない');
+    current = true;
+    observers[0]([]);
+    assert.strictEqual(cleared, 2, 'アプリ設定でも取り消す');
+    mediaChanged({ matches: false });
+    assert.strictEqual(cleared, 2, 'OSを戻してもアプリ側のreduceは有効');
+    current = false;
+    observers[0]([]);
+    mediaChanged({ matches: true });
+    assert.strictEqual(cleared, 3, '次回のreduce遷移も取り消す');
+});
+
+runTest('建設通知の1200msは初回描画機会の後から数え取消後に再開しない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const clearStart = source.indexOf('    function clearBuildNotice()');
+    const showStart = source.indexOf('    function showBuildNotice(card)', clearStart);
+    const scheduleStart = source.indexOf('        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex, card };', showStart);
+    const scheduleEnd = source.indexOf('        return true;', scheduleStart);
+    assert.ok(clearStart >= 0 && showStart > clearStart && scheduleStart > showStart && scheduleEnd > scheduleStart);
+    const frames = new Map(), timers = new Map();
+    let sequence = 0, removed = 0;
+    const context = {
+        buildNoticeFrame: null, buildNoticeTimer: null, buildNoticeContext: null,
+        notice: { isConnected: true }, card: { isConnected: true }, session: 'game', mounted: true,
+        facts: { game: { turnCount: 3, currentPlayerIndex: 0, phase: 'build' } },
+        GAME_PHASES: { BUILD: 'build' }, document: { hidden: false }, enabled: () => true,
+        node: () => ({ remove: () => { removed++; } }),
+        requestAnimationFrame: callback => { frames.set(++sequence, callback); return sequence; },
+        cancelAnimationFrame: handle => frames.delete(handle),
+        setTimeout: (callback, delay) => { timers.set(++sequence, { callback, delay }); return sequence; },
+        clearTimeout: handle => timers.delete(handle),
+    };
+    require('vm').runInNewContext(source.slice(clearStart, showStart) +
+        `\nfunction scheduleNotice() { ${source.slice(scheduleStart, scheduleEnd)} }`, context);
+    const paint = () => {
+        const [handle, callback] = frames.entries().next().value;
+        frames.delete(handle);
+        callback();
+    };
+    context.scheduleNotice();
+    assert.strictEqual(timers.size, 0, '描画前に寿命を消費しない');
+    paint();
+    assert.strictEqual(timers.size, 0, '初回RAF後の遅いpaintで表示寿命を使い切らない');
+    paint();
+    assert.strictEqual(timers.size, 1);
+    assert.strictEqual([...timers.values()][0].delay, 1200, '表示寿命を延長しない');
+    [...timers.values()][0].callback();
+    assert.strictEqual(removed, 1);
+    assert.strictEqual(timers.size, 0);
+    context.scheduleNotice();
+    const cancelledCallback = [...frames.values()][0];
+    context.clearBuildNotice();
+    assert.strictEqual(frames.size, 0);
+    cancelledCallback();
+    assert.strictEqual(timers.size, 0, '取消済み描画callbackは通知を復活させない');
+    context.scheduleNotice();
+    const currentFrame = context.buildNoticeFrame;
+    cancelledCallback();
+    assert.strictEqual(context.buildNoticeFrame, currentFrame, '古いcallbackは次の通知のRAFを消さない');
+    context.facts.game.phase = 'roll';
+    paint();
+    assert.strictEqual(timers.size, 0, '手番の状況が変わったら過去の通知を始めない');
+});
+
+runTest('市場closeは保存視点の有効性に応じて同taskで復帰と建設を示す', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function finishMarketClose()');
+    const end = source.indexOf('    function isMarketExpanded()', start);
+    assert.ok(start >= 0 && end > start);
+    const order = [], frames = [], presented = [];
+    const game = { turnCount: 2, currentPlayerIndex: 0 };
+    const context = {
+        restoreMarketNode: () => order.push('restore'),
+        setMarketExpanded: expanded => order.push(`expanded:${expanded}`),
+        marketLauncher: { isConnected: true, getClientRects: () => [1], focus: () => order.push('focus') },
+        marketLauncherSelector: null, restoreMarketFocus: true, marketReturnView: null,
+        facts: { game }, session: 1,
+        enabled: () => true, node: () => ({ style: { display: '' }, querySelector: () => null }),
+        pendingBuildCues: [{}],
+        pendingBuildTarget: () => true,
+        tableLayout: { syncLayout: () => order.push('table'), refresh: () => order.push('refresh') },
+        tableCamera: { syncLayout: () => order.push('camera'), preserveReadingPosition: active => order.push(`preserve:${active}`) },
+        presentPendingBuildCues: view => { order.push('cue'); presented.push(view); },
+        requestAnimationFrame: callback => frames.push(callback),
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'focus', 'table', 'camera', 'cue', 'preserve:false']);
+    assert.strictEqual(frames.length, 0, '購入演出を次のframeまで待たない');
+    order.length = 0;
+    context.pendingBuildCues = [];
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
+    assert.strictEqual(frames.length, 0, '購入しないcloseも位置を同期復元してから保持方針を解除する');
+    const view = { scale: 0.8, angle: 180 };
+    const captured = { view, session: 1, game, turn: 2, actor: 0 };
+    context.pendingBuildCues = [{}];
+    context.marketReturnView = captured;
+    order.length = 0;
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'cue', 'preserve:false']);
+    assert.strictEqual(presented.at(-1), view, '有効な購入前視点を正面閲覧の復帰先へ渡す');
+    assert.strictEqual(context.marketReturnView, null, '閉じた市場の保存視点を再利用しない');
+    assert.strictEqual(frames.length, 0, '有効な購入も同taskで最終視点へ移る');
+    for (const invalid of [{ session: 2 }, { game: {} }, { turn: 3 }, { actor: 1 }, { view: null }]) {
+        context.marketReturnView = { ...captured, ...invalid };
+        order.length = 0;
+        context.finishMarketClose();
+        assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
+        assert.strictEqual(presented.at(-1), null, '文脈の違う保存視点は従来経路へ戻す');
+        assert.strictEqual(context.marketReturnView, null);
+    }
+    context.marketReturnView = captured;
+    context.pendingBuildTarget = () => null;
+    order.length = 0;
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
+    assert.strictEqual(presented.at(-1), null, '有効な購入先がなければ保存視点を適用しない');
+    order.length = 0;
+    context.tableLayout = null;
+    context.tableCamera = null;
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'cue']);
+});
+
+runTest('閲覧位置の復元は最近傍pixelを使いWebKitの切捨て偏りを避ける', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
+    const start = source.indexOf('        function alignPoint(point, anchor,');
+    const end = source.indexOf('        function paint()', start);
+    assert.ok(start >= 0 && end > start);
+    let destination;
+    const context = { worldToCanvas: point => point, scroll: (left, top) => { destination = { left, top }; } };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    for (const fraction of [0.01, 0.49, 0.51, 0.99]) {
+        const point = { x: 584 + fraction, y: 1777 + fraction };
+        context.alignPoint(point, { x: 0, y: 0 }, true);
+        assert.ok(Math.abs(destination.left - point.x) <= 0.5);
+        assert.ok(Math.abs(destination.top - point.y) <= 0.5);
+        assert.strictEqual(destination.left, Math.floor(destination.left));
+        assert.strictEqual(destination.top, Math.floor(destination.top));
+        context.alignPoint(point, { x: 0, y: 0 });
+        assert.strictEqual(destination.left, point.x, '通常のpan/zoom用座標は変更しない');
+        assert.strictEqual(destination.top, point.y);
+    }
+});
+
+runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比例位置を可視範囲へ保つ', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
+    const start = source.indexOf('        function restoreInspectionAnchor(anchor)');
+    const end = source.indexOf('        function retainInspectionOnResize(anchor)', start);
+    assert.ok(start >= 0 && end > start);
+    let cards = [], destination = null, snapped = false;
+    const context = {
+        destroyed: false, focusPlayer: 1, viewport: { clientWidth: 300, clientHeight: 500 },
+        seat: () => ({ querySelectorAll: () => cards }),
+        paint() {}, updateFocus() {}, cacheInspectionAnchor() {},
+        clientToWorld: (x, y) => ({ x, y }), alignPoint: (point, target, snap) => { destination = target; snapped = snap; },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const anchor = { playerIndex: 1, name: '麦畑', x: 0.25, y: 0.75, preservePosition: true };
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), false, '消失時はworld中心fallbackを可能にする');
+    assert.strictEqual(destination, null);
+    cards = [{ dataset: { cardName: '麦畑' }, getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 80 }) }];
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), true);
+    assert.strictEqual(destination.x, 75);
+    assert.strictEqual(destination.y, 375);
+    assert.strictEqual(snapped, true);
+    context.restoreInspectionAnchor({ ...anchor, x: -0.2, y: 1.2 });
+    assert.strictEqual(destination.x, 0);
+    assert.strictEqual(destination.y, 500);
+    context.restoreInspectionAnchor({ ...anchor, preservePosition: false });
+    assert.strictEqual(destination.x, 150, '通常のresize/reflowは閲覧カードを中央へ戻す');
+    assert.strictEqual(destination.y, 250);
+    context.focusPlayer = 0;
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), false, '新しい閲覧対象を古いanchorで上書きしない');
+    context.focusPlayer = 1;
+    context.destroyed = true;
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), false);
+});
+
+runTest('建設flightの時計は二度目の描画更新で始まり古いcallbackは新しい待機を壊さない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function stageBuildFlight(');
+    const end = source.indexOf('    function startBuildFlight(', start);
+    assert.ok(start >= 0 && end > start);
+    const frames = new Map();
+    let sequence = 0, played = 0, cleared = 0, valid = true;
+    const ghost = {}, animation = { currentTime: 0, play: () => { played++; } };
+    const context = {
+        buildFlight: ghost, buildFlightGeneration: 1, buildFlightFrame: null,
+        requestAnimationFrame: callback => { frames.set(++sequence, callback); return sequence; },
+        clearBuildFlight: () => { cleared++; context.buildFlightGeneration++; context.buildFlightFrame = null; },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const flush = () => {
+        const [handle, callback] = frames.entries().next().value;
+        frames.delete(handle);
+        callback();
+    };
+    context.stageBuildFlight(ghost, animation, 1, () => valid);
+    flush();
+    assert.strictEqual(played, 0, '最初の更新中は静止したカードを保つ');
+    assert.strictEqual(frames.size, 1);
+    animation.currentTime = 100;
+    flush();
+    assert.strictEqual(played, 1);
+    assert.strictEqual(animation.currentTime, 0, '再生段階から時計を開始する');
+    context.stageBuildFlight(ghost, animation, 1, () => valid);
+    flush();
+    valid = false;
+    flush();
+    assert.strictEqual(played, 1, '二段階目でも現在の手番・表示条件を再検査する');
+    assert.strictEqual(cleared, 1);
+    valid = true;
+    context.stageBuildFlight(ghost, animation, 2, () => valid);
+    const stale = [...frames.values()][0];
+    frames.clear();
+    context.buildFlightGeneration++;
+    context.stageBuildFlight(ghost, animation, 3, () => valid);
+    const currentFrame = context.buildFlightFrame;
+    stale();
+    assert.strictEqual(context.buildFlightFrame, currentFrame);
+    assert.strictEqual(frames.size, 1);
+    flush();
+    assert.strictEqual(played, 1);
+    flush();
+    assert.strictEqual(played, 2);
+});
+
+runTest('市場の位置保持解除はlive anchorだけに適用し保存済み復帰viewを変えない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
+    const start = source.indexOf('        function preserveReadingPosition(active)');
+    const end = source.indexOf('        function cancelResizeAnchor()', start);
+    assert.ok(start >= 0 && end > start);
+    let cached = 0;
+    const context = { preserveInspectionPosition: false,
+        inspectionAnchor: { playerIndex: 1, name: 'パン屋', x: 0.25, y: 0.75, preservePosition: false },
+        cacheInspectionAnchor: () => { cached++; },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    context.preserveReadingPosition(true);
+    assert.strictEqual(cached, 1);
+    assert.strictEqual(context.inspectionAnchor.preservePosition, true);
+    const saved = { ...context.inspectionAnchor };
+    context.preserveReadingPosition(false);
+    assert.strictEqual(cached, 1, '解除時に移動後の座標を再採取しない');
+    assert.strictEqual(context.inspectionAnchor.preservePosition, false);
+    assert.strictEqual(saved.preservePosition, true);
+    context.inspectionAnchor = null;
+    context.preserveReadingPosition(true);
+    context.preserveReadingPosition(false);
+    assert.strictEqual(context.inspectionAnchor, null);
+});
+
+runTest('横へ回り込んだ所属札の接続線は自カードだけを結び障害物を避ける', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('            const ownRects = cardGroups.find');
+    const end = source.indexOf('            layer.appendChild(label);', start);
+    assert.ok(start >= 0 && end > start);
+    function renderLink(left, top, width, extraObstacles = []) {
+        const panel = {};
+        const target = { left: 10, right: 50, top: 10, bottom: 50 };
+        const appended = [];
+        const element = () => ({ classList: { add() {} }, dataset: {}, attributes: {}, children: [],
+            setAttribute(key, value) { this.attributes[key] = value; },
+            style: { setProperty() {} }, appendChild(child) { this.children.push(child); } });
+        const context = { panel, left, top, width, height: 22, index: 0, bracketCandidates: [],
+            cardGroups: [{ panel, rects: [target] }], obstacles: [{ ...target }, ...extraObstacles], placed: [],
+            innerLeft: 0, innerTop: 0, viewport: { clientWidth: 300, clientHeight: 200 },
+            document: { createElementNS: element },
+            window: { getComputedStyle: () => ({ getPropertyValue: () => '#1766bd' }) },
+            layer: { appendChild: svg => appended.push(svg) },
+        };
+        require('vm').runInNewContext(source.slice(start, end), context);
+        return appended;
+    }
+    const links = renderLink(60, 10, 96);
+    assert.strictEqual(links.length, 1);
+    assert.strictEqual(links[0].attributes['aria-hidden'], 'true');
+    assert.strictEqual(links[0].attributes.focusable, 'false');
+    assert.strictEqual(links[0].attributes.width, '14');
+    assert.strictEqual(links[0].attributes.height, '4');
+    assert.deepStrictEqual(links[0].children[0].attributes, { x1: '12', y1: '2', x2: '2', y2: '2' });
+    assert.strictEqual(renderLink(60, 10, 96, [{ left: 54, right: 56, top: 20, bottom: 40 }]).length, 0);
+    assert.strictEqual(renderLink(10, -22, 40).length, 0, '通常の上部見出しへ線を増やさない');
+    assert.strictEqual(renderLink(150, 10, 96).length, 0, '長い線を盤面に引かない');
+});
+
+runTest('所有施設群の括弧は空いた外縁だけを使い市場と名前を覆わない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function ownerGroupBracket(');
+    const end = source.indexOf('    function updateOwnerLabels()', start);
+    assert.ok(start >= 0 && end > start);
+    const context = {};
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const cards = [{ left: 10, top: 20, right: 50, bottom: 60 }, { left: 10, top: 70, right: 50, bottom: 110 }];
+    const label = { left: 65, top: 40, right: 120, bottom: 62 };
+    const bounds = { left: 0, top: 0, right: 200, bottom: 200 };
+    const build = (obstacles = cards, labels = [label], clip = bounds, badge = label) =>
+        context.ownerGroupBracket(cards, badge, obstacles, labels, clip);
+    assert.ok(build(cards, [], bounds, { left: 54, top: 40, right: 110, bottom: 62 }), '既存4px間隔でもカードと名前の間へ線を収める');
+    const lines = build();
+    assert.strictEqual(lines.length, 4);
+    assert.strictEqual(lines[1][2] - 1 - cards[0].right, 0.25, '折返しは実際の半線幅と配置丸めを含めてもカードを覆わない');
+    assert.deepStrictEqual(Array.from(lines[0]), [52.25, 20, 52.25, 110], '全施設群の始端と終端を示す');
+    assert.deepStrictEqual(Array.from(lines[3]), [65, 51, 52.25, 51], '名前札を範囲へ接続する');
+    assert.strictEqual(build([...cards, { left: 52, top: 80, right: 70, bottom: 100 }]), null, '市場が外縁をふさぐ場合は元のリンクを保つ');
+    assert.strictEqual(build(cards, [label, { left: 52, top: 80, right: 70, bottom: 100 }]), null, '後から配置した名前も覆わない');
+    assert.strictEqual(build(cards, [label], { ...bounds, top: 19 }), null, '線の太さを含めてviewport内に収める');
+    assert.strictEqual(build(cards, [], bounds, { left: 65, top: 120, right: 120, bottom: 142 }), null, '名前とつながらない範囲は描かない');
+    const leftCards = cards.map(rect => ({ ...rect, left: rect.left + 70, right: rect.right + 70 }));
+    const leftLabel = { left: 0, top: 40, right: 65, bottom: 62 };
+    const leftLines = context.ownerGroupBracket(leftCards, leftLabel, leftCards, [leftLabel], bounds);
+    assert.deepStrictEqual(Array.from(leftLines[0]), [77.75, 20, 77.75, 110]);
+    assert.deepStrictEqual(Array.from(leftLines[3]), [65, 51, 77.75, 51], '左側の名前も外縁へ接続する');
+});
+
+runTest('建設通知は320pxの購入施設と名前を避け市場の空間を使う', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function buildNoticePosition(');
+    const end = source.indexOf('    function showBuildNotice(card)', start);
+    assert.ok(start >= 0 && end > start);
+    const context = {};
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const bounds = { left: 4, top: 120, right: 316, bottom: 500 };
+    const own = { left: 50, top: 434, right: 270, bottom: 496 };
+    const other = { left: 80, top: 133, right: 230, bottom: 190 };
+    const names = [{ left: 144, top: 195, right: 238, bottom: 215 }, { left: 125, top: 407, right: 210, bottom: 430 }];
+    const controls = { left: 50, top: 232, right: 270, bottom: 260 };
+    const market = { left: 50, top: 267, right: 270, bottom: 386, width: 220, height: 119 };
+    const position = context.buildNoticePosition(288, 76, bounds, [own, other], [own, ...names, controls], market);
+    assert.deepStrictEqual({ ...position }, { left: 16, top: 288.5 });
+    // A 12-character owner can wrap in the notice without requiring a smaller
+    // illustration or a clipped caption. Reserve the actual expanded height.
+    const wrapped = context.buildNoticePosition(288, 110, bounds, [own, other], [own, ...names, controls], market);
+    assert.ok(wrapped.left >= bounds.left + 8 && wrapped.left + 288 <= bounds.right - 8);
+    assert.ok(wrapped.top >= bounds.top + 8 && wrapped.top + 110 <= bounds.bottom - 8);
+    for (const rect of [own, other, ...names, controls]) {
+        assert.ok(wrapped.left + 288 <= rect.left || wrapped.left >= rect.right ||
+            wrapped.top + 110 <= rect.top || wrapped.top >= rect.bottom);
+    }
+
+    const pc = context.buildNoticePosition(290, 76, { left: 4, top: 68, right: 1436, bottom: 876 }, [own], [own], market);
+    assert.deepStrictEqual({ ...pc }, { left: 1138, top: 792 }, '空いているPC右下は従来位置を維持する');
+});

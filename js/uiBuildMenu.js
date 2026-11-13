@@ -2,6 +2,135 @@
 /* global PlazaField */
 
 const UiBuildMenu = (() => {
+    // Retain buttons and loaded SVGs across income, inventory and turn updates.
+    // A pointer already held on a detail button must reach that same node on up.
+    const renderedMarketHtml = new WeakMap();
+    const pointerBoundMarkets = new WeakSet();
+
+    function bindBuildMenuPointerCapture(root) {
+        if (pointerBoundMarkets.has(root)) return;
+        pointerBoundMarkets.add(root);
+        let held = null;
+        let cancelledPointerId = null;
+        const release = (cancelClick = false) => {
+            const previous = held;
+            if (previous && cancelClick) cancelledPointerId = previous.id;
+            held = null;
+            try {
+                if (previous?.button.hasPointerCapture(previous.id)) previous.button.releasePointerCapture(previous.id);
+            } catch (_) { /* Removed nodes already lose native capture. */ }
+        };
+        root.addEventListener('pointerdown', event => {
+            if (!event.isPrimary || event.button !== 0) return;
+            release();
+            cancelledPointerId = null;
+            const button = event.target.closest?.('[data-action="showCardDetail"], [data-action="showLandmarkDetail"]');
+            if (!button || !root.contains(button) || typeof button.setPointerCapture !== 'function') return;
+            try {
+                button.setPointerCapture(event.pointerId);
+                held = { button, id: event.pointerId, x: event.clientX, y: event.clientY };
+            } catch (_) { /* Keyboard and unsupported capture retain ordinary clicks. */ }
+        });
+        root.addEventListener('pointermove', event => {
+            if (held && held.id === event.pointerId && Math.hypot(event.clientX - held.x, event.clientY - held.y) > 8) release(true);
+        });
+        root.addEventListener('pointerup', event => {
+            if (!held || held.id !== event.pointerId) return;
+            const button = held.button;
+            if (!button.isConnected || button.disabled || button.closest('[inert], [hidden]') ||
+                    button.getClientRects().length === 0 ||
+                    root.ownerDocument.defaultView.getComputedStyle(button).visibility === 'hidden') release(true);
+            // Native pointerup releases capture after dispatch and preserves
+            // the intended click target. Never synthesize/replay an action.
+            held = null;
+        });
+        root.addEventListener('pointercancel', event => {
+            if (held?.id === event.pointerId) release(true);
+        });
+        root.addEventListener('lostpointercapture', event => {
+            if (held && held.id === event.pointerId) held = null;
+        });
+        root.addEventListener('wheel', () => release(true), { passive: true });
+        root.addEventListener('click', event => {
+            // Keyboard activation must not consume a pending pointer cancel.
+            if (cancelledPointerId === null || event.detail === 0) return;
+            // Older WebKit exposes click as MouseEvent without pointerId.
+            if (typeof event.pointerId === 'number' && event.pointerId !== cancelledPointerId) return;
+            cancelledPointerId = null;
+            // WebKit can retain the former capture target after a drag. Cancel
+            // only that gesture; a new primary press resets this state above.
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+    }
+
+    function presentationNodeKey(node) {
+        if (node.nodeType !== 1) return null;
+        const element = /** @type {Element} */ (node);
+        if (element.id) return `id:${element.id}`;
+        if (element.matches('.build-section')) return element.classList.contains('build-card-section')
+            ? 'section:facilities' : 'section:landmarks';
+        const card = element.matches('.compact-market-item, .card-wrapper')
+            ? element.querySelector('[data-card-name], [data-landmark-name]') : element;
+        for (const attribute of ['data-card-name', 'data-landmark-name', 'data-player-index', 'data-cardboard-player-index']) {
+            if (card?.hasAttribute(attribute)) return JSON.stringify([element.tagName, attribute,
+                card.getAttribute(attribute), card.getAttribute('data-action')]);
+        }
+        return null;
+    }
+
+    function patchPresentationChildren(parent, nextParent) {
+        let cursor = parent.firstChild;
+        for (const next of Array.from(nextParent.childNodes)) {
+            const key = presentationNodeKey(next);
+            let current = cursor;
+            if (key && presentationNodeKey(current || nextParent) !== key) {
+                current = null;
+                for (let candidate = cursor; candidate; candidate = candidate.nextSibling) {
+                    if (presentationNodeKey(candidate) === key) { current = candidate; break; }
+                }
+            }
+            const compatible = current && current.nodeType === next.nodeType && current.nodeName === next.nodeName &&
+                presentationNodeKey(current) === key;
+            if (!compatible) {
+                parent.insertBefore(next.cloneNode(true), cursor);
+                continue;
+            }
+            if (current !== cursor) parent.insertBefore(current, cursor);
+            if (current.nodeType === 1) {
+                const target = /** @type {Element} */ (current);
+                const source = /** @type {Element} */ (next);
+                if (target.outerHTML !== source.outerHTML) {
+                    for (const attribute of Array.from(target.attributes)) {
+                        if (!source.hasAttribute(attribute.name)) target.removeAttribute(attribute.name);
+                    }
+                    for (const attribute of Array.from(source.attributes)) {
+                        if (target.getAttribute(attribute.name) !== attribute.value) target.setAttribute(attribute.name, attribute.value);
+                    }
+                    patchPresentationChildren(target, source);
+                }
+            } else if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+            cursor = current.nextSibling;
+        }
+        while (cursor) {
+            const obsolete = cursor;
+            cursor = cursor.nextSibling;
+            parent.removeChild(obsolete);
+        }
+    }
+
+    function updateBuildMenuHtml(element, html) {
+        const previous = renderedMarketHtml.get(element);
+        if (previous?.html === html && element.childNodes.length &&
+                previous.first === element.firstChild && previous.last === element.lastChild &&
+                previous.count === element.childNodes.length) return;
+        const template = element.ownerDocument.createElement('template');
+        template.innerHTML = html;
+        patchPresentationChildren(element, template.content);
+        renderedMarketHtml.set(element, { html, first: element.firstChild, last: element.lastChild,
+            count: element.childNodes.length });
+    }
+
     const CARD_FILTER_DEFS = Object.freeze([
         Object.freeze({ color: '', label: '全て' }),
         Object.freeze({ color: 'blue', label: '青' }),
@@ -111,6 +240,7 @@ const UiBuildMenu = (() => {
     function applyBuildShortcutView(button, view) {
         if (!button || !view) return false;
         button.style.display = view.display;
+        button.hidden = view.display === 'none';
         button.disabled = view.disabled;
         if (typeof button.setAttribute === 'function') {
             button.setAttribute('aria-hidden', view.ariaHidden);
@@ -715,7 +845,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ bindBuildMenuPointerCapture, patchPresentationChildren, updateBuildMenuHtml, prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

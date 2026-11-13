@@ -1,0 +1,136 @@
+{
+  "run": 41860614203,
+  "source": "83069b01",
+  "reference": "cac364e33987e175196f49a280bea4fdd04a0b87",
+  "results": [
+    {
+      "side": "before",
+      "geometry": [
+        {
+          "owner": "0",
+          "text": "プレイヤー1",
+          "rect": {
+            "x": 156.53125,
+            "y": 531.109375,
+            "width": 85,
+            "height": 22,
+            "top": 531.109375,
+            "right": 241.53125,
+            "bottom": 553.109375,
+            "left": 156.53125
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        },
+        {
+          "owner": "2",
+          "text": "CPU（弱）・3",
+          "rect": {
+            "x": 147.53125,
+            "y": 366.171875,
+            "width": 94,
+            "height": 22,
+            "top": 366.171875,
+            "right": 241.53125,
+            "bottom": 388.171875,
+            "left": 147.53125
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        },
+        {
+          "owner": "3",
+          "text": "CPU（弱）・4",
+          "rect": {
+            "x": 263.375,
+            "y": 130.15625,
+            "width": 94,
+            "height": 22,
+            "top": 130.15625,
+            "right": 357.375,
+            "bottom": 152.15625,
+            "left": 263.375
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        }
+      ]
+    },
+    {
+      "side": "after",
+      "geometry": [
+        {
+          "owner": "0",
+          "text": "プレイヤー1",
+          "rect": {
+            "x": 156.53125,
+            "y": 531.109375,
+            "width": 85,
+            "height": 22,
+            "top": 531.109375,
+            "right": 241.53125,
+            "bottom": 553.109375,
+            "left": 156.53125
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        },
+        {
+          "owner": "1",
+          "text": "CPU（弱）・2",
+          "rect": {
+            "x": 12.28125,
+            "y": 670.046875,
+            "width": 74,
+            "height": 38,
+            "top": 670.046875,
+            "right": 86.28125,
+            "bottom": 708.046875,
+            "left": 12.28125
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        },
+        {
+          "owner": "2",
+          "text": "CPU（弱）・3",
+          "rect": {
+            "x": 147.53125,
+            "y": 366.171875,
+            "width": 94,
+            "height": 22,
+            "top": 366.171875,
+            "right": 241.53125,
+            "bottom": 388.171875,
+            "left": 147.53125
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        },
+        {
+          "owner": "3",
+          "text": "CPU（弱）・4",
+          "rect": {
+            "x": 263.375,
+            "y": 130.15625,
+            "width": 94,
+            "height": 22,
+            "top": 130.15625,
+            "right": 357.375,
+            "bottom": 152.15625,
+            "left": 263.375
+          },
+          "font": "12px",
+          "complete": true,
+          "overlaps": 0
+        }
+      ]
+    }
+  ]
+}

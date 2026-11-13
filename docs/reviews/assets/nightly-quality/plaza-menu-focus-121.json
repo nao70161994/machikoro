@@ -1,0 +1,919 @@
+{
+  "run": 41679412663,
+  "candidate": "12138ef9",
+  "baseline": "e7a3fe32f7c9e410eb292dde84753016ca09dcb0",
+  "scope": "controlled focus before the queued menu-close RAF; real menu click and keyboard input; no force click",
+  "samples": {
+    "before": {
+      "focused": false,
+      "activeId": "",
+      "activeTag": "H4",
+      "events": [
+        {
+          "type": "pointerdown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 15508
+        },
+        {
+          "type": "mousedown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 15525
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 15525
+        },
+        {
+          "type": "pointerup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 15953
+        },
+        {
+          "type": "mouseup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 15953
+        },
+        {
+          "type": "click",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 15953
+        },
+        {
+          "type": "focusin",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 15961
+        },
+        {
+          "type": "pointerdown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 18946
+        },
+        {
+          "type": "mousedown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 18946
+        },
+        {
+          "type": "pointerup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 18947
+        },
+        {
+          "type": "mouseup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 18947
+        },
+        {
+          "type": "click",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 18947
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 18986
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 19687
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 19687
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 19687
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 19688
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 19688
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 19688
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 19845
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 19845
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 19845
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 19846
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 19846
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 19846
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "H4",
+          "at": 19862
+        },
+        {
+          "type": "pointerdown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 20647
+        },
+        {
+          "type": "mousedown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 20653
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 20654
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "plazaViewport",
+          "tag": "DIV",
+          "at": 20726
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "plazaViewport",
+          "tag": "DIV",
+          "at": 20726
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "plazaViewport",
+          "tag": "DIV",
+          "at": 20726
+        },
+        {
+          "type": "pointerdown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 20930
+        },
+        {
+          "type": "mousedown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 20930
+        },
+        {
+          "type": "pointerup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 20931
+        },
+        {
+          "type": "mouseup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 20934
+        },
+        {
+          "type": "click",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 20934
+        },
+        {
+          "type": "focusin",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 20943
+        },
+        {
+          "type": "pointerdown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 21893
+        },
+        {
+          "type": "mousedown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 21893
+        },
+        {
+          "type": "pointerup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 21894
+        },
+        {
+          "type": "mouseup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 21894
+        },
+        {
+          "type": "click",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 21894
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 21942
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 22511
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 22511
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 22512
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 22512
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 22512
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 22512
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22671
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22671
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22672
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22673
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22673
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22673
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 22677
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "H4",
+          "at": 22684
+        }
+      ]
+    },
+    "after": {
+      "focused": true,
+      "activeId": "",
+      "activeTag": "BUTTON",
+      "events": [
+        {
+          "type": "pointerdown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 7469
+        },
+        {
+          "type": "mousedown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 7486
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 7487
+        },
+        {
+          "type": "pointerup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 7930
+        },
+        {
+          "type": "mouseup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 7931
+        },
+        {
+          "type": "click",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 7931
+        },
+        {
+          "type": "focusin",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 7941
+        },
+        {
+          "type": "pointerdown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 9749
+        },
+        {
+          "type": "mousedown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 9749
+        },
+        {
+          "type": "pointerup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 9750
+        },
+        {
+          "type": "mouseup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 9750
+        },
+        {
+          "type": "click",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 9750
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 9793
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 10493
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 10493
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 10493
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 10494
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 10494
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 10494
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 10652
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 10652
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 10652
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 10653
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 10653
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 10653
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "H4",
+          "at": 10669
+        },
+        {
+          "type": "pointerdown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 11395
+        },
+        {
+          "type": "mousedown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 11402
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 11402
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "plazaViewport",
+          "tag": "DIV",
+          "at": 11413
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "plazaViewport",
+          "tag": "DIV",
+          "at": 11413
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "plazaViewport",
+          "tag": "DIV",
+          "at": 11413
+        },
+        {
+          "type": "pointerdown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 11670
+        },
+        {
+          "type": "mousedown",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "use",
+          "at": 11670
+        },
+        {
+          "type": "pointerup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 11671
+        },
+        {
+          "type": "mouseup",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 11676
+        },
+        {
+          "type": "click",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 11676
+        },
+        {
+          "type": "focusin",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 11685
+        },
+        {
+          "type": "pointerdown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 12625
+        },
+        {
+          "type": "mousedown",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 12625
+        },
+        {
+          "type": "pointerup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 12626
+        },
+        {
+          "type": "mouseup",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 12626
+        },
+        {
+          "type": "click",
+          "uiAction": "closeCardDetail",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 12626
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 12665
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 13180
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 13180
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 13180
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 13181
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 13181
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "SUMMARY",
+          "at": 13181
+        },
+        {
+          "type": "pointerdown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13341
+        },
+        {
+          "type": "mousedown",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13341
+        },
+        {
+          "type": "focusin",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13341
+        },
+        {
+          "type": "pointerup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13341
+        },
+        {
+          "type": "mouseup",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13341
+        },
+        {
+          "type": "click",
+          "held": false,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13341
+        },
+        {
+          "type": "focusin",
+          "action": "showLandmarkDetail",
+          "name": "駅",
+          "held": true,
+          "targetId": "",
+          "tag": "BUTTON",
+          "at": 13345
+        }
+      ]
+    }
+  }
+}

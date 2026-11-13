@@ -7,7 +7,7 @@ for (const width of [320, 390]) {
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/');
         await page.evaluate(() => {
-            startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'cpu', difficulty: 'normal', name: '街2' }]);
+            startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
             const state = GameRuntimeState.runtime.snapshot();
             state.cpuPlayers.fill(null);
             cancelCpuSchedule('plaza-log-guide');
@@ -45,7 +45,7 @@ test('ガイドと比較・HUD詳細・出来事詳細を排他表示しラン�
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(() => {
-        startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'cpu', name: '街2', difficulty: 'normal' }]);
+        startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
         const state = GameRuntimeState.runtime.snapshot();
         state.cpuPlayers.fill(null);
         cancelCpuSchedule('panel-combinations');

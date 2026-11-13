@@ -30,6 +30,8 @@ for (const scenario of [
             });
             if (scenario.name === 'テレビ局') game.players[1].coins = 2;
             if (scenario.dice.length === 2) game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+            game.log = [];
+            game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
             setTutorialEnabled(false);
             render();
             acceptHotseatHandoff();
@@ -44,11 +46,14 @@ for (const scenario of [
                 render();
             }
             acceptHotseatHandoff();
-            return { before, after: game.players.map(player => player.coins),
-                transfers: document.querySelector('.cardboard-transfer-summary')?.textContent || '' };
+            return { before, after: game.players.map(player => player.coins) };
         }, scenario);
         expect(result.after[0] - result.before[0]).toBe(scenario.net);
-        expect(result.transfers).toContain(scenario.endpoint);
+        await page.locator('#cardboardEventDetails > summary').click();
+        const receipt = page.locator('#cardboardDiceReceipt');
+        await expect(receipt).toContainText(scenario.name);
+        await expect(receipt).toContainText(scenario.endpoint);
+        await expect(receipt).toContainText('街1');
         const card = page.locator(`#cardboardSeats [data-player-index="0"] [data-card-name="${scenario.name}"]`);
         await expect(card).toHaveAttribute('data-cardboard-activation-net', String(scenario.net));
         await expect(card).toHaveAttribute('data-cardboard-activation-count', '1');
@@ -60,10 +65,18 @@ for (const scenario of [
                 range.selectNodeContents(element);
                 const text = range.getBoundingClientRect();
                 const box = element.getBoundingClientRect();
-                const badge = getComputedStyle(element, '::after');
-                return { textBottom: text.bottom, badgeTop: box.bottom - parseFloat(badge.bottom) - parseFloat(badge.lineHeight) };
+                return { textTop: text.top, textBottom: text.bottom, top: box.top, bottom: box.bottom,
+                    scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
+                    legacyBadgeDisplay: getComputedStyle(element, '::after').display };
             });
-            expect(diceBounds.textBottom).toBeLessThanOrEqual(diceBounds.badgeTop);
+            // Classification now has its own art label; the old overlaid
+            // pseudo badge is absent and must not be used as a geometric box.
+            expect(diceBounds.legacyBadgeDisplay).toBe('none');
+            await expect(card.locator('.cardboard-category')).toBeVisible();
+            await expect(card.locator('.cardboard-category')).toContainText('紫');
+            expect(diceBounds.textTop).toBeGreaterThanOrEqual(diceBounds.top - 1);
+            expect(diceBounds.textBottom).toBeLessThanOrEqual(diceBounds.bottom + 1);
+            expect(diceBounds.scrollHeight).toBeLessThanOrEqual(diceBounds.clientHeight + 1);
             await page.locator('#cardboardDiceReceipt summary').click();
             await expect(page.locator('#cardboardDiceReceipt .plaza-receipt-details')).toContainText('分配プール');
         }

@@ -123,3 +123,28 @@ runTest('手渡しmodal中はwatchdogが背景lockを回復しない', () => {
     runtime.resetForGame();
     assert.ok(calls.some(call => call[0] === 'hide' && call[1] === 'hotseatHandoffOverlay'));
 });
+
+runTest('post-buildの予約と各復旧taskは限定観測を指定しmodal待機を維持する', () => {
+    const snapshots = [], timers = [];
+    let blocking = false;
+    const { runtime, elements } = createHarness({
+        getConfirmAwaitingChoice: () => true,
+        buildSnapshot(reason, options) {
+            snapshots.push({ reason, options });
+            return { postBuild: true, allowedActions: ['nextTurn'],
+                visibleModals: blocking ? ['confirmModal'] : [],
+                ui: { confirmModal: { display: blocking ? 'block' : 'none' } } };
+        },
+        setTimeoutFn: (callback, delay) => timers.push({ callback, delay }),
+    });
+    assert.strictEqual(runtime.schedulePostBuildUiStabilizer(), true);
+    assert.deepStrictEqual(timers.map(timer => timer.delay), [0, 250, 1500, 3500]);
+    blocking = true;
+    timers[0].callback();
+    assert.strictEqual(elements.btnSkip.disabled, true, 'confirm選択待ちを復旧で解除しない');
+    blocking = false;
+    timers.slice(1).forEach(timer => timer.callback());
+    assert.strictEqual(elements.btnSkip.disabled, false);
+    assert.strictEqual(snapshots.length, 5);
+    assert.ok(snapshots.every(snapshot => snapshot.options.purpose === 'post-build'));
+});

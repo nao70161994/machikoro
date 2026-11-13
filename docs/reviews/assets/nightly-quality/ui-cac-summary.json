@@ -1,0 +1,261 @@
+{
+  "source": "cac364e33987e175196f49a280bea4fdd04a0b87",
+  "run": 41855314616,
+  "kind": "automated-human-seat-ui; not physical device or human experience review",
+  "games": [
+    {
+      "mode": "automated-human-seat-ui",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "playerCount": 4,
+      "cpuSpeedMs": 1500,
+      "completed": true,
+      "humanActions": 98,
+      "clicks": 157,
+      "keyboardActions": 20,
+      "cpuWaitMs": 447340,
+      "screenshots": [
+        "start",
+        "dice-motion-0",
+        "dice-motion-1",
+        "dice-motion-2",
+        "dice-motion-3",
+        "dice-motion-4",
+        "first-roll",
+        "first-build",
+        "midgame-opponent-upright",
+        "midgame",
+        "special-effect",
+        "late-game",
+        "winner"
+      ],
+      "pageErrors": [],
+      "diceMotion": [
+        {
+          "index": 0,
+          "targetMs": 0,
+          "elapsedMs": 419
+        },
+        {
+          "index": 1,
+          "targetMs": 180,
+          "elapsedMs": 1109
+        },
+        {
+          "index": 2,
+          "targetMs": 450,
+          "elapsedMs": 1543
+        },
+        {
+          "index": 3,
+          "targetMs": 800,
+          "elapsedMs": 1910
+        },
+        {
+          "index": 4,
+          "targetMs": 1200,
+          "elapsedMs": 2324
+        }
+      ],
+      "marketOpens": 21,
+      "cameraReview": {
+        "turn": 12,
+        "targetIndex": 1,
+        "initialScale": "0.358",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.358",
+          "angle": "0",
+          "mode": "overview",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 1046,
+          "worldHeight": 1486,
+          "frames": [
+            {
+              "scale": "0.358",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1046,
+              "worldHeight": 1486
+            },
+            {
+              "scale": "0.358",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1046,
+              "worldHeight": 1486
+            },
+            {
+              "scale": "0.358",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1046,
+              "worldHeight": 1486
+            },
+            {
+              "scale": "0.358",
+              "angle": "0",
+              "mode": "overview",
+              "width": 374,
+              "height": 660,
+              "worldWidth": 1046,
+              "worldHeight": 1486
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.358",
+          "angle": "0",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 1046,
+          "worldHeight": 1486
+        },
+        "clicks": 2,
+        "readableScale": "1.106",
+        "elapsedMs": 686
+      },
+      "winner": "プレイヤー1",
+      "elapsedMs": 621512,
+      "lastTurn": 80
+    },
+    {
+      "mode": "automated-human-seat-ui",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "playerCount": 4,
+      "cpuSpeedMs": 1500,
+      "completed": true,
+      "humanActions": 115,
+      "clicks": 180,
+      "keyboardActions": 23,
+      "cpuWaitMs": 457606,
+      "screenshots": [
+        "start",
+        "dice-motion-0",
+        "dice-motion-1",
+        "dice-motion-2",
+        "dice-motion-3",
+        "dice-motion-4",
+        "first-roll",
+        "first-build",
+        "midgame-opponent-upright",
+        "midgame",
+        "late-game",
+        "special-effect",
+        "winner"
+      ],
+      "pageErrors": [],
+      "diceMotion": [
+        {
+          "index": 0,
+          "targetMs": 0,
+          "elapsedMs": 413
+        },
+        {
+          "index": 1,
+          "targetMs": 180,
+          "elapsedMs": 888
+        },
+        {
+          "index": 2,
+          "targetMs": 450,
+          "elapsedMs": 1349
+        },
+        {
+          "index": 3,
+          "targetMs": 800,
+          "elapsedMs": 1785
+        },
+        {
+          "index": 4,
+          "targetMs": 1200,
+          "elapsedMs": 2158
+        }
+      ],
+      "marketOpens": 24,
+      "cameraReview": {
+        "turn": 14,
+        "targetIndex": 3,
+        "initialScale": "0.287",
+        "initialAngle": "0",
+        "settledView": {
+          "scale": "0.287",
+          "angle": "0",
+          "mode": "overview",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 2548,
+          "worldHeight": 870,
+          "frames": [
+            {
+              "scale": "0.287",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2548,
+              "worldHeight": 870
+            },
+            {
+              "scale": "0.287",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2548,
+              "worldHeight": 870
+            },
+            {
+              "scale": "0.287",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2548,
+              "worldHeight": 870
+            },
+            {
+              "scale": "0.287",
+              "angle": "0",
+              "mode": "overview",
+              "width": 824,
+              "height": 250,
+              "worldWidth": 2548,
+              "worldHeight": 870
+            }
+          ]
+        },
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.287",
+          "angle": "0",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 2548,
+          "worldHeight": 870
+        },
+        "clicks": 2,
+        "readableScale": "1.153",
+        "elapsedMs": 581
+      },
+      "winner": "プレイヤー1",
+      "elapsedMs": 660064,
+      "lastTurn": 94
+    }
+  ]
+}

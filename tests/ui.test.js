@@ -1,6 +1,7 @@
 const assert = require('assert');
 const vm = require('vm');
-const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+const { createStorage, makeElement, runTest } = require('./helpers/test-utils');
+const { loadScriptsWithStringMarket } = require('./helpers/string-market-runtime');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function loadUiRuntime(options = {}) {
@@ -139,7 +140,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
+    loadScriptsWithStringMarket(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiLogHighlightEffects.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -338,6 +339,28 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
     context.onChangeTutorialLevel('invalid');
     assert.strictEqual(elements.tutorialLevel.value, 'beginner');
     assert.strictEqual(elements.btnTutorialLevel.getAttribute('aria-label'), 'チュートリアルの詳しさ、現在 初心者向け');
+});
+
+runTest('cardboard手番通知は市場を覆わずHUDを強調し1300msと明示取消で解除する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'cardboard' } };
+    context.showTurnAnnouncer('街1', false, 0);
+    const board = elements.cardboardBoard;
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), true);
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'プレイヤー1、人間、街1 のターン');
+    assert.deepStrictEqual(context.timeoutDelays, [1300]);
+    context.lastTimeout();
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), false);
+    assert.deepStrictEqual(context.timeoutDelays, [1300, 400]);
+    context.lastTimeout();
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    context.showTurnAnnouncer('街2', true, 1);
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), true);
+    context.dismissTurnGreeting();
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), false);
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'プレイヤー2、CPU、街2 のターン');
 });
 
 runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {
@@ -1449,6 +1472,8 @@ runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedAction
     context.enabledLandmarks = new Set(['駅']);
 
     context.renderBuildMenu();
+    assert.deepStrictEqual(context.__stringMarketDomCalls.bindings, [elements.buildMenu]);
+    assert.strictEqual(context.__stringMarketDomCalls.updates.at(-1).html, elements.buildMenu.innerHTML);
     assert.ok(/data-action="buildCard"[^>]+disabled/.test(elements.buildMenu.innerHTML));
     assert.ok(/data-action="buildLandmark"[^>]+disabled/.test(elements.buildMenu.innerHTML));
 
@@ -2436,6 +2461,11 @@ runTest('UiBuildMenu 建設shortcut effectは表示同期と既存menuへのfocu
     assert.strictEqual(button.style.display, 'none');
     assert.strictEqual(button.disabled, true);
     assert.strictEqual(button['aria-hidden'], 'true');
+    assert.strictEqual(button.hidden, true);
+    helper.applyBuildShortcutView(button, { display: 'block', disabled: false, ariaHidden: 'false' });
+    assert.strictEqual(button.hidden, false);
+    assert.strictEqual(button.style.display, 'block');
+    assert.strictEqual(button.disabled, false);
 
     const calls = [];
     const target = {
@@ -3308,4 +3338,68 @@ runTest('詳細のため停止した市場も手渡し待機時に破棄し詳�
     assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'flex');
     context.acceptHotseatHandoff();
     assert.strictEqual(elements.gameScreen.inert, false);
+});
+
+runTest('広場収支cacheは同長の実振り直しログとsnapshot置換と端更新で失効し純表示では再利用する', () => {
+    const { context } = loadUiRuntime();
+    const { GameManager, createCardByName, GAME_PHASES, LOG_TYPES } = loadGameRuntime();
+    const landmarkNames = vm.runInContext('LANDMARK_NAMES', context);
+    const projection = require('../js/uiTurnEvents');
+    let calls = 0;
+    context.UiTurnEvents = { project(...args) { calls++; return projection.project(...args); } };
+    const game = new GameManager(2);
+    game.currentPlayerIndex = 0;
+    game.players.forEach((player, index) => { player.name = `街${index + 1}`; player.coins = 30; player.cards = []; });
+    game.players[0].cards = ['麦畑', '貸金業'].map(createCardByName);
+    game.players[0].landmarks[landmarkNames.RADIO_TOWER] = true;
+    game.log = [];
+    game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+    game.rollDice(5);
+    game.skipReroll();
+    const originalLog = game.log;
+    const originalLength = game.log.length;
+    const first = context.plazaTurnEventsFor(game);
+    assert.strictEqual(first.dice.base, 5);
+    assert.strictEqual(context.plazaTurnEventsFor(game), first);
+    assert.strictEqual(calls, 1);
+    // Match the regression's actual GM reroll path with a controlled admission
+    // phase; do not replace rollDice or generate a synthetic dice log.
+    game.phase = GAME_PHASES.REROLL_CONFIRM;
+    game.rerollDice(1);
+    assert.strictEqual(game.log.length, originalLength);
+    assert.notStrictEqual(game.log, originalLog);
+    const rerolled = context.plazaTurnEventsFor(game);
+    assert.notStrictEqual(rerolled, first);
+    assert.strictEqual(rerolled.dice.base, 1);
+    assert.strictEqual(rerolled.dice.rerolled, true);
+    assert.strictEqual(calls, 2);
+    assert.strictEqual(context.plazaTurnEventsFor(game), rerolled);
+    // A recreated snapshot uses new entries and a new array of equal length.
+    game.log = JSON.parse(JSON.stringify(game.log));
+    const restored = context.plazaTurnEventsFor(game);
+    assert.notStrictEqual(restored, rerolled);
+    assert.strictEqual(restored.dice.base, 1);
+    assert.strictEqual(calls, 3);
+    const sameArray = game.log;
+    game.log[game.log.length - 1] = { ...game.log.at(-1) };
+    const replacedTail = context.plazaTurnEventsFor(game);
+    assert.strictEqual(game.log, sameArray);
+    assert.notStrictEqual(replacedTail, restored);
+    assert.strictEqual(calls, 4);
+    game.log[0] = { ...game.log[0] };
+    const replacedHead = context.plazaTurnEventsFor(game);
+    assert.notStrictEqual(replacedHead, replacedTail);
+    assert.strictEqual(calls, 5, '同じ長さ/配列で先頭entryだけ替わる場合も失効');
+    // Capped-log shift/push can preserve both array identity and total length.
+    game.log.shift();
+    game.log.push({ type: LOG_TYPES.SYSTEM, message: '表示用通知' });
+    const capped = context.plazaTurnEventsFor(game);
+    assert.strictEqual(game.log, sameArray);
+    assert.strictEqual(game.log.length, originalLength);
+    assert.notStrictEqual(capped, replacedHead);
+    assert.strictEqual(calls, 6);
+    assert.strictEqual(context.plazaTurnEventsFor(game), capped);
+    assert.strictEqual(calls, 6);
+    assert.notStrictEqual(context.plazaTurnEventsFor(game, 1000), capped);
+    assert.strictEqual(calls, 7, '上限を含む従来cache keyも維持する');
 });

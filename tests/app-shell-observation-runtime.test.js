@@ -157,3 +157,30 @@ runTest('端末手渡しmodalはwatchdog snapshotの可視modalとUI状態に含
     assert.deepStrictEqual(snapshot.visibleModals, ['hotseatHandoffOverlay']);
     assert.strictEqual(snapshot.ui.hotseatHandoffOverlay.display, 'flex');
 });
+
+runTest('post-build観測は全modalとshell状態を維持し市場と施設子孫を読まない', () => {
+    const reads = [];
+    const modalIds = ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal', 'hotseatHandoffOverlay'];
+    const runtime = createRuntime({
+        domSnapshot: {
+            snapshotById(id, options) {
+                reads.push([id, options]);
+                return { id, display: modalIds.includes(id) ? 'flex' : 'block', computedDisplay: 'block',
+                    visibility: 'visible', hidden: false, inert: id === 'gameScreen' };
+            },
+            isVisibleById() { throw new Error('完全modal snapshotを重複走査しない'); },
+        },
+        getGameRuntimeSnapshot: () => ({ game: { phase: 'build', builtThisTurn: true, currentPlayerIndex: 0,
+            turnCount: 3, players: [{}], pendingRenovation: 1, checkWinner: () => false }, cpuPlayers: [null] }),
+    });
+    const result = runtime.buildClientRuntimeSnapshot('stabilize', { purpose: 'post-build' });
+    assert.deepStrictEqual(reads.map(([id]) => id), ['gameScreen', 'btnSkip', ...modalIds]);
+    assert.ok(reads.every(([, options]) => options.shallow === true));
+    assert.deepStrictEqual(result.dom.visibleModals, modalIds);
+    assert.strictEqual(result.dom.ui.gameScreen.inert, true);
+    assert.strictEqual(result.game.pendingFields.pendingRenovation, 1);
+    assert.strictEqual(result.game.builtThisTurn, true);
+    reads.length = 0;
+    runtime.buildClientRuntimeSnapshot('state-only', { purpose: 'post-build', includeDom: false });
+    assert.strictEqual(reads.length, 0);
+});
