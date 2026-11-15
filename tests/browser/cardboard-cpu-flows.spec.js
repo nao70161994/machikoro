@@ -6,8 +6,11 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
+for (const artControl of (process.env.CARD_TABLE_ART_CONTROL ? ['legacy', 'empty'] : [''])) {
+test.describe(artControl || '通常アート', () => {
 for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
+if (artControl && (!dense || viewport.width !== 844)) continue;
 test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewport.width}px${dense ? ' 終盤' : ''}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -36,6 +39,15 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             else clearInterval(timer);
             last = now;
         }, 200);
+    });
+    if (artControl) await page.route('**/js/uiBuildMenu.js', async route => {
+        const response = await route.fetch();
+        const source = await response.text();
+        const original = 'if (tableArtFailures.has(motif)) return renderFacilityArt(name, landmark, category);';
+        expect(source.split(original)).toHaveLength(2);
+        const replacement = artControl === 'legacy' ? 'return renderFacilityArt(name, landmark, category);'
+            : 'return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"></svg>`;';
+        await route.fulfill({ response, body: source.replace(original, replacement) });
     });
     await page.goto('/');
     await page.evaluate(dense => {
@@ -312,6 +324,9 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
 });
 
 }
+}
+
+});
 }
 
 test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画される', async ({ page }, testInfo) => {
