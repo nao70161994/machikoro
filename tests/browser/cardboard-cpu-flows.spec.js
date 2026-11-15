@@ -17,7 +17,26 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.addInitScript(() => {
-        const profile = window.cpuFrameProfile = { frames: [], heartbeats: [] };
+        const profile = window.cpuFrameProfile = { frames: [], heartbeats: [], observers: [] };
+        for (const kind of ['ResizeObserver', 'MutationObserver']) {
+            const Native = window[kind];
+            if (!Native) continue;
+            window[kind] = class extends Native {
+                constructor(callback) {
+                    const label = `${callback.name || 'anonymous'}: ${String(callback).slice(0, 120)}`;
+                    super((entries, observer) => {
+                        const startedAt = performance.now();
+                        try { callback(entries, observer); }
+                        finally {
+                            if (profile.observers.length < 1000) profile.observers.push({ kind, label, startedAt,
+                                endedAt: performance.now(), count: entries.length,
+                                targets: entries.slice(0, 8).map(entry => ({ id: entry.target.id || entry.target.nodeName,
+                                    width: entry.contentRect?.width, height: entry.contentRect?.height })) });
+                        }
+                    });
+                }
+            };
+        }
         const nativeRequest = window.requestAnimationFrame.bind(window);
         const labels = new WeakMap();
         window.requestAnimationFrame = callback => {
