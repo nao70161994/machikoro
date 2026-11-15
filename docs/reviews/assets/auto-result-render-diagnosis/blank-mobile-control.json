@@ -1,0 +1,3557 @@
+{
+  "finished": [
+    {
+      "index": 0,
+      "at": 718
+    },
+    {
+      "index": 1,
+      "at": 718
+    },
+    {
+      "index": 2,
+      "at": 718
+    },
+    {
+      "index": 3,
+      "at": 718
+    },
+    {
+      "index": 4,
+      "at": 718
+    },
+    {
+      "index": 5,
+      "at": 718
+    },
+    {
+      "index": 6,
+      "at": 718
+    }
+  ],
+  "samples": [
+    {
+      "at": 8,
+      "actors": [
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        }
+      ]
+    },
+    {
+      "at": 107,
+      "actors": [
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        },
+        {
+          "time": 0,
+          "state": "paused",
+          "x": 20
+        }
+      ]
+    },
+    {
+      "at": 109,
+      "actors": [
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        },
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        },
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        },
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        },
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        },
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        },
+        {
+          "time": 2,
+          "state": "running",
+          "x": 21.33333396911621
+        }
+      ]
+    },
+    {
+      "at": 125,
+      "actors": [
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        },
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        },
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        },
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        },
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        },
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        },
+        {
+          "time": 18,
+          "state": "running",
+          "x": 32
+        }
+      ]
+    },
+    {
+      "at": 141,
+      "actors": [
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        },
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        },
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        },
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        },
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        },
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        },
+        {
+          "time": 34,
+          "state": "running",
+          "x": 42.666664123535156
+        }
+      ]
+    },
+    {
+      "at": 157,
+      "actors": [
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        },
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        },
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        },
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        },
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        },
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        },
+        {
+          "time": 50,
+          "state": "running",
+          "x": 53.33333206176758
+        }
+      ]
+    },
+    {
+      "at": 173,
+      "actors": [
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        },
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        },
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        },
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        },
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        },
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        },
+        {
+          "time": 66,
+          "state": "running",
+          "x": 64
+        }
+      ]
+    },
+    {
+      "at": 189,
+      "actors": [
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        },
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        },
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        },
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        },
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        },
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        },
+        {
+          "time": 82,
+          "state": "running",
+          "x": 74.66667175292969
+        }
+      ]
+    },
+    {
+      "at": 206,
+      "actors": [
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        },
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        },
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        },
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        },
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        },
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        },
+        {
+          "time": 99,
+          "state": "running",
+          "x": 86
+        }
+      ]
+    },
+    {
+      "at": 222,
+      "actors": [
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        },
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        },
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        },
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        },
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        },
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        },
+        {
+          "time": 115,
+          "state": "running",
+          "x": 97.33333587646484
+        }
+      ]
+    },
+    {
+      "at": 238,
+      "actors": [
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        },
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        },
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        },
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        },
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        },
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        },
+        {
+          "time": 131,
+          "state": "running",
+          "x": 107.33333587646484
+        }
+      ]
+    },
+    {
+      "at": 256,
+      "actors": [
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        },
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        },
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        },
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        },
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        },
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        },
+        {
+          "time": 149,
+          "state": "running",
+          "x": 119.33333587646484
+        }
+      ]
+    },
+    {
+      "at": 272,
+      "actors": [
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        },
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        },
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        },
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        },
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        },
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        },
+        {
+          "time": 165,
+          "state": "running",
+          "x": 130
+        }
+      ]
+    },
+    {
+      "at": 287,
+      "actors": [
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        },
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        },
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        },
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        },
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        },
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        },
+        {
+          "time": 180,
+          "state": "running",
+          "x": 140
+        }
+      ]
+    },
+    {
+      "at": 303,
+      "actors": [
+        {
+          "time": 196,
+          "state": "running",
+          "x": 150.6666717529297
+        },
+        {
+          "time": 196,
+          "state": "running",
+          "x": 151.3333282470703
+        },
+        {
+          "time": 196,
+          "state": "running",
+          "x": 151.3333282470703
+        },
+        {
+          "time": 196,
+          "state": "running",
+          "x": 151.3333282470703
+        },
+        {
+          "time": 196,
+          "state": "running",
+          "x": 151.3333282470703
+        },
+        {
+          "time": 196,
+          "state": "running",
+          "x": 151.3333282470703
+        },
+        {
+          "time": 196,
+          "state": "running",
+          "x": 151.3333282470703
+        }
+      ]
+    },
+    {
+      "at": 320,
+      "actors": [
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        },
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        },
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        },
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        },
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        },
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        },
+        {
+          "time": 212,
+          "state": "running",
+          "x": 162
+        }
+      ]
+    },
+    {
+      "at": 339,
+      "actors": [
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        },
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        },
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        },
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        },
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        },
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        },
+        {
+          "time": 232,
+          "state": "running",
+          "x": 174.6666717529297
+        }
+      ]
+    },
+    {
+      "at": 354,
+      "actors": [
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        },
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        },
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        },
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        },
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        },
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        },
+        {
+          "time": 247,
+          "state": "running",
+          "x": 184.6666717529297
+        }
+      ]
+    },
+    {
+      "at": 369,
+      "actors": [
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        },
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        },
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        },
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        },
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        },
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        },
+        {
+          "time": 262,
+          "state": "running",
+          "x": 194.6666717529297
+        }
+      ]
+    },
+    {
+      "at": 385,
+      "actors": [
+        {
+          "time": 278,
+          "state": "running",
+          "x": 205.3333282470703
+        },
+        {
+          "time": 278,
+          "state": "running",
+          "x": 205.3333282470703
+        },
+        {
+          "time": 278,
+          "state": "running",
+          "x": 205.3333282470703
+        },
+        {
+          "time": 278,
+          "state": "running",
+          "x": 206
+        },
+        {
+          "time": 278,
+          "state": "running",
+          "x": 206
+        },
+        {
+          "time": 278,
+          "state": "running",
+          "x": 206
+        },
+        {
+          "time": 278,
+          "state": "running",
+          "x": 206
+        }
+      ]
+    },
+    {
+      "at": 402,
+      "actors": [
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        },
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        },
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        },
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        },
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        },
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        },
+        {
+          "time": 294,
+          "state": "running",
+          "x": 216.6666717529297
+        }
+      ]
+    },
+    {
+      "at": 419,
+      "actors": [
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        },
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        },
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        },
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        },
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        },
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        },
+        {
+          "time": 312,
+          "state": "running",
+          "x": 228
+        }
+      ]
+    },
+    {
+      "at": 435,
+      "actors": [
+        {
+          "time": 328,
+          "state": "running",
+          "x": 238.6666717529297
+        },
+        {
+          "time": 328,
+          "state": "running",
+          "x": 238.6666717529297
+        },
+        {
+          "time": 328,
+          "state": "running",
+          "x": 238.6666717529297
+        },
+        {
+          "time": 328,
+          "state": "running",
+          "x": 239.3333282470703
+        },
+        {
+          "time": 328,
+          "state": "running",
+          "x": 239.3333282470703
+        },
+        {
+          "time": 328,
+          "state": "running",
+          "x": 239.3333282470703
+        },
+        {
+          "time": 328,
+          "state": "running",
+          "x": 239.3333282470703
+        }
+      ]
+    },
+    {
+      "at": 450,
+      "actors": [
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        },
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        },
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        },
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        },
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        },
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        },
+        {
+          "time": 343,
+          "state": "running",
+          "x": 248.6666717529297
+        }
+      ]
+    },
+    {
+      "at": 466,
+      "actors": [
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        },
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        },
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        },
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        },
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        },
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        },
+        {
+          "time": 359,
+          "state": "running",
+          "x": 259.33331298828125
+        }
+      ]
+    },
+    {
+      "at": 482,
+      "actors": [
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270
+        },
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270.66668701171875
+        },
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270.66668701171875
+        },
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270.66668701171875
+        },
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270.66668701171875
+        },
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270.66668701171875
+        },
+        {
+          "time": 375,
+          "state": "running",
+          "x": 270.66668701171875
+        }
+      ]
+    },
+    {
+      "at": 500,
+      "actors": [
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        },
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        },
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        },
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        },
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        },
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        },
+        {
+          "time": 393,
+          "state": "running",
+          "x": 282
+        }
+      ]
+    },
+    {
+      "at": 516,
+      "actors": [
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        },
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        },
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        },
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        },
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        },
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        },
+        {
+          "time": 409,
+          "state": "running",
+          "x": 292.6666564941406
+        }
+      ]
+    },
+    {
+      "at": 532,
+      "actors": [
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        },
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        },
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        },
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        },
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        },
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        },
+        {
+          "time": 425,
+          "state": "running",
+          "x": 303.3333435058594
+        }
+      ]
+    },
+    {
+      "at": 552,
+      "actors": [
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        },
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        },
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        },
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        },
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        },
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        },
+        {
+          "time": 445,
+          "state": "running",
+          "x": 316.6666564941406
+        }
+      ]
+    },
+    {
+      "at": 567,
+      "actors": [
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        },
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        },
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        },
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        },
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        },
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        },
+        {
+          "time": 460,
+          "state": "running",
+          "x": 326.6666564941406
+        }
+      ]
+    },
+    {
+      "at": 583,
+      "actors": [
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        },
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        },
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        },
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        },
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        },
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        },
+        {
+          "time": 476,
+          "state": "running",
+          "x": 337.3333435058594
+        }
+      ]
+    },
+    {
+      "at": 599,
+      "actors": [
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        },
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        },
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        },
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        },
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        },
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        },
+        {
+          "time": 492,
+          "state": "running",
+          "x": 348
+        }
+      ]
+    },
+    {
+      "at": 615,
+      "actors": [
+        {
+          "time": 508,
+          "state": "running",
+          "x": 358.6666564941406
+        },
+        {
+          "time": 508,
+          "state": "running",
+          "x": 359.3333435058594
+        },
+        {
+          "time": 508,
+          "state": "running",
+          "x": 359.3333435058594
+        },
+        {
+          "time": 508,
+          "state": "running",
+          "x": 359.3333435058594
+        },
+        {
+          "time": 508,
+          "state": "running",
+          "x": 359.3333435058594
+        },
+        {
+          "time": 508,
+          "state": "running",
+          "x": 359.3333435058594
+        },
+        {
+          "time": 508,
+          "state": "running",
+          "x": 359.3333435058594
+        }
+      ]
+    },
+    {
+      "at": 634,
+      "actors": [
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        },
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        },
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        },
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        },
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        },
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        },
+        {
+          "time": 527,
+          "state": "running",
+          "x": 371.3333435058594
+        }
+      ]
+    },
+    {
+      "at": 651,
+      "actors": [
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        },
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        },
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        },
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        },
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        },
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        },
+        {
+          "time": 544,
+          "state": "running",
+          "x": 382.6666564941406
+        }
+      ]
+    },
+    {
+      "at": 665,
+      "actors": [
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392
+        },
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392.6666564941406
+        },
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392.6666564941406
+        },
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392.6666564941406
+        },
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392.6666564941406
+        },
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392.6666564941406
+        },
+        {
+          "time": 558,
+          "state": "running",
+          "x": 392.6666564941406
+        }
+      ]
+    },
+    {
+      "at": 682,
+      "actors": [
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        },
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        },
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        },
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        },
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        },
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        },
+        {
+          "time": 575,
+          "state": "running",
+          "x": 403.3333435058594
+        }
+      ]
+    },
+    {
+      "at": 698,
+      "actors": [
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        },
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        },
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        },
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        },
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        },
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        },
+        {
+          "time": 591,
+          "state": "running",
+          "x": 414
+        }
+      ]
+    },
+    {
+      "at": 718,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 732,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 747,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 763,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 779,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 795,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 812,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 828,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 844,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 860,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 876,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 892,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 908,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 924,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 940,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 956,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 972,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 988,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1004,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1021,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1037,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1053,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1069,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1085,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1101,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1117,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1133,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1149,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1165,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1181,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1197,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1213,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1230,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1246,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1262,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1278,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1294,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1310,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1326,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1342,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1358,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1374,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1390,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1406,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1423,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1439,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1455,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1471,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    },
+    {
+      "at": 1487,
+      "actors": [
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        },
+        {
+          "time": 600,
+          "state": "finished",
+          "x": 420
+        }
+      ]
+    }
+  ],
+  "elapsed": 1503,
+  "dpr": 3,
+  "visible": true
+}

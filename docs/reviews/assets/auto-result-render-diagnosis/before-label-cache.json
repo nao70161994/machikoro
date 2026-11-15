@@ -1,0 +1,1312 @@
+{
+  "startedAt": 1597,
+  "initialTurn": 0,
+  "initialActor": 0,
+  "cpuSpeed": 1500,
+  "cpuDifficulties": [
+    "weak",
+    "weak",
+    "weak",
+    "weak"
+  ],
+  "events": [
+    {
+      "kind": "resolved-roll",
+      "at": 4140,
+      "phase": "build",
+      "dice": 3
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 3,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-created",
+      "at": 5119,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "netGeometryMs": "7",
+      "netPlannerMs": "17"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 3,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-start-sample",
+      "at": 5651,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "connected": true,
+      "currentTime": 0,
+      "playState": "paused"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "カフェ",
+      "owner": "3",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "カフェ",
+      "owner": "2",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "カフェ",
+      "owner": "1",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "コーン畑・パン屋",
+      "owner": "0",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "コーン畑",
+      "owner": "1",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "コーン畑",
+      "owner": "2",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 8319,
+      "name": "コーン畑",
+      "owner": "3",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 3,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "transfer-cancelled",
+      "at": 8320,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "currentTime": null
+    },
+    {
+      "kind": "turn-change",
+      "at": 9319,
+      "turn": 1,
+      "actor": 1
+    }
+  ],
+  "geometry": [],
+  "animationFrames": [],
+  "resolvedGroups": [
+    "街1/コーン畑",
+    "街1/パン屋",
+    "街2/カフェ",
+    "街2/コーン畑",
+    "街3/カフェ",
+    "街3/コーン畑",
+    "街4/カフェ",
+    "街4/コーン畑"
+  ],
+  "final": {
+    "turn": 1,
+    "actor": 1,
+    "phase": "roll",
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 街2のターン"
+      }
+    ]
+  },
+  "snapshot": {
+    "playerCoins": [
+      14,
+      32,
+      32,
+      32
+    ],
+    "playerCardNames": [
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園",
+        "コーン畑"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園"
+      ]
+    ],
+    "playerDormantIndices": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "playerLandmarks": [
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": true,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      }
+    ],
+    "playerItVenture": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "playerHasYakusho": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "hadAmusementParkAtRoll": false,
+    "shopStock": {
+      "麦畑": 2,
+      "牧場": 2,
+      "森林": 2,
+      "鉱山": 2,
+      "リンゴ園": 2,
+      "パン屋": 6,
+      "コンビニ": 2,
+      "チーズ工場": 2,
+      "家具工場": 2,
+      "青果市場": 2,
+      "カフェ": 2,
+      "ファミレス": 2,
+      "スタジアム": 0,
+      "テレビ局": 0,
+      "ビジネスセンター": 0,
+      "花畑": 2,
+      "サンマ漁船": 2,
+      "マグロ漁船": 2,
+      "フラワーショップ": 2,
+      "食品倉庫": 2,
+      "寿司屋": 2,
+      "ピザ屋": 2,
+      "バーガーショップ": 2,
+      "出版社": 0,
+      "税務署": 0,
+      "コーン畑": 1,
+      "ブドウ園": 2,
+      "雑貨屋": 2,
+      "改装屋": 2,
+      "貸金業": 2,
+      "ワイナリー": 2,
+      "引越し屋": 2,
+      "ドリンク工場": 2,
+      "高級フレンチ": 2,
+      "会員制BAR": 2,
+      "清掃業": 0,
+      "ITベンチャー": 0,
+      "公園": 0
+    },
+    "builtThisTurn": false,
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 街2のターン"
+      }
+    ],
+    "reviewSummary": {
+      "complete": true,
+      "totalsComplete": true,
+      "counts": {
+        "dice": 1,
+        "gain": 6,
+        "lose": 3,
+        "build": 1,
+        "special": 2,
+        "system": 3,
+        "error": 0
+      },
+      "totals": {
+        "gain": 9,
+        "lose": 19
+      }
+    }
+  },
+  "diceRngCalls": 3,
+  "frameProfile": {
+    "frames": [
+      {
+        "requestedAt": 1525,
+        "timestamp": 3221,
+        "startedAt": 3221,
+        "endedAt": 3233,
+        "label": "syncOwnerLabels: function syncOwnerLabels() {\n        if (ownerLabelFrame !== null) window.cancelAnimationFrame(ownerLabelFrame);\n       "
+      },
+      {
+        "requestedAt": 1593,
+        "timestamp": 3221,
+        "startedAt": 3234,
+        "endedAt": 3250,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 1593,
+        "timestamp": 3221,
+        "startedAt": 3250,
+        "endedAt": 3261,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed) return;\n            const changedSession = !mounte"
+      },
+      {
+        "requestedAt": 1598,
+        "timestamp": 3221,
+        "startedAt": 3261,
+        "endedAt": 3262,
+        "label": "sample: timestamp => {\n            if (stopAtTurnChange()) return;\n            const now = performance.now();\n            if (sa"
+      },
+      {
+        "requestedAt": 3262,
+        "timestamp": 6623,
+        "startedAt": 6632,
+        "endedAt": 6632,
+        "label": "sample: timestamp => {\n            if (stopAtTurnChange()) return;\n            const now = performance.now();\n            if (sa"
+      },
+      {
+        "requestedAt": 3262,
+        "timestamp": 6623,
+        "startedAt": 6632,
+        "endedAt": 6633,
+        "label": "anonymous: () => {\n                layoutPending = false; layout();\n                if (mounted && node('plazaViewport').clientWidt"
+      },
+      {
+        "requestedAt": 3262,
+        "timestamp": 6623,
+        "startedAt": 6633,
+        "endedAt": 6633,
+        "label": "anonymous: () => {\n            if (!mounted || !viewport.clientWidth || !viewport.clientHeight) return;\n            layout();\n     "
+      },
+      {
+        "requestedAt": 3262,
+        "timestamp": 6623,
+        "startedAt": 6633,
+        "endedAt": 6661,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 5672,
+        "timestamp": 6623,
+        "startedAt": 6661,
+        "endedAt": 6674,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed) return;\n            const changedSession = !mounte"
+      },
+      {
+        "requestedAt": 5702,
+        "timestamp": 6623,
+        "startedAt": 6674,
+        "endedAt": 6715,
+        "label": "anonymous: () => {\n                transferFrame = null;\n                if (sequence !== transferSequence || !mounted || !enabled("
+      },
+      {
+        "requestedAt": 6632,
+        "timestamp": 12660,
+        "startedAt": 12660,
+        "endedAt": 12660,
+        "label": "sample: timestamp => {\n            if (stopAtTurnChange()) return;\n            const now = performance.now();\n            if (sa"
+      },
+      {
+        "requestedAt": 7548,
+        "timestamp": 12660,
+        "startedAt": 12660,
+        "endedAt": 12678,
+        "label": "syncOwnerLabels: function syncOwnerLabels() {\n        if (ownerLabelFrame !== null) window.cancelAnimationFrame(ownerLabelFrame);\n       "
+      },
+      {
+        "requestedAt": 7592,
+        "timestamp": 12660,
+        "startedAt": 12678,
+        "endedAt": 12704,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 7592,
+        "timestamp": 12660,
+        "startedAt": 12704,
+        "endedAt": 12722,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed) return;\n            const changedSession = !mounte"
+      },
+      {
+        "requestedAt": 12722,
+        "timestamp": 14030,
+        "startedAt": 14032,
+        "endedAt": 14039,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 14039,
+        "timestamp": 14197,
+        "startedAt": 14198,
+        "endedAt": 14225,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed) return;\n            const changedSession = !mounte"
+      },
+      {
+        "requestedAt": 16452,
+        "timestamp": 17413,
+        "startedAt": 17413,
+        "endedAt": 17413,
+        "label": "anonymous: () => {\n                layoutPending = false; layout();\n                if (mounted && node('plazaViewport').clientWidt"
+      },
+      {
+        "requestedAt": 16452,
+        "timestamp": 17413,
+        "startedAt": 17413,
+        "endedAt": 17667,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 17669,
+        "timestamp": 18442,
+        "startedAt": 18443,
+        "endedAt": 18464,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 18020,
+        "timestamp": 18442,
+        "startedAt": 18464,
+        "endedAt": 18475,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed) return;\n            const changedSession = !mounte"
+      },
+      {
+        "requestedAt": 18027,
+        "timestamp": 18442,
+        "startedAt": 18475,
+        "endedAt": 18492,
+        "label": "anonymous: () => {\n                transferFrame = null;\n                if (sequence !== transferSequence || !mounted || !enabled("
+      },
+      {
+        "requestedAt": 18491,
+        "timestamp": 20570,
+        "startedAt": 20570,
+        "endedAt": 20570,
+        "label": "anonymous: () => {\n                    if (generation !== motionGeneration || !simultaneousMotion) return;\n                    star"
+      },
+      {
+        "requestedAt": 19779,
+        "timestamp": 20570,
+        "startedAt": 20570,
+        "endedAt": 20587,
+        "label": "syncOwnerLabels: function syncOwnerLabels() {\n        if (ownerLabelFrame !== null) window.cancelAnimationFrame(ownerLabelFrame);\n       "
+      },
+      {
+        "requestedAt": 19809,
+        "timestamp": 20570,
+        "startedAt": 20587,
+        "endedAt": 20589,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed || !world.isConnected || !world.contains(market)) r"
+      },
+      {
+        "requestedAt": 19809,
+        "timestamp": 20570,
+        "startedAt": 20589,
+        "endedAt": 20612,
+        "label": "layout: function layout() {\n            frame = 0;\n            if (destroyed) return;\n            const changedSession = !mounte"
+      }
+    ],
+    "heartbeats": [
+      {
+        "at": 321,
+        "gap": 308
+      },
+      {
+        "at": 554,
+        "gap": 233
+      },
+      {
+        "at": 1603,
+        "gap": 1049
+      },
+      {
+        "at": 3990,
+        "gap": 2387
+      },
+      {
+        "at": 4190,
+        "gap": 200
+      },
+      {
+        "at": 4392,
+        "gap": 202
+      },
+      {
+        "at": 4596,
+        "gap": 204
+      },
+      {
+        "at": 4800,
+        "gap": 204
+      },
+      {
+        "at": 5004,
+        "gap": 204
+      },
+      {
+        "at": 5209,
+        "gap": 205
+      },
+      {
+        "at": 5412,
+        "gap": 203
+      },
+      {
+        "at": 5737,
+        "gap": 325
+      },
+      {
+        "at": 5940,
+        "gap": 203
+      },
+      {
+        "at": 6148,
+        "gap": 208
+      },
+      {
+        "at": 6348,
+        "gap": 200
+      },
+      {
+        "at": 6552,
+        "gap": 204
+      },
+      {
+        "at": 7248,
+        "gap": 696
+      },
+      {
+        "at": 7598,
+        "gap": 350
+      },
+      {
+        "at": 7800,
+        "gap": 202
+      },
+      {
+        "at": 8004,
+        "gap": 204
+      },
+      {
+        "at": 8208,
+        "gap": 204
+      },
+      {
+        "at": 8413,
+        "gap": 205
+      },
+      {
+        "at": 8616,
+        "gap": 203
+      },
+      {
+        "at": 8821,
+        "gap": 205
+      },
+      {
+        "at": 9024,
+        "gap": 203
+      },
+      {
+        "at": 9230,
+        "gap": 206
+      },
+      {
+        "at": 9432,
+        "gap": 202
+      },
+      {
+        "at": 9636,
+        "gap": 204
+      },
+      {
+        "at": 9840,
+        "gap": 204
+      },
+      {
+        "at": 10044,
+        "gap": 204
+      },
+      {
+        "at": 10251,
+        "gap": 207
+      },
+      {
+        "at": 10454,
+        "gap": 203
+      },
+      {
+        "at": 10658,
+        "gap": 204
+      },
+      {
+        "at": 10918,
+        "gap": 260
+      },
+      {
+        "at": 11120,
+        "gap": 202
+      },
+      {
+        "at": 11324,
+        "gap": 204
+      },
+      {
+        "at": 11529,
+        "gap": 205
+      },
+      {
+        "at": 11732,
+        "gap": 203
+      },
+      {
+        "at": 11937,
+        "gap": 205
+      },
+      {
+        "at": 12140,
+        "gap": 203
+      },
+      {
+        "at": 12344,
+        "gap": 204
+      },
+      {
+        "at": 12548,
+        "gap": 204
+      },
+      {
+        "at": 12797,
+        "gap": 249
+      },
+      {
+        "at": 12998,
+        "gap": 201
+      },
+      {
+        "at": 13201,
+        "gap": 203
+      },
+      {
+        "at": 13405,
+        "gap": 204
+      },
+      {
+        "at": 13609,
+        "gap": 204
+      },
+      {
+        "at": 13812,
+        "gap": 203
+      },
+      {
+        "at": 14019,
+        "gap": 207
+      },
+      {
+        "at": 14278,
+        "gap": 259
+      },
+      {
+        "at": 14480,
+        "gap": 202
+      },
+      {
+        "at": 14684,
+        "gap": 204
+      },
+      {
+        "at": 14888,
+        "gap": 204
+      },
+      {
+        "at": 15092,
+        "gap": 204
+      },
+      {
+        "at": 15297,
+        "gap": 205
+      },
+      {
+        "at": 15500,
+        "gap": 203
+      },
+      {
+        "at": 15707,
+        "gap": 207
+      },
+      {
+        "at": 15908,
+        "gap": 201
+      },
+      {
+        "at": 16112,
+        "gap": 204
+      },
+      {
+        "at": 16517,
+        "gap": 405
+      },
+      {
+        "at": 16721,
+        "gap": 204
+      },
+      {
+        "at": 16927,
+        "gap": 206
+      },
+      {
+        "at": 17129,
+        "gap": 202
+      },
+      {
+        "at": 17332,
+        "gap": 203
+      },
+      {
+        "at": 17750,
+        "gap": 418
+      },
+      {
+        "at": 18059,
+        "gap": 309
+      },
+      {
+        "at": 18264,
+        "gap": 205
+      },
+      {
+        "at": 18723,
+        "gap": 459
+      },
+      {
+        "at": 18924,
+        "gap": 201
+      },
+      {
+        "at": 19128,
+        "gap": 204
+      },
+      {
+        "at": 19332,
+        "gap": 204
+      },
+      {
+        "at": 19537,
+        "gap": 205
+      },
+      {
+        "at": 19816,
+        "gap": 279
+      },
+      {
+        "at": 20016,
+        "gap": 200
+      },
+      {
+        "at": 20220,
+        "gap": 204
+      },
+      {
+        "at": 20424,
+        "gap": 204
+      },
+      {
+        "at": 20717,
+        "gap": 293
+      },
+      {
+        "at": 20920,
+        "gap": 203
+      },
+      {
+        "at": 21124,
+        "gap": 204
+      },
+      {
+        "at": 21416,
+        "gap": 292
+      },
+      {
+        "at": 21616,
+        "gap": 200
+      },
+      {
+        "at": 21820,
+        "gap": 204
+      }
+    ]
+  }
+}
