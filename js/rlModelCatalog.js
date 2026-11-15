@@ -117,6 +117,18 @@ const RL_MODEL_CATALOG = Object.freeze([
         productionActive: true,
         registryStatus: "adopted",
     },
+    {
+        id: "stable-selfplay-2p-seed82-lr1e5-5000-20261107",
+        aliases: Object.freeze(["seed82", "seed82-stable"]),
+        label: "RL（自然学習・花とブドウ園・強化型）",
+        path: "models/rl_model/portfolio/stable-seed82-lr1e5-final.browser.json",
+        bytes: 11449189,
+        sha256: "e3bf6ac830d13dd38cf3659e7af7bff246aee8dbf7a1c0a25e42601a90288145",
+        weight: 10,
+        maxPlayers: 2,
+        productionActive: true,
+        registryStatus: "adopted",
+    },
 ].map(model => Object.freeze(model)));
 
 const RLModelCatalog = Object.freeze({
