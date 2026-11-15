@@ -6,11 +6,11 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['dpr3-desktop', 'dpr1-mobile'] : [''])) {
+for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['dpr1-desktop', 'mobile-after-input'] : [''])) {
 test.describe(paintDiagnostic || '標準モバイル', () => {
-if (paintDiagnostic) test.use(paintDiagnostic === 'dpr3-desktop'
-    ? { deviceScaleFactor: 3, isMobile: false, hasTouch: true }
-    : { deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+if (paintDiagnostic) test.use(paintDiagnostic === 'dpr1-desktop'
+    ? { deviceScaleFactor: 1, isMobile: false, hasTouch: false }
+    : { deviceScaleFactor: 3, isMobile: true, hasTouch: true });
 for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
 if (paintDiagnostic && (!dense || viewport.width !== 844)) continue;
@@ -223,6 +223,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             requestAnimationFrame(sample);
         });
     }, dense);
+    if (paintDiagnostic === 'mobile-after-input') await page.locator('[data-cardboard-camera="overview"]').tap();
     await page.screenshot({ path: testInfo.outputPath('cpu-events-start.png') });
     await page.evaluate(() => scheduleCPU());
     try {
