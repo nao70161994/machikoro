@@ -505,3 +505,18 @@ runTest('owner金額の一括配置は名前と障害物と他badgeを避け全�
     assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, [bounds]), null);
     assert.deepStrictEqual(CardBoardTransfers.placeNetBadges([], bounds, []), []);
 });
+
+runTest('自動coinの終点は所有者の文字と金額札を避け画面内で市場側へ寄る', () => {
+    const name = { left: 100, top: 100, width: 100, height: 20 };
+    const clip = { left: 0, top: 0, width: 600, height: 400 };
+    assert.deepStrictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, clip), { x: 210, y: 110 });
+    const blocked = { left: 200, top: 90, right: 240, bottom: 130 };
+    const point = CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, clip, [blocked]);
+    assert.ok(point);
+    const coin = { left: point.x - 8, right: point.x + 8, top: point.y - 8, bottom: point.y + 8 };
+    const overlap = box => coin.left < box.right && coin.right > box.left && coin.top < box.bottom && coin.bottom > box.top;
+    assert.ok(!overlap(blocked));
+    assert.ok(!overlap({ left: 100, top: 100, right: 200, bottom: 120 }));
+    assert.strictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, name), null);
+    assert.strictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: NaN, y: 110 }, clip), null);
+});

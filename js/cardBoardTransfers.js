@@ -135,6 +135,28 @@ const CardBoardTransfers = (() => {
         return plan ? owners.map(owner => plan.find(placed => placed.owner === owner.owner)) : null;
     }
 
+    function safeCoinEndpoint(rect, target, clip, obstacles = []) {
+        if (!rect || !target || !clip) return null;
+        const complete = box => ({ left: box.left, top: box.top,
+            right: box.right ?? box.left + box.width, bottom: box.bottom ?? box.top + box.height });
+        rect = complete(rect);
+        clip = complete(clip);
+        obstacles = obstacles.map(complete);
+        if (![rect, clip, ...obstacles].every(box => [box.left, box.top, box.right, box.bottom].every(Number.isFinite)) ||
+                !Number.isFinite(target.x) || !Number.isFinite(target.y)) return null;
+        const radius = 8, gap = 2;
+        const x = (rect.left + rect.right) / 2, y = (rect.top + rect.bottom) / 2;
+        const left = rect.left - radius - gap, right = rect.right + radius + gap;
+        const top = rect.top - radius - gap, bottom = rect.bottom + radius + gap;
+        const overlap = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        return [[left, y], [right, y], [x, top], [x, bottom], [left, top], [left, bottom], [right, top], [right, bottom]]
+            .map(([x, y]) => ({ x, y, left: x - radius, right: x + radius, top: y - radius, bottom: y + radius }))
+            .filter(point => point.left >= clip.left && point.right <= clip.right && point.top >= clip.top && point.bottom <= clip.bottom &&
+                ![rect, ...obstacles].some(obstacle => overlap(point, obstacle)))
+            .sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y))
+            .map(({ x, y }) => ({ x, y }))[0] || null;
+    }
+
     function create() {
         let layer = null;
         let summaryNode = null;
@@ -308,6 +330,9 @@ const CardBoardTransfers = (() => {
                 const center = { x: bounds.width / 2, y: bounds.height / 2 };
                 const viewport = container.querySelector('#cardboardTableViewport');
                 const viewportBounds = viewport?.getBoundingClientRect();
+                const market = container.querySelector('#cardboardCenter')?.getBoundingClientRect();
+                const protectedRects = Array.from(container.querySelectorAll?.('.cardboard-owner-label, #cardboardSeats .cardboard-header, .cardboard-roster-name, .cardboard-owner-net') || [])
+                    .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
                 const intersects = (rect, clip) => rect?.width > 0 && rect.height > 0 && clip?.width > 0 && clip.height > 0 &&
                     rect.left < clip.left + clip.width && rect.left + rect.width > clip.left &&
                     rect.top < clip.top + clip.height && rect.top + rect.height > clip.top;
@@ -329,6 +354,12 @@ const CardBoardTransfers = (() => {
                         if (viewport && !intersects(rect, bounds)) return null;
                     }
                     if (!rect?.width || !rect.height) return null;
+                    if (options.simultaneous === true) {
+                        const target = market && intersects(market, viewportBounds) ? { x: market.left + market.width / 2, y: market.top + market.height / 2 }
+                            : { x: bounds.left + center.x, y: bounds.top + center.y };
+                        const point = safeCoinEndpoint(rect, target, bounds, protectedRects);
+                        return point ? { x: point.x - bounds.left, y: point.y - bounds.top } : null;
+                    }
                     const inset = 8;
                     const clamp = (value, extent) => Math.max(Math.min(inset, extent / 2),
                         Math.min(extent - Math.min(inset, extent / 2), value));
@@ -339,7 +370,6 @@ const CardBoardTransfers = (() => {
                 };
                 return location;
             };
-            const location = endpointReader();
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';
             summaryNode = documentRef.createElement('p');
@@ -365,14 +395,14 @@ const CardBoardTransfers = (() => {
                 summaryNode.textContent += `\n${omitted}`;
                 summaryNode.setAttribute('aria-label', `${summaryNode.getAttribute('aria-label') || ''}。${omitted}`);
             }
-            const displayed = visualFlows
-                .slice(0, visualLimit)
-                .map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
             if (parallel && !reducedMotion) {
                 badgeContext = { container, events, nets: projectOwnerNets(events) };
                 positionBadges();
             }
+            const currentLocation = endpointReader();
+            const displayed = visualFlows.slice(0, visualLimit)
+                .map(route => ({ route, from: currentLocation(route.from), to: currentLocation(route.to) }));
             if (!reducedMotion) {
                 motionQuery = view?.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
                 motionHandler = event => { if (event.matches) stopMotion(); };
@@ -439,6 +469,6 @@ const CardBoardTransfers = (() => {
         }
         return Object.freeze({ play, retarget, clear });
     }
-    return Object.freeze({ project, projectFacilityTimeline, projectOwnerNets, placeNetBadges, create });
+    return Object.freeze({ project, projectFacilityTimeline, projectOwnerNets, placeNetBadges, safeCoinEndpoint, create });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardTransfers;

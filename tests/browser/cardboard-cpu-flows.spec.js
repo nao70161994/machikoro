@@ -6,14 +6,15 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off', deviceScaleFactor: 1, isMobile: false, hasTouch: false,
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
+for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
-test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewport.width}px`, async ({ page }, testInfo) => {
+test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewport.width}px${dense ? ' 終盤' : ''}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
-    await page.evaluate(() => {
+    await page.evaluate(dense => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
         cancelCpuSchedule('eight-group-diagnostic-setup');
         GameSetupState.runtime.setCpuSpeed(1500);
@@ -25,6 +26,19 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         game.players.forEach((player, index) => {
             player.name = `街${index + 1}`;
             player.cards = ['コーン畑', 'パン屋', 'カフェ'].map(name => createCardByName(name));
+            if (dense) {
+                // Grow the visible collection without adding any die-3 effect:
+                // the same seven real routes must still resolve and finish.
+                const quiet = CARDS.filter(card => !card.diceNums.includes(3));
+                player.cards.push(...quiet.map(card => createCardByName(card.name)));
+                for (const card of quiet) SHOP_STOCK[card.name]--;
+                if (index === 0) {
+                    // Two incoming corn coins plus the bakery balance the
+                    // three café payments: show an actual zero net as well.
+                    player.cards.push(createCardByName('コーン畑'));
+                    SHOP_STOCK['コーン畑']--;
+                }
+            }
             player.coins = 30;
             Object.keys(player.landmarks).forEach(name => { player.landmarks[name] = false; });
             SHOP_STOCK['コーン畑']--;
@@ -202,7 +216,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             };
             requestAnimationFrame(sample);
         });
-    });
+    }, dense);
     await page.screenshot({ path: testInfo.outputPath('cpu-events-start.png') });
     await page.evaluate(() => scheduleCPU());
     try {
@@ -238,7 +252,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         expect(created.every(event => event.routeLabelDisplay === 'none'), '飛行coinに読み取り用の経路文字を重ねない').toBe(true);
         for (const event of created) {
             expect(event.text).toBe('●');
-            expect(event.amount).toBe(event.from === 'null' && event.to === '0' ? 2 : 1);
+            expect(event.amount).toBe(event.from === 'null' && event.to === '0' ? dense ? 3 : 2 : 1);
             expect(event.subjects.slice().sort()).toEqual((event.from === 'null'
                 ? event.to === '0' ? ['コーン畑', 'パン屋'] : ['コーン畑'] : ['カフェ']).sort());
         }
@@ -249,11 +263,12 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         // Coins can physically share their source. Readable owner amounts,
         // rather than the tiny coin glyphs, must remain separate and unobscured.
         for (const sample of evidence.geometry) {
+            expect(sample.labelOverlaps, '移動coinが所有者名を覆わない').toEqual([]);
             expect(sample.badgeStatus, JSON.stringify(sample)).toBe('complete');
             expect(sample.badges.map(({ owner, net }) => ({ owner, net })).sort((a, b) => a.owner - b.owner))
-                .toEqual([{ owner: 0, net: -1 }, { owner: 1, net: 2 }, { owner: 2, net: 2 }, { owner: 3, net: 2 }]);
-            expect(sample.badges.map(badge => badge.text)).toEqual(['−1', '+2', '+2', '+2']);
-            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の今回の施設収支、${badge.net < 0 ? 'マイナス' : 'プラス'}${Math.abs(badge.net)}コイン`)).toBe(true);
+                .toEqual([{ owner: 0, net: dense ? 0 : -1 }, { owner: 1, net: 2 }, { owner: 2, net: 2 }, { owner: 3, net: 2 }]);
+            expect(sample.badges.map(badge => badge.text)).toEqual([dense ? '0' : '−1', '+2', '+2', '+2']);
+            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の今回の施設収支、${badge.net < 0 ? 'マイナス' : badge.net > 0 ? 'プラス' : ''}${Math.abs(badge.net)}コイン`)).toBe(true);
             expect(sample.badges.every(badge => badge.scrollWidth <= badge.clientWidth), '全桁を札の幅内へ表示する').toBe(true);
             expect(sample.badgeOwners, JSON.stringify(sample)).toBe(true);
             expect(sample.badgeOverlaps, JSON.stringify(sample)).toEqual([]);
@@ -272,4 +287,5 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     }
 });
 
+}
 }
