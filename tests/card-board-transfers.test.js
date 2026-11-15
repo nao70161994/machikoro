@@ -421,45 +421,38 @@ runTest('manualとReduced Motionはretarget対象外で設定変更時もmotion�
     controller.clear();
 });
 
-runTest('自動送金bundleは共有2RAF後に一度だけ開始し待機中retargetでも時計を変えない', () => {
-    const { container, animated, frameQueue, flushFrame, setEndpointShift, timer } = fixture();
+runTest('自動送金はnative開始をpauseせずretargetで時計を再設定しない', () => {
+    const { container, animated, frameQueue, setEndpointShift, timer } = fixture();
     const controller = CardBoardTransfers.create();
     controller.play({ container, events, simultaneous: true });
     const cleanup = timer();
-    assert.strictEqual(frameQueue.size, 1, '全routeが1本の開始予約を共有');
-    assert.ok(animated.every(({ animation }) => animation.playState === 'paused' && animation.currentTime === 0));
+    const clocks = animated.map(({ animation }) => [animation.currentTime, animation.startTime]);
+    assert.strictEqual(frameQueue.size, 0, 'native開始を追加RAF待機へ変換しない');
+    assert.ok(animated.every(({ animation }) => animation.playState === 'running'));
     setEndpointShift(30);
     controller.retarget();
-    assert.ok(animated.every(({ animation }) => animation.currentTime === 0 && animation.startTime === 1000));
-    flushFrame();
-    assert.strictEqual(frameQueue.size, 1);
-    assert.ok(animated.every(({ animation }) => animation.playState === 'paused'));
-    flushFrame();
-    assert.strictEqual(frameQueue.size, 0);
-    assert.ok(animated.every(record => record.animation.playState === 'running' && record.plays === 1));
-    controller.retarget();
-    flushFrame();
-    assert.ok(animated.every(record => record.plays === 1));
-    assert.strictEqual(timer(), cleanup, '準備待ちでcleanupを延期しない');
+    assert.deepStrictEqual(animated.map(({ animation }) => [animation.currentTime, animation.startTime]), clocks);
+    assert.ok(animated.every(record => !record.plays), 'retargetでplayを呼び直さない');
+    assert.strictEqual(timer(), cleanup);
     controller.clear();
+    assert.ok(animated.every(({ animation }) => animation.playState === 'idle'));
 });
 
-runTest('待機中clearや新bundleやReduced Motionは古いnative RAFの開始を無効にする', () => {
+runTest('clear・置換・Reduced Motion・非表示ではnative演出を停止し再開しない', () => {
     for (const reason of ['clear', 'replace', 'reduced', 'hidden']) {
-        const { container, animated, frameQueue, flushFrame, motion } = fixture();
+        const { container, animated, frameQueue, motion } = fixture();
+        let visibility;
+        container.ownerDocument.addEventListener = (name, callback) => { if (name === 'visibilitychange') visibility = callback; };
+        container.ownerDocument.removeEventListener = () => {};
         const controller = CardBoardTransfers.create();
         controller.play({ container, events, simultaneous: true });
-        flushFrame();
-        const [staleHandle, staleCallback] = [...frameQueue.entries()][0];
         const old = [...animated];
         if (reason === 'clear') controller.clear();
         if (reason === 'replace') controller.play({ container, events, simultaneous: true });
         if (reason === 'reduced') motion.callback({ matches: true });
-        if (reason === 'hidden') container.ownerDocument.hidden = true;
-        frameQueue.delete(staleHandle);
-        staleCallback(); // Native delivery can race cancellation; identity still guards it.
-        assert.ok(old.every(record => !record.plays), reason);
-        if (reason !== 'replace') assert.strictEqual(frameQueue.size, 0);
+        if (reason === 'hidden') { container.ownerDocument.hidden = true; visibility(); }
+        assert.ok(old.every(record => record.animation.playState === 'idle' && !record.plays), reason);
+        assert.strictEqual(frameQueue.size, 0);
         controller.clear();
     }
 });

@@ -170,15 +170,12 @@ const CardBoardTransfers = (() => {
         let simultaneousMotion = false;
         let badgeContext = null;
         let badges = [];
-        let startFrame = null;
-        let motionGeneration = 0;
+        let visibilityDocument = null;
+        let visibilityHandler = null;
         let motionQuery = null;
         let motionHandler = null;
         let motionObserver = null;
         function stopMotion() {
-            motionGeneration++;
-            if (startFrame !== null) view?.cancelAnimationFrame(startFrame);
-            startFrame = null;
             for (const animation of animations) animation.cancel();
             animations = [];
             actors = [];
@@ -199,32 +196,14 @@ const CardBoardTransfers = (() => {
                 if (typeof motionQuery.removeEventListener === 'function') motionQuery.removeEventListener('change', motionHandler);
                 else motionQuery.removeListener?.(motionHandler);
             }
+            visibilityDocument?.removeEventListener?.('visibilitychange', visibilityHandler);
+            visibilityDocument = null;
+            visibilityHandler = null;
             motionObserver?.disconnect();
             motionQuery = null;
             motionHandler = null;
             motionObserver = null;
             view = null;
-        }
-        function stageSimultaneous(container) {
-            const generation = motionGeneration;
-            const schedule = remaining => {
-                startFrame = view.requestAnimationFrame(() => {
-                    if (generation !== motionGeneration || !simultaneousMotion) return;
-                    startFrame = null;
-                    if (!container.isConnected || !layer?.isConnected || container.ownerDocument.hidden ||
-                            motionQuery?.matches || container.ownerDocument.body?.classList?.contains('accessibility-reduced-motion')) {
-                        stopMotion();
-                        return;
-                    }
-                    if (remaining > 0) schedule(remaining - 1);
-                    else for (const animation of animations) {
-                        // Start this bundle once, after its initial rendering
-                        // opportunity. No replay or clock reset on retarget.
-                        if (animation.playState === 'paused') animation.play();
-                    }
-                });
-            };
-            schedule(1);
         }
         function flightFrames(from, to, origin = from) {
             const translate = point => point.x === origin.x && point.y === origin.y
@@ -321,6 +300,7 @@ const CardBoardTransfers = (() => {
             const routes = allRoutes.filter(route => route.amount > 0);
             if (!routes.length && !events.incomplete && !(options.simultaneous && projectOwnerNets(events)?.length)) return false;
             const documentRef = container.ownerDocument;
+            if (documentRef.hidden) return false;
             view = documentRef.defaultView;
             const reducedMotion = options.reducedMotion === true ||
                 documentRef.body?.classList?.contains('accessibility-reduced-motion') === true ||
@@ -406,6 +386,9 @@ const CardBoardTransfers = (() => {
             const displayed = visualFlows.slice(0, visualLimit)
                 .map(route => ({ route, from: currentLocation(route.from), to: currentLocation(route.to) }));
             if (!reducedMotion) {
+                visibilityDocument = documentRef;
+                visibilityHandler = () => { if (documentRef.hidden) stopMotion(); };
+                documentRef.addEventListener?.('visibilitychange', visibilityHandler);
                 motionQuery = view?.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
                 motionHandler = event => { if (event.matches) stopMotion(); };
                 if (typeof motionQuery?.addEventListener === 'function') motionQuery.addEventListener('change', motionHandler);
@@ -453,10 +436,6 @@ const CardBoardTransfers = (() => {
                     const duration = parallel || route.facility ? 600 : 900;
                     if (route.facility) stepRoutes.set(route.facility.step, sameStep + 1);
                     const animation = coin.animate(flightFrames(from, to), { duration, delay, easing: 'linear', fill: 'both' });
-                    if (parallel) {
-                        animation.pause();
-                        animation.currentTime = 0;
-                    }
                     if (!route.facility) animationIndex++;
                     lastFlightEnd = Math.max(lastFlightEnd, delay + duration);
                     animation.finished?.catch(() => {});
@@ -464,7 +443,6 @@ const CardBoardTransfers = (() => {
                     actors.push({ route, animation, origin: from, endpointKey: `${from.x}:${from.y}:${to.x}:${to.y}` });
                 } else coin.remove();
             }
-            if (simultaneousMotion && animations.length) stageSimultaneous(container);
             // Facility steps share the caption timeline; no timer advances play.
             timeout = view?.setTimeout(clear, Math.max(3200, lastFlightEnd + 100)) ?? null;
             return true;
