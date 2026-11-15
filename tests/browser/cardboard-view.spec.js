@@ -81,7 +81,25 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     test(`カード盤面は4ビュー切替でも同一状態と共有市場を保つ ${viewport.width}`, async ({ page }, testInfo) => {
         await prepare(page, viewport);
         await expect(page.locator('svg[data-local-facility-art="ready"]')).toHaveCount(1);
-        await expect.poll(() => page.locator('#cardboardSeats .cardboard-card .cardboard-art use').evaluateAll(nodes => nodes.length > 0 && nodes.every(node => node.getAttribute('href').startsWith('#facility-local-')))).toBe(true);
+        const artwork = page.locator('#cardboardSeats .cardboard-card .cardboard-art svg');
+        await expect.poll(() => artwork.evaluateAll(nodes => nodes.length > 0 && nodes.every(svg => {
+            const image = svg.querySelector('image[data-facility-image-motif]');
+            const motif = image?.getAttribute('data-facility-image-motif');
+            if (!image || !motif || image.getAttribute('href') !== `icons/facility-art-images/${motif}.svg`) return false;
+            const bounds = image.getBBox();
+            return bounds.width > 0 && bounds.height > 0;
+        }))).toBe(true);
+        const decoded = await artwork.evaluateAll(async nodes => {
+            const sources = [...new Set(nodes.map(svg => svg.querySelector('image').getAttribute('href')))];
+            return Promise.all(sources.map(async source => {
+                const image = new Image();
+                image.src = source;
+                await image.decode();
+                return image.naturalWidth > 0 && image.naturalHeight > 0;
+            }));
+        });
+        expect(decoded.length).toBeGreaterThan(0);
+        expect(decoded.every(Boolean), '所有施設の画像が実際にデコードできる').toBe(true);
         const before = await state(page);
         for (const theme of ['plaza', 'sunset', 'classic', 'cardboard']) {
             await selectTheme(page, theme);

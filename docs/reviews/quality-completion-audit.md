@@ -2,13 +2,97 @@
 
 ## 現在の結論
 
-**Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
+**Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
+
+### v367実対局4人戦と次の演出診断
+
+[43722365615](https://github.com/nao70161994/machikoro/actions/runs/43722365615) の4人390/844も通常CPU1500msで完走。390は118turn/135操作/223click/900047ms、844は115turn/130操作/215click/885205ms。両方PageErrorsなし、相手正面→Backの2clickで視点復元・正本不変：[390原本](assets/nightly-quality/v367/normal-ui-4p-390-summary.json)・[844原本](assets/nightly-quality/v367/normal-ui-4p-844-summary.json)。独立原寸8画像レビューは全4所有札/カード/ランドマーク/市場の重大被覆、絵柄の欠落/変形を認めず、勝利名/6目標完成/再戦も明瞭：[844終盤](assets/nightly-quality/v367/normal-ui-4p-late-844.png)。2人戦を合わせた4幅16画像はレビュー済み。844終盤の細字は正面閲覧が必要で、発動額やプレイヤー個性は公式参考より控えめ、静止画からテンポや同等性は断定しない。
+
+主8aの16画面/操作43722700595は成功。一方、Release43722700623は旧use要求の844/1440だけ失敗（他job成功）。画像実体/参照/寸法/decodeへ修正した84c3c41fは主テスト更新として保存し、次の一括Pushで検証する。
+
+補助f838f72e /43723663933は4件中3成功。320は全7送金が実フレームで動いてCPU手番内に完了し全4収支札の配置も成立、明示確認320/844も成功。844はresolved-roll3590ms→transfer-created6249ms→turn-change6867ms、移動のRAF前に手番変更となった。根本の処理区間を特定するため、4b9200f3では寸法取得と配置探索の時間を分離計測し、同一geometryの探索を再利用する。Node2ファイル/checkJs4構成は成功、43724345668で失敗したCPU2条件だけ検証中。待ち時間/600ms/CPU1500や全員/全桁/非交差assertは維持し、主製品へ未採用。
+
+### v367実対局2人戦と独立画像レビュー
+
+[43722362883](https://github.com/nao70161994/machikoro/actions/runs/43722362883) の320/1440は通常CPU1500msで開始→勝利まで実UI完走。320は73turn/179操作/289click/533757ms、1440は66turn/177操作/264click/610501ms。両方PageErrorsなし、相手正面→Backの2click復帰・正本不変：[320原本](assets/nightly-quality/v367/normal-ui-2p-320-summary.json)・[1440原本](assets/nightly-quality/v367/normal-ui-2p-1440-summary.json)。独立原寸8画像レビューは重大なカード/名前切れ・操作被覆・画像の欠落/変形を認めず、320の横幅利用と勝利導線を確認：[320終盤](assets/nightly-quality/v367/normal-ui-2p-late-320.png)。旧版と自然対局状態は異なるので、倍率改善の因果比較は同一fixtureのv366証拠と区別する。
+
+主v367の16画面/操作43722198551は成功。設定テストを修正した8a9b912cはRelease43722700623で旧rendererのuseだけを要求する5caseのうち844/1440が失敗し、他jobは成功した。主375件を含むNightly43722695349はまだ実行中。この5caseを、所有カード全SVGのimage/motif/参照先/実寸と各unique画像のdecode成功へ更新し、元の4theme切替・共有市場・状態一致assertは維持する。単に旧assertを削除して通す変更ではない。ソース変更はテストだけで、元symbol fallbackのready assertも維持する。
+
+P2案4fadc580は送受信者/符号のtuple推論で型検査が停止。符号をobject propertyで分離したf838f72eはNode2ファイルとcheckJs4構成が成功し43723663933で実描画待ち。短い金額の全桁/全owner/非交差/600ms/CPU1500の条件を維持。主製品へ未採用。4人390/844の主実UIは継続中（844は完走成功）。
+
+### v367主CIの設定テスト修正（2026-11-15 JST）
+
+85570f2eの一括CI（Nightly43722191368・Release43722198530・画面43722198551）と通常CPU実UI完走（2人320/1440:43722362883、4人390/844:43722365615）を開始。ReleaseとNightlyのNode main.testはPlaywright testIgnoreの旧ソース文字列完全一致だけで失敗した。新規offline caseのChromium配置に対応するため、configをVM評価し、seeded/offlineの除外を確認した上で既存の全browser specがWebKitから除外されないこと、Chromiumがseeded/online/offlineを収集することへ検証を強化。既存オンラインのgateは維持する。修正後main/nightly-coverage Node2ファイルは成功、製品JSは変えていない。
+
+初回のbrowser/実対局は実行中のため停止・再起動せず結果を収集する。修正をまとめてPushした後、最終のRelease/Nightlyを再確認する。テスト成功や性能改善を先取りせず、Goal未完了・マージ保留。
+
+### v367描画方式の採用・主ブランチ検証待ち（2026-11-15 JST）
+
+最新main1336bf43（2人RLモデル更新）を作業ブランチへ統合。画像方式の独立ソースレビューでは採用阻害バグなし、cardboardの所有カードと建設メニューだけをSVG imageへ変更し、詳細/他テーマは元useを維持する。motif/scene/特殊viewBoxを共通化し、404時は従来描画へ復帰。50画像は元facility-art.svgの依存関係を含めて生成し、SW必須precache一覧と生成物をstatic CIで同期検査する。主SW v367へ更新。
+
+補助53971b9dの43346571047ではChromiumが50cache/50decode/offline reload/PageErrorsなしを成功：[原本](assets/nightly-quality/v367/chromium-facility-images-offline.json)。同run WebKitのsetOfflineはHTML/画像ともLoad failed：[診断原本](assets/nightly-quality/v367/webkit-offline-emulation-probe.json)。これは成功へ書換えず、既知の自動化制約を踏まえ、新規offline caseのみChromiumへ配置する。既存WebKit371件は維持し、同一実行の元symbolと画像の厳密画素比較（全施設＋麦畑/マグロ漁船/空港の4方向2倍率clone）をWebKitへ追加する。主inventoryは373→375予定で、実収集後に照合する。
+
+採用は描画資産の再利用を目的とし、ABBA少数試行では冷間RAF問題の因果を証明していない。WebKit実機offline・Safari実機・更新UIの実機挙動は未証明。Node施設アート/UI/Fieldと編集JS構文・生成50件一致は成功。主ブランチのRelease/16画面/Nightly/実対局回帰は一括検証待ち。自動一括演出案は別branchで未達のため採用しない。Goal未完了・マージ保留。
+
+### 補助offlineの切り分け続報
+
+004ae915 /43346167116はWebKitでoffline fetchが失敗し、clone画素比較は成功。Chromium対照は既存projectのtestMatchがseeded/onlineのみで対象を収集せず失敗したため、53971b9dの補助configだけにofflineを追加し [43346571047](https://github.com/nao70161994/machikoro/actions/runs/43346571047) で同一契約を比較中。主373件のconfig/期待値は変えていない。既に成功した画像比較を再度回さず、このrunはofflineだけに限定する。
+
+[Playwright公式資料](https://playwright.dev/docs/service-workers)はSW用機能のChromium制限を記載し、[upstream報告42775](https://github.com/microsoft/playwright/issues/42775)はWebKitのsetOffline後のSW navigation失敗とorigin停止対照の成功を記録している。自分の実行結果と同じ原因とまでは断定せず、WebKit+setOffline成功を画像方式の証拠に使わない。実サーバー停止や実機Safariのofflineは未検証のまま。
+
+### v366主製品の一括検証完了
+
+製品193d2edd（SW v366）の [Release43343690449](https://github.com/nao70161994/machikoro/actions/runs/43343690449)、[16画面/操作43343690441](https://github.com/nao70161994/machikoro/actions/runs/43343690441)、[Nightly43343707150](https://github.com/nao70161994/machikoro/actions/runs/43343707150) が全て成功。6分割の統合原本で373実行（WebKit371/Chromium2）、許可skip1、retry0、stable=true、欠落・重複なしを確認：[coverage原本](assets/nightly-quality/v366/nightly-browser-coverage.json)。新しい縦持ち高密度case、通知2RAF、既存ルール/保存/PWA/オンライン/CPU回帰を含む。前版の失敗事実は維持し、冷間描画の稀な遅延まで根絶したとは断定しない。
+
+補助画像54a00c72の43345749881では全施設/回転clone画素比較が成功し、50画像の実build cache保存も確認できた。一方、WebKitはoffline reloadでinternal errorとなり、採用条件未達。004ae915で同一条件のSW fetch診断とChromium対照を追加して原因を切り分ける。主製品は画像方式を採用していない。実プレイ証拠・公式との演出/奥行き差、物理端末未確認を含めGoal未完了、マージ保留。
+
+### v366検証途中の記録（2026-11-13 10:30 JST頃）
+
+通常Release43343690449は成功。Nightly43343707150はルール/PWA/オンライン・simulation・inventory・soakとWebKit第1/2/4/5分割が成功し、第3/6は実行中。前回不安定だった建設を含む第5の成功だけで全件安定とは判定せず、終了後のcoverage照合を待つ。画面/操作43343690441も実行中。
+
+画像候補1cb12a32の43344756668は失敗。独立レビューで発見したclone基準の保存漏れを14bc992cで修正。offline試験はサーバーのinjectServiceWorkerBuildHashがcache名をmachikoro-${buildHash}へ置換する仕様を見落としており、専用template名の空cacheを検査していた。54a00c72でapi/versionの実hashから既存cacheを特定し、cache存在と50件の200/SVG、offline decodeの条件は維持した。これはテスト修正で、製品の欠落を隠す期待値緩和ではない。中間14bcの43345474519は実行中のため再起動せず、その結果を確認してから修正版を一括実行する。
+
+### 画像方式候補の互換性補完（補助ブランチ・未採用）
+
+1cb12a32 / [43344756668](https://github.com/nao70161994/machikoro/actions/runs/43344756668) では、正本からの50 SVG生成とSW precache一覧を同じgeneratorで検査する。補助cache名を専用化し、主製品のSWは変更しない。元symbolと画像cloneを麦畑/マグロ漁船/空港×4方向×2倍率で画素比較し、50件のSW保存とオフラインreload後のdecodeを検証する。構文・生成一致のローカル検査は成功、native結果待ち。これが成功しても冷間RAF遅延の因果やPWA更新通知まで証明したとは扱わない。
+
+### v366独立レビューと補助候補の再検証
+
+採用2変更の独立ソースレビューでは具体的な新規欠陥なし。列候補は2人・縦長・13種類以上・非readingに限定し、通知は両RAFで取消条件を維持する。ブラウザ保証は主CI43343707150/43343690441/43343690449の結果待ち。
+
+補助832ab7a0の [43343782968](https://github.com/nao70161994/machikoro/actions/runs/43343782968) は4件中1成功・3失敗。320の明示確認は成功、844は逐次送金の実movingを時系列で捕捉できず（600ms終点を観測）、CPU2幅は全owner badge配置が依然未成立。探索候補を増やすだけでは十分でなく、狭い卓上に追加badgeを置く設計自体を再評価する。製品には未採用、既存の収支明細は維持し、強制クリック・時限延長・部分的な金額省略は行わない。
+
+### v366採用変更と残る不安定性（2026-11-13 JST）
+
+縦持ち2人終盤の列候補を6/8列へ拡張。補助 [43342542756](https://github.com/nao70161994/machikoro/actions/runs/43342542756) の同一fixture比較9件が成功。320pxの倍率は0.176→0.217（23.3%増）、390pxは0.303→0.352（16.2%増）。カード160×128を維持し、序盤・横持ち・PC・4人対照の倍率は不変。320原寸の独立レビューは採用を支持したが、市場の初期可視枚数6→4との交換条件があり、スクロールで全在庫へ到達する。全対局の品質保証とは区別する。[320変更前](assets/nightly-quality/v366/portrait-density-before-320.png)・[変更後](assets/nightly-quality/v366/portrait-density-after-320.png)・[2人8条件の計測原本](assets/nightly-quality/v366/portrait-density-comparisons.json)。既存終盤caseにも高密度配置・正面閲覧復帰・正本不変の検証を追加した。
+
+建設通知は最初のRAF（paint前）から1200msを消費していた。2回の描画機会後から同じ寿命を開始し、各段階でsession/turn/phase等を確認するよう修正。Node回帰は成功。主ブランチのnative検証は未完了で、1440pxの飛行待機失敗まで直ったとは扱わない。
+
+自動一括演出の補助43341728274は未成功。844pxは実移動を観測したものの手番変更前に完了を記録できず、両幅の金額badge配置も未成立。明示確認はボタンがreceiptのスクロール外に出る問題と、テストが実BUILD前に状態基準を採る問題を切り分けた。配置探索・ボタン先頭配置・正しいphase待機を補助ブランチで修正中。時間窓延長や強制クリックで隠さず、製品への採用は保留する。
+
+### 候補の実描画比較（2026-11-13 JST）
+
+補助 [43246050031](https://github.com/nao70161994/machikoro/actions/runs/43246050031) は2jobで実施。画像方式 `dffe275f` は型検査、全施設画素/404fallback、390/1440各ABBAの建設8caseが成功、全正本不変。390の最大RAF gapは順に旧675/画像271/画像271/旧274ms、移動観測951/417/421/533ms。1440は旧783/画像616/画像618/旧623ms、観測906/764/754/815ms。暖機後の旧方式も近いgapであり、OS/GPU cache未制御・有限試行なので画像方式が根本解決したとは言えない。clone/回転/zoom時の厳密画素、PWA保存は未検証のまま。
+
+一括結果/縦配置候補 `a7c3f16a` は未成功。型はonViewChangeの既定引数 `{}` と必須reasonの不一致を修正し、checkJs4構成を再成功。ブラウザ13caseは全失敗を調査した：CPU2caseは7経路の実moving frameを観測した一方、同時出発の金額/経路文字が重なる製品問題。明示確認2caseは既知の再生ボタン重複で失敗し、receipt HTMLへボタンを含めることで修正中。縦配置9caseは比較側が未建設の非表示ランドマークまで所有物として0rectを集計する試験不備で、全施設＋建設済みランドマークへ対象を正確化。施設の0rectは除外せず、5%改善/非退行/衝突/包含の基準を維持する。
+
+次候補では飛行するcoinと読める金額を分離し、全affected ownerの確認済net badgeを一括安全配置できるか検証する。1人だけ落とす表示は採用せず、成立しなければ候補未達とする。上記は補助ブランチの診断であり、主PR製品へ未検証機能を採用していない。
+
+### v365一括結果と次の候補（2026-11-13 JST）
+
+`a210bd2d`のRelease43241583647・16画面/操作43241583761は成功。Nightly43241587851は全6分割が終了したが、第5分割の390/1440建設が初回失敗→retry成功となり安定性照合は失敗。他5分割・unit/release/PWA/online/simulationは成功した。1440は準備RAF248→1504msで元1500ms窓内の480ms飛行中フレームを確認できず、390は建設通知の表示フレームを確認できなかった。shallow監視は不要走査を減らすが、この結果を原因解消とは扱わない。
+
+P0継続調査として、正本SVGから生成した共有SVG画像方式の旧候補を再評価する。旧対照では全施設画素一致/404fallbackは成功した一方、旧新各3回がどちらも成功しており性能原因の証明にはならなかった。今回も元の時間/geometry条件を維持し、390/1440の順序を交互にした比較とcold/warmの区別、生成物の整合・PWA保存を検討する。未検証の画像方式は製品へ採用していない。
+
+P1/P2のaux候補は、縦持ち2人終盤の実測列候補6/8と、自動一括結果/明示逐次確認。後者の独立レビューで、投影object参照をguardに使うと状態不変再描画で字幕だけ中断する問題、収支外へボタンが出る構造を発見したため修正中。どちらもnative確認前で製品未採用。候補の比較試験はまとめ、主CIの再試行や描画時間の緩和で問題を隠さない。
 
 ### v364画像レビューとv365の追加修正（2026-11-12 JST）
 
 v363実UI原寸16画像の独立レビューは、全カード/所有札/ランドマークの明確な卓外欠落や重大被覆なし、勝利と再戦の表示も明瞭と評価。[4対局の操作実測](assets/nightly-quality/v363/normal-ui-playthrough-summary.json)。2人320/1440は68/72turn、4人390/844は79/111turnで完走。金色手番と青緑発動はPCで識別できるが、4人844終盤では演出中の別規則 `.cardboard-resolving` が発動者HUDに金色insetを再付与していた。v365でHUDだけ青緑へ修正し、手番の金色outlineとカード側の発動金色は維持する。既存の実ロール/全4所有者の逐次発動case（844/320）で、その瞬間の実CSSを採取するassertを追加。時間/件数/順序/衝突条件は緩和していない。独立ソースレビューで具体的な退行は見当たらないが、native検証は次の一括CIで行う。
 
 基準候補生成 [43240237655](https://github.com/nao70161994/machikoro/actions/runs/43240237655) は成功。16画像のbyte比較は11完全一致/5差分。独立旧新10画像レビューでカード卓4幅は採用を支持。差分は案内文、短名札の寸法/配置、前回までの市場価格/在庫整理も含む。実カード・操作の重大切れや被覆は見当たらない：[320前](assets/nightly-quality/v364/card-table-before-320.png)・[320後](assets/nightly-quality/v364/card-table-after-320.png)。静止fixtureの画像評価で、長名・演出中・対局全体を保証しない。カード卓4枚だけ承認して更新、他12枚は既存を維持する。
+
+v364の通常画像/操作43240203703は旧基準とのカード卓844差分4245pixel（約2%）だけで失敗した。基準候補はこれより前に独立画像レビューで採否を判定し、v365へカード卓4枚を更新済み。旧基準の失敗を隠さず、v365側の実比較成功を待つ。
 
 夕暮れの広場844候補の693pixel差は下部3ラベルの文字位置に限定される。画像上は重大不具合ではないが意図的変更の説明がないため、その基準は更新しない。[候補5差分の計測](assets/nightly-quality/v364/baseline-candidate-differences.json)。既存の比較許容値も変更しない。未達は、320終盤で左右に余白があり文字が小さい点、冷間描画遅延の根本原因、送金テンポ、公式との差、物理端末未確認。Goal未完了・マージ保留。
 
@@ -168,10 +252,10 @@ c433時点の全体検証（履歴）: `c4335aab`。main `7954fcd1` を統合済
 
 ## 次の完了判定に必要なもの
 
-1. 最新7ecでRelease・16画面・全Nightlyと352件照合は成功。単発成功と長期安定を区別する。
-2. 最新7ecで4幅実UI完走、mid/late/first-build/winner16枚の独立レビュー完了。重大な切れ/操作重なりなし。実発動2枚も確認したが、連続演出の体感評価は不足。
-3. 実時間の発動表示で市場が長く隠れないか、送金フレームと操作の遅延が悪化していないかを確認する。固定静止画の見栄えだけで採用確定としない。
-4. 独立レビューの重大問題を解消し、公式との差が商用品質を妨げるかを具体的に評価する。
+1. v363 `e110e048` はRelease・16画面/操作・全Nightly373実行/retry0が成功。v364 `62f8f2c5` のRelease43240203606も全job成功。v365 `a210bd2d` のRelease43241583647・画像/操作43241583761は成功、Nightly43241587851は390/1440建設のretryで安定性照合が失敗。旧版の成功を新版の保証にしない。
+2. v363の2人320/1440・4人390/844通常速度UI完走と原寸16画像の独立レビューは完了。重大な切れ/操作被覆なし。5/10人の通常速度完走はv362に証拠がある。全幅×全人数の自然対局を実施済みとは扱わない。
+3. 実時間の送金/発動の描画を確認する。自動逐次紹介がCPU次手番へ間に合わない問題と冷間RAF停滞を、固定静止画やfinished Promiseだけで解消扱いにしない。並列化は紹介内容との意味整合・経路の省略表示・取消条件も含め候補段階で再評価する。
+4. 独立レビューで公式画像と原寸16画像を比較。明確なカード切れ/所有者欠落/主要操作遮蔽は見当たらないが、320終盤の左右空白と小さなカード、通常面の経済効果、卓上の光と反応表現は具体的な差として残る。物理端末と連続演出の体感は未確認。
 
 テスト成功・回数・チェック欄の充足だけで商用品質到達とはしない。物理スマートフォン未確認、主観的な比較の限界、全幅×全人数の自然対局未実施は最終報告でも明記する。
 

@@ -120,6 +120,7 @@ runTest('RL model portfolio: 2人戦では2人用候補だけを選ぶ', () => {
             'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3',
             'natural-selfplay-2p-seed73-20261101',
             'natural-selfplay-2p-seed76-20261101',
+            'stable-selfplay-2p-seed82-lr1e5-5000-20261107',
         ]
     );
 });
@@ -656,5 +657,32 @@ runTest('RL model portfolio: natural seeds eligible only in supported counts', (
     for (let i = 0; i < 100; i++) {
         const assigned = RLModelPortfolio.assignModelIds(settings, 4);
         assert.ok(RLModelPortfolio.selectedMemoryBudget(4, assigned).withinBudget);
+    }
+});
+
+runTest('RL model portfolio: stable seed82 is a verified 2p-only manual and automatic choice', () => {
+    const { RLModelPortfolio, RL_MODEL_PORTFOLIO } = loadPortfolio();
+    const id = 'stable-selfplay-2p-seed82-lr1e5-5000-20261107';
+    const model = RLModelPortfolio.modelById(id, 2);
+    assert.ok(model);
+    assert.strictEqual(model.productionActive, true);
+    assert.strictEqual(model.maxPlayers, 2);
+    assert.ok(model.aliases.includes('seed82'));
+    assert.ok(model.label.includes('花とブドウ園'));
+    assert.ok(RL_MODEL_PORTFOLIO.some(m => m.id === id));
+    assert.ok(!RLModelPortfolio.eligibleModels(3).some(m => m.id === id));
+    const manual = RLModelPortfolio.assignModelIds([
+        {type:'cpu',difficulty:'rl',rlModelId:id,rlModelSelection:'manual'},
+        {type:'human',difficulty:'normal'},
+    ],2);
+    assert.strictEqual(manual[0].rlModelId, id);
+    const available = new Set(RLModelPortfolio.eligibleModels(2).map(m => m.id));
+    for(let i=0;i<100;i++) {
+        const assigned = RLModelPortfolio.assignModelIds([
+            {type:'cpu',difficulty:'rl'},
+            {type:'cpu',difficulty:'rl'},
+        ],2);
+        assert.ok(assigned.every(player => available.has(player.rlModelId)));
+        assert.ok(RLModelPortfolio.selectedMemoryBudget(2, assigned).withinBudget);
     }
 });
