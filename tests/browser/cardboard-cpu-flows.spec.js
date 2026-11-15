@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['no-promotion', 'no-lift'] : [''])) {
+for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['no-art', 'no-shadows'] : [''])) {
 for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
 if (paintDiagnostic && (!dense || viewport.width !== 844)) continue;
@@ -17,9 +17,9 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     if (paintDiagnostic) {
-        await page.addStyleTag({ content: `html[data-design="cardboard"] body #cardboardBoard .cardboard-card-activated {
-            will-change: auto !important; ${paintDiagnostic === 'no-lift' ? 'animation: none !important;' : ''}
-        }` });
+        await page.addStyleTag({ content: paintDiagnostic === 'no-art'
+            ? '#cardboardBoard svg { visibility: hidden !important; }'
+            : '#cardboardBoard, #cardboardBoard *, #cardboardBoard *::before, #cardboardBoard *::after { box-shadow: none !important; text-shadow: none !important; filter: none !important; backdrop-filter: none !important; }' });
     }
     await page.evaluate(dense => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
@@ -275,7 +275,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             expect(sample.badges.map(({ owner, net }) => ({ owner, net })).sort((a, b) => a.owner - b.owner))
                 .toEqual([{ owner: 0, net: dense ? 0 : -1 }, { owner: 1, net: 2 }, { owner: 2, net: 2 }, { owner: 3, net: 2 }]);
             expect(sample.badges.map(badge => badge.text)).toEqual([dense ? '0' : '−1', '+2', '+2', '+2']);
-            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の今回の施設収支、${badge.net < 0 ? 'マイナス' : badge.net > 0 ? 'プラス' : ''}${Math.abs(badge.net)}コイン`)).toBe(true);
+            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の直近に解決した収支、${badge.net < 0 ? 'マイナス' : badge.net > 0 ? 'プラス' : ''}${Math.abs(badge.net)}コイン`)).toBe(true);
             expect(sample.badges.every(badge => badge.scrollWidth <= badge.clientWidth), '全桁を札の幅内へ表示する').toBe(true);
             expect(sample.badgeOwners, JSON.stringify(sample)).toBe(true);
             expect(sample.badgeOverlaps, JSON.stringify(sample)).toEqual([]);
