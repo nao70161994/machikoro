@@ -6,19 +6,37 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['dpr1-desktop', 'mobile-after-input'] : [''])) {
-test.describe(paintDiagnostic || '標準モバイル', () => {
-if (paintDiagnostic) test.use(paintDiagnostic === 'dpr1-desktop'
-    ? { deviceScaleFactor: 1, isMobile: false, hasTouch: false }
-    : { deviceScaleFactor: 3, isMobile: true, hasTouch: true });
 for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
-if (paintDiagnostic && (!dense || viewport.width !== 844)) continue;
-test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewport.width}px${dense ? ' 終盤' : ''}${paintDiagnostic ? ` 描画診断 ${paintDiagnostic}` : ''}`, async ({ page }, testInfo) => {
+test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewport.width}px${dense ? ' 終盤' : ''}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.addInitScript(() => {
+        const profile = window.cpuFrameProfile = { frames: [], heartbeats: [] };
+        const nativeRequest = window.requestAnimationFrame.bind(window);
+        const labels = new WeakMap();
+        window.requestAnimationFrame = callback => {
+            if (!labels.has(callback)) labels.set(callback, `${callback.name || 'anonymous'}: ${String(callback).slice(0, 120)}`);
+            const requestedAt = performance.now();
+            return nativeRequest(timestamp => {
+                const startedAt = performance.now();
+                try { callback(timestamp); }
+                finally {
+                    if (profile.frames.length < 2000) profile.frames.push({ requestedAt, timestamp, startedAt,
+                        endedAt: performance.now(), label: labels.get(callback) });
+                }
+            });
+        };
+        let last = performance.now();
+        const timer = setInterval(() => {
+            const now = performance.now();
+            if (profile.heartbeats.length < 500) profile.heartbeats.push({ at: now, gap: now - last });
+            else clearInterval(timer);
+            last = now;
+        }, 200);
+    });
     await page.goto('/');
     await page.evaluate(dense => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
@@ -223,7 +241,6 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             requestAnimationFrame(sample);
         });
     }, dense);
-    if (paintDiagnostic === 'mobile-after-input') await page.locator('[data-cardboard-camera="overview"]').tap();
     await page.screenshot({ path: testInfo.outputPath('cpu-events-start.png') });
     await page.evaluate(() => scheduleCPU());
     try {
@@ -235,7 +252,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     } finally {
         const evidence = await page.evaluate(() => {
             window.stopCpuEventObservation();
-            return { ...window.cpuEventTimeline,
+            return { ...window.cpuEventTimeline, frameProfile: window.cpuFrameProfile,
                 diceRngCalls: window.cpuEventTimeline.diceRngCalls ?? window.cpuDiagnosticDiceCalls() };
         });
         const file = testInfo.outputPath('cpu-events-timeline.json');
@@ -297,5 +314,3 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
 }
 }
 
-});
-}
