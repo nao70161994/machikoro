@@ -4,6 +4,14 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
 
+### v367実対局4人戦と次の演出診断
+
+[43722365615](https://github.com/nao70161994/machikoro/actions/runs/43722365615) の4人390/844も通常CPU1500msで完走。390は118turn/135操作/223click/900047ms、844は115turn/130操作/215click/885205ms。両方PageErrorsなし、相手正面→Backの2clickで視点復元・正本不変：[390原本](assets/nightly-quality/v367/normal-ui-4p-390-summary.json)・[844原本](assets/nightly-quality/v367/normal-ui-4p-844-summary.json)。独立原寸8画像レビューは全4所有札/カード/ランドマーク/市場の重大被覆、絵柄の欠落/変形を認めず、勝利名/6目標完成/再戦も明瞭：[844終盤](assets/nightly-quality/v367/normal-ui-4p-late-844.png)。2人戦を合わせた4幅16画像はレビュー済み。844終盤の細字は正面閲覧が必要で、発動額やプレイヤー個性は公式参考より控えめ、静止画からテンポや同等性は断定しない。
+
+主8aの16画面/操作43722700595は成功。一方、Release43722700623は旧use要求の844/1440だけ失敗（他job成功）。画像実体/参照/寸法/decodeへ修正した84c3c41fは主テスト更新として保存し、次の一括Pushで検証する。
+
+補助f838f72e /43723663933は4件中3成功。320は全7送金が実フレームで動いてCPU手番内に完了し全4収支札の配置も成立、明示確認320/844も成功。844はresolved-roll3590ms→transfer-created6249ms→turn-change6867ms、移動のRAF前に手番変更となった。根本の処理区間を特定するため、4b9200f3では寸法取得と配置探索の時間を分離計測し、同一geometryの探索を再利用する。Node2ファイル/checkJs4構成は成功、43724345668で失敗したCPU2条件だけ検証中。待ち時間/600ms/CPU1500や全員/全桁/非交差assertは維持し、主製品へ未採用。
+
 ### v367実対局2人戦と独立画像レビュー
 
 [43722362883](https://github.com/nao70161994/machikoro/actions/runs/43722362883) の320/1440は通常CPU1500msで開始→勝利まで実UI完走。320は73turn/179操作/289click/533757ms、1440は66turn/177操作/264click/610501ms。両方PageErrorsなし、相手正面→Backの2click復帰・正本不変：[320原本](assets/nightly-quality/v367/normal-ui-2p-320-summary.json)・[1440原本](assets/nightly-quality/v367/normal-ui-2p-1440-summary.json)。独立原寸8画像レビューは重大なカード/名前切れ・操作被覆・画像の欠落/変形を認めず、320の横幅利用と勝利導線を確認：[320終盤](assets/nightly-quality/v367/normal-ui-2p-late-320.png)。旧版と自然対局状態は異なるので、倍率改善の因果比較は同一fixtureのv366証拠と区別する。
