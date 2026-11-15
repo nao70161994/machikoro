@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['no-art', 'no-shadows'] : [''])) {
+for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['no-world', 'no-other-animation'] : [''])) {
 for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
 if (paintDiagnostic && (!dense || viewport.width !== 844)) continue;
@@ -17,9 +17,9 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     if (paintDiagnostic) {
-        await page.addStyleTag({ content: paintDiagnostic === 'no-art'
-            ? '#cardboardBoard svg { visibility: hidden !important; }'
-            : '#cardboardBoard, #cardboardBoard *, #cardboardBoard *::before, #cardboardBoard *::after { box-shadow: none !important; text-shadow: none !important; filter: none !important; backdrop-filter: none !important; }' });
+        await page.addStyleTag({ content: paintDiagnostic === 'no-world'
+            ? '#cardboardSeats { visibility: hidden !important; }'
+            : 'body *, body *::before, body *::after { animation: none !important; transition: none !important; }' });
     }
     await page.evaluate(dense => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
