@@ -111,7 +111,9 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                             from: element.dataset.from, to: element.dataset.to,
                             amount: Number(element.dataset.amount), mode: element.dataset.mode, routeLabelDisplay: getComputedStyle(element, '::after').display,
                             subjects: JSON.parse(element.dataset.subjects || '[]'), text: element.textContent };
-                        record('transfer-created', { ...data, delay: timing?.delay, duration: timing?.duration });
+                        record('transfer-created', { ...data, delay: timing?.delay, duration: timing?.duration,
+                            netGeometryMs: element.closest('.cardboard-transfers')?.dataset.netGeometryMs,
+                            netPlannerMs: element.closest('.cardboard-transfers')?.dataset.netPlannerMs });
                         resolveFirstTransfer();
                         if (animation) {
                             // A timer observes the existing animation; it never changes its clock.

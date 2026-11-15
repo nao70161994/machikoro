@@ -216,6 +216,8 @@ const CardBoardTransfers = (() => {
         function positionBadges() {
             if (!badgeContext || !layer) return;
             const { container, events, nets } = badgeContext;
+            const clock = () => view?.performance?.now?.() ?? Date.now();
+            const startedAt = clock();
             const rect = container.getBoundingClientRect();
             const viewport = container.querySelector('#cardboardTableViewport')?.getBoundingClientRect() || rect;
             const valid = box => box?.width > 0 && box.height > 0;
@@ -236,7 +238,13 @@ const CardBoardTransfers = (() => {
             });
             const bounds = { left: Math.max(rect.left, viewport.left), right: Math.min(rect.right, viewport.right),
                 top: Math.max(rect.top, viewport.top), bottom: Math.min(rect.bottom, viewport.bottom) };
+            const input = JSON.stringify([bounds, owners, obstacles]);
+            if (layer.dataset.netBadgeInput === input) return;
+            layer.dataset.netBadgeInput = input;
+            const plannedAt = clock();
             const plan = nets && owners.every(owner => owner.anchor) ? placeNetBadges(owners, bounds, obstacles) : null;
+            layer.dataset.netGeometryMs = String(plannedAt - startedAt);
+            layer.dataset.netPlannerMs = String(clock() - plannedAt);
             layer.dataset.netBadges = plan ? 'complete' : nets ? 'unplaced' : 'overflow';
             const key = plan ? JSON.stringify(plan.map(item => [item.owner, item.net, item.left, item.top, item.width])) : 'none';
             if (layer.dataset.netBadgeGeometry === key) return;
