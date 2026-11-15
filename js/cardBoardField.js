@@ -2005,7 +2005,7 @@ const CardBoardField = (() => {
                 playerSettings: facts.playerSettings,
                 renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
                 playerKindAccessibleLabel: UiPlayerDisplay.playerKindAccessibleLabel,
-                renderFacilityArt: UiBuildMenu.renderFacilityArt,
+                renderFacilityArt: UiBuildMenu.renderTableFacilityArt,
                 renderTownScenery: null,
                 getEffectText,
             }));

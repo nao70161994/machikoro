@@ -222,13 +222,17 @@ const CardBoardTransfers = (() => {
             const inside = box => valid(box) && box.left >= viewport.left && box.right <= viewport.right && box.top >= viewport.top && box.bottom <= viewport.bottom;
             const obstacles = Array.from(container.querySelectorAll?.('.cardboard-owner-label, .cardboard-card, .cardboard-landmark, #cardboardCenter, #cardboardControls, #cardboardCameraTools, #cardboardRoster, #cardboardViewHint') || [])
                 .map(element => element.getBoundingClientRect()).filter(valid);
+            const measure = container.ownerDocument.createElement('canvas').getContext?.('2d');
+            if (measure) measure.font = `800 12px ${view?.getComputedStyle?.(container).fontFamily || 'sans-serif'}`;
             const owners = (nets || []).map(entry => {
                 const label = container.querySelector(`.cardboard-owner-label[data-player-index="${entry.owner}"]`);
                 const header = container.querySelector(`[data-player-index="${entry.owner}"] .cardboard-header`);
                 const hud = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${entry.owner}"]`);
                 const anchor = [label, header, hud].map(element => element?.getBoundingClientRect()).find(inside);
-                const text = `${events.incomplete ? '確認分' : '収支'} ${entry.net > 0 ? '+' : ''}${entry.net}`;
-                return { ...entry, text, anchor, width: Math.max(78, text.length * 12 + 16) };
+                const amount = entry.net < 0 ? `−${Math.abs(entry.net)}` : `${entry.net > 0 ? '+' : ''}${entry.net}`;
+                const text = `${events.incomplete ? '確認分 ' : ''}${amount}`;
+                const width = Math.max(36, Math.ceil(measure ? measure.measureText(text).width : text.length * 12) + 16);
+                return { ...entry, text, anchor, width };
             });
             const bounds = { left: Math.max(rect.left, viewport.left), right: Math.min(rect.right, viewport.right),
                 top: Math.max(rect.top, viewport.top), bottom: Math.min(rect.bottom, viewport.bottom) };
@@ -247,7 +251,7 @@ const CardBoardTransfers = (() => {
                 badge.dataset.net = String(placement.net);
                 badge.dataset.incomplete = String(events.incomplete === true);
                 badge.textContent = placement.text;
-                badge.setAttribute('aria-label', `${participantName(events, placement.owner)}の${placement.text}`);
+                badge.setAttribute('aria-label', `${participantName(events, placement.owner)}の今回の施設収支${events.incomplete ? '（確認分）' : ''}、${placement.net < 0 ? 'マイナス' : placement.net > 0 ? 'プラス' : ''}${Math.abs(placement.net)}コイン`);
                 badge.style.left = `${placement.left - rect.left}px`;
                 badge.style.top = `${placement.top - rect.top}px`;
                 badge.style.width = `${placement.width}px`;
@@ -332,10 +336,10 @@ const CardBoardTransfers = (() => {
             layer.className = 'cardboard-transfers';
             summaryNode = documentRef.createElement('p');
             summaryNode.className = 'cardboard-transfer-summary';
-            summaryNode.textContent = routes.slice(0, 3).map(route =>
+            summaryNode.textContent = (options.simultaneous ? ['今回の施設収支（コイン）'] : []).concat(routes.slice(0, 3).map(route =>
                 route.text.replace(/^(.*?)：(\d+)コイン$/, '$2コイン · $1')
             ).concat(routes.length > 3 ? [`ほか${routes.length - 3}件（発動・支払いの内訳で確認）`] : [])
-                .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : []).join('\n');
+                .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : [])).join('\n');
             summaryNode.setAttribute('role', 'status');
             summaryNode.setAttribute('aria-live', 'polite');
             summaryNode.setAttribute('aria-label', routes.slice(0, 8).map(route =>

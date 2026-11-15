@@ -177,7 +177,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                     const badgeElements = [...document.querySelectorAll('.cardboard-owner-net')];
                     const protectedElements = [...document.querySelectorAll('.cardboard-owner-label, .cardboard-card, .cardboard-landmark, #cardboardCenter, #cardboardControls, #cardboardCameraTools, #cardboardRoster, #cardboardViewHint')];
                     const badges = badgeElements.map(badge => ({ owner: Number(badge.dataset.playerIndex), net: Number(badge.dataset.net),
-                        text: badge.textContent, rect: badge.getBoundingClientRect().toJSON(), aria: badge.getAttribute('aria-label') }));
+                        text: badge.textContent, scrollWidth: badge.scrollWidth, clientWidth: badge.clientWidth, rect: badge.getBoundingClientRect().toJSON(), aria: badge.getAttribute('aria-label') }));
                     const collides = (a, b) => a.width > 0 && a.height > 0 && b.width > 0 && b.height > 0 &&
                         a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
                     const badgeOverlaps = badges.flatMap((badge, index) => [
@@ -250,8 +250,9 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             expect(sample.badgeStatus, JSON.stringify(sample)).toBe('complete');
             expect(sample.badges.map(({ owner, net }) => ({ owner, net })).sort((a, b) => a.owner - b.owner))
                 .toEqual([{ owner: 0, net: -1 }, { owner: 1, net: 2 }, { owner: 2, net: 2 }, { owner: 3, net: 2 }]);
-            expect(sample.badges.map(badge => badge.text)).toEqual(['収支 -1', '収支 +2', '収支 +2', '収支 +2']);
-            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の${badge.text}`)).toBe(true);
+            expect(sample.badges.map(badge => badge.text)).toEqual(['−1', '+2', '+2', '+2']);
+            expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の今回の施設収支、${badge.net < 0 ? 'マイナス' : 'プラス'}${Math.abs(badge.net)}コイン`)).toBe(true);
+            expect(sample.badges.every(badge => badge.scrollWidth <= badge.clientWidth), '全桁を札の幅内へ表示する').toBe(true);
             expect(sample.badgeOwners, JSON.stringify(sample)).toBe(true);
             expect(sample.badgeOverlaps, JSON.stringify(sample)).toEqual([]);
         }
