@@ -4,6 +4,34 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
 
+### v367主CIの一括成功（2026-11-16 JST）
+
+主883a0831の [Nightly43727592329](https://github.com/nao70161994/machikoro/actions/runs/43727592329) は6分割/Node/release/PWA/online/simulation/soak/最終coverageが全成功。[原本集計](assets/nightly-quality/v367/nightly-browser-coverage.json) は375実行（WebKit372・Chromium3）、許可skip1、retry0、stable=true。全件の重複/欠落検査も成功した。同一主HEADのRelease43724454030と16画面43724454082も成功。旧use期待値の失敗を修復したことを最終全件で確認した。
+
+これは主製品のP0正常化の証拠であり、別ブランチのP2演出候補の成功や商用品質全体の達成を意味しない。自然対局2/4人4幅の完走・16画像独立レビューは上記v367証拠を維持。Goal未完了、Draft PR #19、マージ保留。
+
+### 標準モバイル設定の演出診断と最終Nightly（2026-11-16 JST）
+
+主883a0831のRelease43724454030と16画面43724454082は成功。旧use専用期待値5件は84c3c41fでimage/motif/実寸/decode検証へ更新し、共有状態・4themeのassertを維持。8a9b912cのNightly43722695349はその5件で失敗して終結した。最新主のNightly [43727592329](https://github.com/nao70161994/machikoro/actions/runs/43727592329) を一括実行中。成功はまだ未確定。
+
+P2候補のDPR1四条件43725733641は成功したが、標準モバイルDPR/touchへ戻した [43726571832](https://github.com/nao70161994/machikoro/actions/runs/43726571832) は4件中3件失敗。演出生成後の最初のRAFが約2～4.5秒遅れ、完了前に取消される条件を原本JSONで確認した。DPR1の成功を製品採用根拠にせず、主ブランチへの演出候補採用は保留する。
+
+独立ソースレビューで、収支札配置探索の`if (!budget--)`が0から負数へ進むことで上限を失う欠陥を発見。補助ブランチ02c0ccecで0以下停止・親ループ終了へ修正し、予算2なら失敗／3なら成功する決定的assertを追加。非施設分や追加解決batchも集計するラベルは「直近に解決した収支」に修正。Node対象テスト・4構成checkJs・独立再レビューは成功。同じ標準モバイル四条件 [43727578162](https://github.com/nao70161994/machikoro/actions/runs/43727578162) で再検証中。上限不備がRAF遅延の原因だったとの因果判定はしていない。
+
+
+P2候補のsafeEndpoint修正後DPR1四画像も独立目視レビューした。撮影時点でowner名へのcoin被覆はなく、正負/0の全桁と街札対応を確認。ただしcoinは施設アート/市場上を通り、全演出非被覆を意味しない。320密集終盤ではカード名/枚数/効果は全体表示だけでは読めず、844の細字も正面閲覧が必要。このfixtureを商用品質達成とは評価しない。標準DPRではRAF停滞が続き、タイマーはその間に動くため、全発動カード同時のlift/will-changeによる描画負荷を候補として、fbac588dの補助 [43727759514](https://github.com/nao70161994/machikoro/actions/runs/43727759514) でno-promotion/no-liftを比較中。経路/600ms/CPU1500/非被覆の検証条件は維持する。
+
+
+02c0ccecの標準DPR再検証43727578162も完了漏れが再現。320序盤の失敗はbrowser側aria期待値の更新漏れであり、採取geometryのlabelOverlapsは全件空だった。移動途中の名前被覆とした途中報告は訂正する。期待値を実装と同じ「直近に解決した収支」へ更新。no-promotion/no-liftの両対照43727759514でもfinished欠落が残り、lift単独原因とは判定しない。016e8ec6の補助 [43728163335](https://github.com/nao70161994/machikoro/actions/runs/43728163335) でアートのみ非表示／影とfilterのみ無効を切り分け中（製品採用案ではない）。既存timestamp解析では観測RAFのtimestampとcallback時刻差0～1msで、主にframe自体の到着が遅い。
+
+
+アート非表示／影・filter無効の二対照43728163335でもfinished欠落が残った。アート、影、liftの単独原因説を採用しない。2add3ba2の補助 [43728528079](https://github.com/nao70161994/machikoro/actions/runs/43728528079) でworld非描画／他CSS animation無効を診断中。いずれも通常製品・CIの画質やassertを下げる変更ではなく補助workflow限定。主883aのNightlyはsimulation/Node/online-soakとブラウザ3分割が成功し、残り/全件coverageは待機中。
+
+
+world非描画対照43728528079はfinished検証を通過したが実時間frameのgeometry採取が0、他CSS animation無効対照はfinished欠落。完成とは扱わない。旧成功設定はDPR1に加えてisMobile=falseであり、DPR単独の因果比較ではなかった。b6c9ac8aの補助 [43728906581](https://github.com/nao70161994/machikoro/actions/runs/43728906581) はDPR3/isMobile=falseとDPR1/isMobile=trueを独立比較（hasTouch両方true）。主P2未採用を維持。
+
+Goal未完了、PR #19はDraft、マージ保留を維持する。
+
 ### v367実対局4人戦と次の演出診断
 
 [43722365615](https://github.com/nao70161994/machikoro/actions/runs/43722365615) の4人390/844も通常CPU1500msで完走。390は118turn/135操作/223click/900047ms、844は115turn/130操作/215click/885205ms。両方PageErrorsなし、相手正面→Backの2clickで視点復元・正本不変：[390原本](assets/nightly-quality/v367/normal-ui-4p-390-summary.json)・[844原本](assets/nightly-quality/v367/normal-ui-4p-844-summary.json)。独立原寸8画像レビューは全4所有札/カード/ランドマーク/市場の重大被覆、絵柄の欠落/変形を認めず、勝利名/6目標完成/再戦も明瞭：[844終盤](assets/nightly-quality/v367/normal-ui-4p-late-844.png)。2人戦を合わせた4幅16画像はレビュー済み。844終盤の細字は正面閲覧が必要で、発動額やプレイヤー個性は公式参考より控えめ、静止画からテンポや同等性は断定しない。
