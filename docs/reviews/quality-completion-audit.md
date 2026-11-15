@@ -4,6 +4,14 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
 
+### v367実対局2人戦と独立画像レビュー
+
+[43722362883](https://github.com/nao70161994/machikoro/actions/runs/43722362883) の320/1440は通常CPU1500msで開始→勝利まで実UI完走。320は73turn/179操作/289click/533757ms、1440は66turn/177操作/264click/610501ms。両方PageErrorsなし、相手正面→Backの2click復帰・正本不変：[320原本](assets/nightly-quality/v367/normal-ui-2p-320-summary.json)・[1440原本](assets/nightly-quality/v367/normal-ui-2p-1440-summary.json)。独立原寸8画像レビューは重大なカード/名前切れ・操作被覆・画像の欠落/変形を認めず、320の横幅利用と勝利導線を確認：[320終盤](assets/nightly-quality/v367/normal-ui-2p-late-320.png)。旧版と自然対局状態は異なるので、倍率改善の因果比較は同一fixtureのv366証拠と区別する。
+
+主v367の16画面/操作43722198551は成功。設定テストを修正した8a9b912cはRelease43722700623で旧rendererのuseだけを要求する5caseのうち844/1440が失敗し、他jobは成功した。主375件を含むNightly43722695349はまだ実行中。この5caseを、所有カード全SVGのimage/motif/参照先/実寸と各unique画像のdecode成功へ更新し、元の4theme切替・共有市場・状態一致assertは維持する。単に旧assertを削除して通す変更ではない。ソース変更はテストだけで、元symbol fallbackのready assertも維持する。
+
+P2案4fadc580は送受信者/符号のtuple推論で型検査が停止。符号をobject propertyで分離したf838f72eはNode2ファイルとcheckJs4構成が成功し43723663933で実描画待ち。短い金額の全桁/全owner/非交差/600ms/CPU1500の条件を維持。主製品へ未採用。4人390/844の主実UIは継続中（844は完走成功）。
+
 ### v367主CIの設定テスト修正（2026-11-15 JST）
 
 85570f2eの一括CI（Nightly43722191368・Release43722198530・画面43722198551）と通常CPU実UI完走（2人320/1440:43722362883、4人390/844:43722365615）を開始。ReleaseとNightlyのNode main.testはPlaywright testIgnoreの旧ソース文字列完全一致だけで失敗した。新規offline caseのChromium配置に対応するため、configをVM評価し、seeded/offlineの除外を確認した上で既存の全browser specがWebKitから除外されないこと、Chromiumがseeded/online/offlineを収集することへ検証を強化。既存オンラインのgateは維持する。修正後main/nightly-coverage Node2ファイルは成功、製品JSは変えていない。
