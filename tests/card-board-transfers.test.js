@@ -498,6 +498,8 @@ runTest('owner金額の一括配置は名前と障害物と他badgeを避け全�
     const obstacles = owners.map(owner => owner.anchor);
     const plan = CardBoardTransfers.placeNetBadges(owners, bounds, obstacles);
     assert.strictEqual(plan.length, 2);
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 2), null, '探索予算を使い切った後の候補から再開しない');
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 3).length, 2);
     assert.deepStrictEqual(plan.map(entry => entry.owner), [0, 1]);
     const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
     for (const placed of plan) assert.ok(obstacles.every(obstacle => !intersects(placed, obstacle)));

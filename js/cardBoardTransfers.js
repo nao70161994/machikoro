@@ -98,7 +98,7 @@ const CardBoardTransfers = (() => {
     }
 
     // All-or-none: never leave only the winners visible when one label cannot fit.
-    function placeNetBadges(owners, bounds, obstacles) {
+    function placeNetBadges(owners, bounds, obstacles, searchBudget = 2000) {
         const overlap = (a, b) => a.left < b.right + 2 && a.right > b.left - 2 && a.top < b.bottom + 2 && a.bottom > b.top - 2;
         const distance = (rect, anchor) => Math.hypot((rect.left + rect.right) / 2 - (anchor.left + anchor.right) / 2,
             (rect.top + rect.bottom) / 2 - (anchor.top + anchor.bottom) / 2);
@@ -120,11 +120,13 @@ const CardBoardTransfers = (() => {
                 .sort((left, right) => distance(left, owner.anchor) - distance(right, owner.anchor));
         });
         const order = owners.map((_, index) => index).sort((a, b) => candidates[a].length - candidates[b].length);
-        let budget = 2000;
+        let budget = Number.isInteger(searchBudget) ? Math.max(0, Math.min(2000, searchBudget)) : 2000;
         const search = (index, placed) => {
-            if (!budget--) return null;
+            if (budget <= 0) return null;
+            budget--;
             if (index === owners.length) return placed;
             for (const candidate of candidates[order[index]]) {
+                if (budget <= 0) break;
                 if (placed.some(rect => overlap(candidate, rect))) continue;
                 const result = search(index + 1, [...placed, candidate]);
                 if (result) return result;
@@ -281,7 +283,7 @@ const CardBoardTransfers = (() => {
                 badge.dataset.net = String(placement.net);
                 badge.dataset.incomplete = String(events.incomplete === true);
                 badge.textContent = placement.text;
-                badge.setAttribute('aria-label', `${participantName(events, placement.owner)}の今回の施設収支${events.incomplete ? '（確認分）' : ''}、${placement.net < 0 ? 'マイナス' : placement.net > 0 ? 'プラス' : ''}${Math.abs(placement.net)}コイン`);
+                badge.setAttribute('aria-label', `${participantName(events, placement.owner)}の直近に解決した収支${events.incomplete ? '（確認分）' : ''}、${placement.net < 0 ? 'マイナス' : placement.net > 0 ? 'プラス' : ''}${Math.abs(placement.net)}コイン`);
                 badge.style.left = `${placement.left - rect.left}px`;
                 badge.style.top = `${placement.top - rect.top}px`;
                 badge.style.width = `${placement.width}px`;
@@ -374,7 +376,7 @@ const CardBoardTransfers = (() => {
             layer.className = 'cardboard-transfers';
             summaryNode = documentRef.createElement('p');
             summaryNode.className = 'cardboard-transfer-summary';
-            summaryNode.textContent = (options.simultaneous ? ['今回の施設収支（コイン）'] : []).concat(routes.slice(0, 3).map(route =>
+            summaryNode.textContent = (options.simultaneous ? ['直近に解決した収支（コイン）'] : []).concat(routes.slice(0, 3).map(route =>
                 route.text.replace(/^(.*?)：(\d+)コイン$/, '$2コイン · $1')
             ).concat(routes.length > 3 ? [`ほか${routes.length - 3}件（発動・支払いの内訳で確認）`] : [])
                 .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : [])).join('\n');
