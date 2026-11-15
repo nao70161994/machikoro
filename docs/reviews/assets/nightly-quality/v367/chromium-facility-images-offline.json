@@ -1,0 +1,513 @@
+{
+  "cached": {
+    "keys": [
+      "machikoro-mweb91x0"
+    ],
+    "activeCache": "machikoro-mweb91x0",
+    "entries": [
+      {
+        "name": "airport.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "bakery.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "beverage.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "bistro.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "burger.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "business-center.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "cafe.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "cheese.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "civic.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "cleaning.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "convenience.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "corn.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "factory.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "family.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "field.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "fishery.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "florist.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "flower.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "forest.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "furniture.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "general-store.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "harbor.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "landmark.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "lender.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "mall.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "market-stall.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "members-bar.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "mine.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "mover.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "orchard.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "park-ground.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "park.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "pizzeria.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "port.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "produce.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "publisher.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "radio.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "ranch.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "remodel.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "shop.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "stadium.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "startup.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "station.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "sushi.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "tax-office.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "tuna-boat.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "tv-station.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "vineyard.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "warehouse.svg",
+        "status": 200,
+        "svg": true
+      },
+      {
+        "name": "winery.svg",
+        "status": 200,
+        "svg": true
+      }
+    ]
+  },
+  "decoded": [
+    {
+      "name": "airport.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "bakery.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "beverage.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "bistro.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "burger.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "business-center.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "cafe.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "cheese.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "civic.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "cleaning.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "convenience.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "corn.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "factory.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "family.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "field.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "fishery.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "florist.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "flower.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "forest.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "furniture.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "general-store.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "harbor.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "landmark.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "lender.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "mall.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "market-stall.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "members-bar.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "mine.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "mover.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "orchard.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "park-ground.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "park.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "pizzeria.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "port.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "produce.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "publisher.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "radio.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "ranch.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "remodel.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "shop.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "stadium.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "startup.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "station.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "sushi.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "tax-office.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "tuna-boat.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "tv-station.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "vineyard.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "warehouse.svg",
+      "width": 300,
+      "height": 150
+    },
+    {
+      "name": "winery.svg",
+      "width": 300,
+      "height": 150
+    }
+  ],
+  "errors": []
+}

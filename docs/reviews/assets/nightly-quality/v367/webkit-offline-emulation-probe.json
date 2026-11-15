@@ -1,0 +1,23 @@
+{
+  "controller": "http://127.0.0.1:3210/sw.js",
+  "workers": [
+    {
+      "active": "activated",
+      "scope": "http://127.0.0.1:3210/"
+    }
+  ],
+  "probes": [
+    {
+      "url": "/",
+      "error": "TypeError: Load failed"
+    },
+    {
+      "url": "/index.html",
+      "error": "TypeError: Load failed"
+    },
+    {
+      "url": "/icons/facility-art-images/field.svg",
+      "error": "TypeError: Load failed"
+    }
+  ]
+}

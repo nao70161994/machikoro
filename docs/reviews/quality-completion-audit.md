@@ -2,7 +2,15 @@
 
 ## 現在の結論
 
-**Goal未完了・Draft PR #19・マージ保留。** 最新main `34a92740`を統合済み。
+**Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
+
+### v367描画方式の採用・主ブランチ検証待ち（2026-11-15 JST）
+
+最新main1336bf43（2人RLモデル更新）を作業ブランチへ統合。画像方式の独立ソースレビューでは採用阻害バグなし、cardboardの所有カードと建設メニューだけをSVG imageへ変更し、詳細/他テーマは元useを維持する。motif/scene/特殊viewBoxを共通化し、404時は従来描画へ復帰。50画像は元facility-art.svgの依存関係を含めて生成し、SW必須precache一覧と生成物をstatic CIで同期検査する。主SW v367へ更新。
+
+補助53971b9dの43346571047ではChromiumが50cache/50decode/offline reload/PageErrorsなしを成功：[原本](assets/nightly-quality/v367/chromium-facility-images-offline.json)。同run WebKitのsetOfflineはHTML/画像ともLoad failed：[診断原本](assets/nightly-quality/v367/webkit-offline-emulation-probe.json)。これは成功へ書換えず、既知の自動化制約を踏まえ、新規offline caseのみChromiumへ配置する。既存WebKit371件は維持し、同一実行の元symbolと画像の厳密画素比較（全施設＋麦畑/マグロ漁船/空港の4方向2倍率clone）をWebKitへ追加する。主inventoryは373→375予定で、実収集後に照合する。
+
+採用は描画資産の再利用を目的とし、ABBA少数試行では冷間RAF問題の因果を証明していない。WebKit実機offline・Safari実機・更新UIの実機挙動は未証明。Node施設アート/UI/Fieldと編集JS構文・生成50件一致は成功。主ブランチのRelease/16画面/Nightly/実対局回帰は一括検証待ち。自動一括演出案は別branchで未達のため採用しない。Goal未完了・マージ保留。
 
 ### 補助offlineの切り分け続報
 

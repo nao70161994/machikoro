@@ -69,7 +69,7 @@
     "tune-expert": "node scripts/tune-expert.js",
     "train-expert-crowd": "node scripts/train-expert-crowd.js",
     "export-rl-model": "python3 -m scripts.rl.export_model",
-    "test:static:py": "python3 -m py_compile scripts/rl/*.py",
+    "test:static:py": "python3 -m py_compile scripts/rl/*.py && python3 scripts/generate-facility-art-images.py --check",
     "test:release": "node tests/run-all.js release",
     "eval-expert-v2-multiseed": "node scripts/eval-expert-v2-multiseed.js",
     "test:online-delivery": "node scripts/check-online-delivery.js",
