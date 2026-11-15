@@ -17,3 +17,11 @@
 Linux WebKitで処理が抑制される[上流報告](https://github.com/microsoft/playwright/issues/41044)も調べたが、対象はWorkerであり今回の原因の証拠ではない。blank対照は実際に成功しているため、上流問題を理由に失敗を除外しない。
 
 次はゲームの更新/observer処理と、静止した実盤面上だけの演出を比較し、更新で生じる描画待ちを分ける。CPU1500ms、演出600ms、全7経路の接続中・可視・異なる位置・完了・所有者札/名前の非被覆を維持する。未達のP2候補は主へ採用しない。
+
+## 実盤面上の静止対照と開始・plane分離（2026-11-16 JST）
+
+3a13b902 / [43731937914](https://github.com/nao70161994/machikoro/actions/runs/43731937914) はCPUを止めた密集盤面上で同じTransfersを起動。1500ms内にfinished0・samples0、正本不変true。CPU進行だけが原因とは言えない。静止対照はゲーム進行検証ではなく演出単体の診断である。
+
+a031238dはautoのpause/currentTime=0/2RAF再開を除去してnative開始へ委任。retargetは時計を触らず、hidden開始を拒否しvisibilitychangeで停止、clearでlistenerを除去する。旧unitの2RAF契約はnative開始・時計不変・clear/置換/reduced/hiddenで停止・再開なしへ同じscopeで更新。Node2ファイル/checkJs4構成/独立レビュー成功。[43732399483](https://github.com/nao70161994/machikoro/actions/runs/43732399483) はCPU844終盤finished欠落。静止対照はfinished検証を通過しても可視移動2frameが不足して失敗した。完了件数だけを成功扱いにしない。
+
+3a78dac2はautoのcoin/owner金額planeだけをbody直下へ分離。固定boundsは盤面のclient rectへ追従し、同一値を書かず、retargetでも時計を変えない。endpointはlayer内の金額も避ける。manualは元のcontainer。Nodeでroot境界追従/取消後の残留なし/時計不変を追加し、型検査・独立レビューも成功。しかし [43732983605](https://github.com/nao70161994/machikoro/actions/runs/43732983605) はCPUと静止対照の両方で失敗。主採用は保留。独立planeによる原因解消・性能向上の主張はしない。browser observerの監視rootは、実際の描画先を採取するためbodyへ変更したが、全経路/時間/可視移動/非被覆のassertは維持する。
