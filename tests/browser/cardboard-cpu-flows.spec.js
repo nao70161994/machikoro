@@ -6,7 +6,11 @@ const fs = require('node:fs/promises');
 test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
-for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['no-world', 'no-other-animation'] : [''])) {
+for (const paintDiagnostic of (process.env.CARD_TABLE_PAINT_DIAGNOSTIC ? ['dpr3-desktop', 'dpr1-mobile'] : [''])) {
+test.describe(paintDiagnostic || '標準モバイル', () => {
+if (paintDiagnostic) test.use(paintDiagnostic === 'dpr3-desktop'
+    ? { deviceScaleFactor: 3, isMobile: false, hasTouch: true }
+    : { deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 for (const dense of [false, true]) {
 for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
 if (paintDiagnostic && (!dense || viewport.width !== 844)) continue;
@@ -16,11 +20,6 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
-    if (paintDiagnostic) {
-        await page.addStyleTag({ content: paintDiagnostic === 'no-world'
-            ? '#cardboardSeats { visibility: hidden !important; }'
-            : 'body *, body *::before, body *::after { animation: none !important; transition: none !important; }' });
-    }
     await page.evaluate(dense => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
         cancelCpuSchedule('eight-group-diagnostic-setup');
@@ -297,4 +296,5 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
 }
 }
 
+});
 }
