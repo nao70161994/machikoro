@@ -1,9 +1,9 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('node:fs/promises');
 
-// Diagnostic candidate only: keep this untracked file off the primary Nightly
-// for the seven aggregated monetary routes. No product action/scheduler overrides.
-test.use({ serviceWorkers: 'block', video: 'off', deviceScaleFactor: 1, isMobile: false, hasTouch: false,
+// Run the actual mobile project settings, including DPR and touch support.
+// Preserve real actions and CPU scheduling while fixing only the random input.
+test.use({ serviceWorkers: 'block', video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
 for (const dense of [false, true]) {
