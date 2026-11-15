@@ -515,3 +515,27 @@ runTest('自動coinの終点は所有者の文字と金額札を避け画面内�
     assert.strictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, name), null);
     assert.strictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: NaN, y: 110 }, clip), null);
 });
+
+runTest('独立overlayは盤面の固定境界へ追従し取消後にbodyへ残らない', () => {
+    const { container, animated } = fixture();
+    const root = new container.constructor();
+    let left = 20;
+    container.getBoundingClientRect = () => ({ left, top: 40, width: 600, height: 400 });
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, overlayRoot: root, events, simultaneous: true });
+    assert.strictEqual(container.children.length, 0);
+    assert.strictEqual(root.children.length, 1);
+    const layer = root.children[0];
+    assert.match(layer.className, /cardboard-transfers-viewport/);
+    assert.strictEqual(layer.style.left, '20px');
+    assert.strictEqual(layer.style.top, '40px');
+    assert.strictEqual(layer.style.width, '600px');
+    const clocks = animated.map(({ animation }) => [animation.currentTime, animation.startTime]);
+    left = 30;
+    controller.retarget();
+    assert.strictEqual(layer.style.left, '30px');
+    assert.deepStrictEqual(animated.map(({ animation }) => [animation.currentTime, animation.startTime]), clocks);
+    controller.clear();
+    assert.strictEqual(root.children.length, 0);
+    assert.ok(animated.every(({ animation }) => animation.playState === 'idle'));
+});

@@ -167,6 +167,7 @@ const CardBoardTransfers = (() => {
         let animations = [];
         let actors = [];
         let endpointReader = null;
+        let overlayBoundsReader = null;
         let simultaneousMotion = false;
         let badgeContext = null;
         let badges = [];
@@ -180,6 +181,7 @@ const CardBoardTransfers = (() => {
             animations = [];
             actors = [];
             endpointReader = null;
+            overlayBoundsReader = null;
             simultaneousMotion = false;
             badgeContext = null;
             badges = [];
@@ -273,6 +275,7 @@ const CardBoardTransfers = (() => {
         function retarget() {
             if (!simultaneousMotion || !layer?.isConnected || !endpointReader || !actors.some(actor =>
                 actor.animation.playState !== 'finished' && actor.animation.playState !== 'idle')) return false;
+            overlayBoundsReader?.();
             positionBadges();
             const location = endpointReader();
             // Batch reads before writes. Retargeting never restarts an animation
@@ -313,7 +316,8 @@ const CardBoardTransfers = (() => {
                 const viewport = container.querySelector('#cardboardTableViewport');
                 const viewportBounds = viewport?.getBoundingClientRect();
                 const market = container.querySelector('#cardboardCenter')?.getBoundingClientRect();
-                const protectedRects = Array.from(container.querySelectorAll?.('.cardboard-owner-label, #cardboardSeats .cardboard-header, .cardboard-roster-name, .cardboard-owner-net') || [])
+                const protectedRects = [...Array.from(container.querySelectorAll?.('.cardboard-owner-label, #cardboardSeats .cardboard-header, .cardboard-roster-name') || []),
+                    ...Array.from(layer?.querySelectorAll?.('.cardboard-owner-net') || [])]
                     .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
                 const intersects = (rect, clip) => rect?.width > 0 && rect.height > 0 && clip?.width > 0 && clip.height > 0 &&
                     rect.left < clip.left + clip.width && rect.left + rect.width > clip.left &&
@@ -354,6 +358,20 @@ const CardBoardTransfers = (() => {
             };
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';
+            const overlayRoot = options.overlayRoot?.isConnected && options.overlayRoot.ownerDocument === documentRef
+                ? options.overlayRoot : null;
+            if (overlayRoot) {
+                layer.className += ' cardboard-transfers-viewport';
+                overlayBoundsReader = () => {
+                    const box = container.getBoundingClientRect();
+                    for (const [property, value] of Object.entries({ left: `${box.left}px`, top: `${box.top}px`,
+                        width: `${box.width}px`, height: `${box.height}px` })) {
+                        if (layer.style[property] !== value) layer.style[property] = value;
+                    }
+                };
+                overlayBoundsReader();
+                layer.style.fontFamily = view?.getComputedStyle?.(container).fontFamily || 'sans-serif';
+            }
             summaryNode = documentRef.createElement('p');
             summaryNode.className = 'cardboard-transfer-summary';
             summaryNode.textContent = (options.simultaneous ? ['直近に解決した収支（コイン）'] : []).concat(routes.slice(0, 3).map(route =>
@@ -377,7 +395,7 @@ const CardBoardTransfers = (() => {
                 summaryNode.textContent += `\n${omitted}`;
                 summaryNode.setAttribute('aria-label', `${summaryNode.getAttribute('aria-label') || ''}。${omitted}`);
             }
-            container.appendChild(layer);
+            (overlayRoot || container).appendChild(layer);
             if (parallel && !reducedMotion) {
                 badgeContext = { container, events, nets: projectOwnerNets(events) };
                 positionBadges();

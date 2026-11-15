@@ -15845,3 +15845,13 @@ html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-owner-
 }
 
 html[data-design="cardboard"] .cardboard-transfer[data-mode="parallel"]::after { display: none; }
+
+/* Keep automatic money feedback outside the transformed card table's paint
+   subtree. Its fixed bounds still match the current board, below dialogs. */
+html[data-design="cardboard"] .cardboard-transfers.cardboard-transfers-viewport {
+    position: fixed;
+    inset: auto;
+    contain: layout paint;
+    isolation: isolate;
+    transform: translateZ(0);
+}

@@ -2183,7 +2183,7 @@ const CardBoardField = (() => {
                     node('cardboardBoard').appendChild(confirmation);
                 }
                 activationTags?.clear();
-                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'),
+                transfers?.play({ container: node('cardboardBoard'), overlayRoot: document.body, summaryContainer: node('cardboardDiceReceipt'),
                     events: freshEvents, simultaneous: true, delayMs: 0 });
             });
         }

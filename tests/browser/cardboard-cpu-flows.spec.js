@@ -185,7 +185,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             }
             inspect();
         });
-        observer.observe(document.getElementById('cardboardBoard'), { childList: true, subtree: true, characterData: true });
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
         window.stopCpuEventObservation = () => observer.disconnect();
         trace.geometry = [];
         trace.animationFrames = [];
@@ -411,7 +411,7 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
         ] };
         const controller = CardBoardTransfers.create();
         const startedAt = performance.now();
-        controller.play({ container: document.getElementById('cardboardBoard'), events, simultaneous: true });
+        controller.play({ container: document.getElementById('cardboardBoard'), overlayRoot: document.body, events, simultaneous: true });
         const finished = [], samples = [];
         const actors = [...document.querySelectorAll('.cardboard-transfer')].map(element => {
             const animation = element.getAnimations()[0];
