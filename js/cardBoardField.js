@@ -36,6 +36,9 @@ const CardBoardField = (() => {
     /** @type {CanvasRenderingContext2D | null} */
     let ownerLabelMeasure = null;
     let ownerLabelsInspecting = false;
+    let ownerLabelsGeometry = null;
+    let ownerLabelsPanels = [];
+    let ownerLabelsLayer = null;
     let mounted = false;
     let actionOrigin = null;
     let statusOrigin = null;
@@ -200,22 +203,45 @@ const CardBoardField = (() => {
         const viewport = node('cardboardTableViewport');
         const layer = node('cardboardOwnerLabels');
         if (!viewport || !layer) return;
-        layer.replaceChildren();
         const panels = Array.from(node('cardboardSeats')?.querySelectorAll('.cardboard-player') || []);
-        panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
-        if (!enabled() || !mounted || ownerLabelsInspecting || panels.length > 4) return;
+        if (!enabled() || !mounted || ownerLabelsInspecting || panels.length > 4) {
+            layer.replaceChildren();
+            panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
+            ownerLabelsGeometry = null;
+            ownerLabelsPanels = [];
+            ownerLabelsLayer = null;
+            return;
+        }
         const bounds = viewport.getBoundingClientRect();
         const innerLeft = bounds.left + viewport.clientLeft;
         const innerTop = bounds.top + viewport.clientTop;
         const innerRight = innerLeft + viewport.clientWidth;
         const innerBottom = innerTop + viewport.clientHeight;
-        layer.style.width = `${viewport.clientWidth}px`;
-        layer.style.height = `${viewport.clientHeight}px`;
-        layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
         const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
             .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
         const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
             .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
+        // Read the geometry before changing the existing labels. Repeated
+        // camera/layout notifications with identical inputs must not remove
+        // their SVGs, toggle heading opacity or queue another table repaint.
+        const rectKey = rect => [rect.left, rect.top, rect.right, rect.bottom];
+        const geometry = JSON.stringify([rectKey(bounds), viewport.clientWidth, viewport.clientHeight,
+            viewport.clientLeft, viewport.clientTop, viewport.scrollLeft, viewport.scrollTop,
+            window.innerWidth, window.innerHeight, window.getComputedStyle(viewport).fontFamily,
+            facts?.game?.players?.map(player => player.name), obstacles.map(rectKey),
+            panels.map(panel => [panel.getAttribute('data-player-index'), rectKey(panel.getBoundingClientRect()),
+                rectKey(panel.querySelector('.cardboard-player-heading')?.getBoundingClientRect() || bounds),
+                window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent')])]);
+        if (ownerLabelsLayer === layer && ownerLabelsGeometry === geometry && layer.childNodes.length &&
+                panels.length === ownerLabelsPanels.length && panels.every((panel, index) => panel === ownerLabelsPanels[index])) return;
+        ownerLabelsGeometry = geometry;
+        ownerLabelsPanels = panels;
+        ownerLabelsLayer = layer;
+        layer.style.width = `${viewport.clientWidth}px`;
+        layer.style.height = `${viewport.clientHeight}px`;
+        layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
+        layer.replaceChildren();
+        panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
         const placed = [];
         const bracketCandidates = [];
         const marketBounds = node('cardboardCenter')?.getBoundingClientRect();

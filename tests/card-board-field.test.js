@@ -508,3 +508,51 @@ runTest('明示再生の共通guardは不変再描画を保持しphase・reroll�
         assert.deepStrictEqual([tagClears, transferClears, removed], baseline.map(value => value + 1), '取消は一度だけ');
     }
 });
+
+runTest('所有者札は同じ配置の再通知でDOMを再生成せず名前・移動・再マウント時に再計算する', () => {
+    const fs = require('fs');
+    const vm = require('vm');
+    const source = fs.readFileSync(require.resolve('../js/cardBoardField'), 'utf8');
+    const start = source.indexOf('    function updateOwnerLabels()');
+    const end = source.indexOf('    function ensureTable()', start);
+    let writes = 0;
+    const stop = new Error('placement starts');
+    const bounds = { left: 0, top: 0, right: 800, bottom: 300, width: 800, height: 300 };
+    const card = { getBoundingClientRect: () => ({ left: 100, top: 80, right: 200, bottom: 180, width: 100, height: 100 }) };
+    const panel = { getBoundingClientRect: () => bounds, querySelector: () => card,
+        querySelectorAll: () => [card], getAttribute: () => '0', classList: { remove() { throw new Error('unexpected class write'); } } };
+    let panels = [panel];
+    const viewport = { getBoundingClientRect: () => bounds, querySelectorAll: () => [card],
+        clientLeft: 0, clientTop: 0, clientWidth: 800, clientHeight: 300, scrollLeft: 0, scrollTop: 0 };
+    const style = new Proxy({}, { set() { throw new Error('unexpected style write'); } });
+    const layer = { childNodes: [{}], style, replaceChildren() { writes++; throw stop; } };
+    // Allow the first layout's dimension writes; stop before the actual planner.
+    const dimensions = {};
+    layer.style = dimensions;
+    const nodes = { cardboardTableViewport: viewport, cardboardOwnerLabels: layer,
+        cardboardSeats: { querySelectorAll: () => panels } };
+    const context = { node: id => nodes[id], enabled: () => true, mounted: true, ownerLabelsInspecting: false,
+        ownerLabelsGeometry: null, ownerLabelsPanels: [], ownerLabelsLayer: null,
+        window: { innerWidth: 844, innerHeight: 390, getComputedStyle: () => ({ fontFamily: 'sans-serif', getPropertyValue: () => '#abc' }) },
+        facts: { game: { players: [{ name: '街1' }] } } };
+    vm.createContext(context);
+    vm.runInContext(source.slice(start, end), context);
+    const plan = () => context.updateOwnerLabels();
+    assert.throws(plan, error => error === stop);
+    assert.strictEqual(writes, 1);
+    layer.style = style;
+    plan();
+    assert.strictEqual(writes, 1, '同一geometryでは削除もstyle再代入も行わない');
+    layer.style = dimensions;
+    for (const change of [() => { viewport.scrollLeft++; }, () => { bounds.left++; },
+        () => { context.facts.game.players[0].name = '名前変更'; },
+        () => { panels = [{ ...panel }]; }, () => { layer.childNodes = []; }]) {
+        change();
+        const before = writes;
+        assert.throws(plan, error => error === stop);
+        assert.strictEqual(writes, before + 1);
+        layer.childNodes = [{}];
+        plan();
+        assert.strictEqual(writes, before + 1);
+    }
+});
