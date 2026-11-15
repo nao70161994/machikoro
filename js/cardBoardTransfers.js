@@ -87,7 +87,7 @@ const CardBoardTransfers = (() => {
         for (const event of Array.isArray(events?.activations) ? events.activations : []) {
             const route = project({ ...events, activations: [event] })[0];
             if (!route) continue;
-            for (const [owner, sign] of [[route.from, -1], [route.to, 1]]) {
+            for (const { owner, sign } of [{ owner: route.from, sign: -1 }, { owner: route.to, sign: 1 }]) {
                 if (!Number.isInteger(owner)) continue;
                 const net = (nets.get(owner) || 0) + sign * route.amount;
                 if (!Number.isSafeInteger(net)) return null;
