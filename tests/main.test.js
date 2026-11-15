@@ -3803,7 +3803,28 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(packageConfig.scripts['test:browser-pr'].includes('--project=chromium-desktop'));
     const playwrightConfig = fs.readFileSync(path.join(__dirname, '..', 'playwright.config.js'), 'utf8');
     assert.ok(playwrightConfig.includes("name: 'chromium-desktop'"));
-    assert.ok(playwrightConfig.includes('testIgnore: /seeded-browser-match\\.spec\\.js/'));
+    const configModule = { exports: {} };
+    vm.runInNewContext(playwrightConfig, {
+        module: configModule,
+        require(name) {
+            assert.strictEqual(name, '@playwright/test');
+            return { defineConfig: value => value, devices: {} };
+        },
+        process: { env: {} },
+    });
+    const projects = configModule.exports.projects;
+    const webkit = projects.find(project => project.name === 'mobile-webkit');
+    const chromium = projects.find(project => project.name === 'chromium-desktop');
+    assert.ok(webkit && chromium);
+    assert.ok(webkit.testIgnore.test('seeded-browser-match.spec.js'));
+    assert.ok(webkit.testIgnore.test('facility-image-offline.spec.js'));
+    for (const file of fs.readdirSync(path.join(__dirname, 'browser')).filter(name => name.endsWith('.spec.js'))) {
+        if (['seeded-browser-match.spec.js', 'facility-image-offline.spec.js'].includes(file)) continue;
+        assert.ok(!webkit.testIgnore.test(file), `${file} must retain its WebKit gate`);
+    }
+    for (const file of ['seeded-browser-match.spec.js', 'plaza-online.spec.js', 'facility-image-offline.spec.js']) {
+        assert.ok(chromium.testMatch.test(file), `${file} must run in Chromium`);
+    }
     const nightlyWorkflow = fs.readFileSync(
         path.join(__dirname, '..', '.github/workflows/nightly-release-test.yml'),
         'utf8'

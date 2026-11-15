@@ -4,6 +4,12 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
 
+### v367主CIの設定テスト修正（2026-11-15 JST）
+
+85570f2eの一括CI（Nightly43722191368・Release43722198530・画面43722198551）と通常CPU実UI完走（2人320/1440:43722362883、4人390/844:43722365615）を開始。ReleaseとNightlyのNode main.testはPlaywright testIgnoreの旧ソース文字列完全一致だけで失敗した。新規offline caseのChromium配置に対応するため、configをVM評価し、seeded/offlineの除外を確認した上で既存の全browser specがWebKitから除外されないこと、Chromiumがseeded/online/offlineを収集することへ検証を強化。既存オンラインのgateは維持する。修正後main/nightly-coverage Node2ファイルは成功、製品JSは変えていない。
+
+初回のbrowser/実対局は実行中のため停止・再起動せず結果を収集する。修正をまとめてPushした後、最終のRelease/Nightlyを再確認する。テスト成功や性能改善を先取りせず、Goal未完了・マージ保留。
+
 ### v367描画方式の採用・主ブランチ検証待ち（2026-11-15 JST）
 
 最新main1336bf43（2人RLモデル更新）を作業ブランチへ統合。画像方式の独立ソースレビューでは採用阻害バグなし、cardboardの所有カードと建設メニューだけをSVG imageへ変更し、詳細/他テーマは元useを維持する。motif/scene/特殊viewBoxを共通化し、404時は従来描画へ復帰。50画像は元facility-art.svgの依存関係を含めて生成し、SW必須precache一覧と生成物をstatic CIで同期検査する。主SW v367へ更新。
