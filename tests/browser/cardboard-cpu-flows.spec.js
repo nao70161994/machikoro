@@ -376,3 +376,75 @@ test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画さ
         expect(new Set(positions).size).toBeGreaterThanOrEqual(2);
     }
 });
+
+test('静止盤面対照: 終盤の実カード卓上で7経路を描画する', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    await page.evaluate(() => {
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
+        cancelCpuSchedule('static-table-control');
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayerIndex = 0;
+        game.players.forEach((player, index) => {
+            player.name = `街${index + 1}`;
+            player.cards = ['コーン畑', 'パン屋', 'カフェ', ...CARDS.filter(card => !card.diceNums.includes(3)).map(card => card.name)]
+                .map(name => createCardByName(name));
+            if (index === 0) player.cards.push(createCardByName('コーン畑'));
+            player.coins = 30;
+            Object.keys(player.landmarks).forEach(name => { player.landmarks[name] = false; });
+        });
+        setTutorialEnabled(false);
+        render();
+    });
+    await expect(page.locator('.cardboard-owner-label')).toHaveCount(4);
+    await page.screenshot({ path: testInfo.outputPath('static-table-start.png') });
+    const evidence = await page.evaluate(() => new Promise(resolve => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const before = JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+        const events = { participantNames: game.players.map(player => player.name), activations: [
+            ...[1, 2, 3].map(owner => ({ from: 0, to: owner, amount: 1, subject: 'カフェ', facility: true, owner })),
+            ...[0, 1, 2, 3].map(owner => ({ from: null, to: owner, amount: owner === 0 ? 2 : 1, subject: 'コーン畑', facility: true, owner })),
+            { from: null, to: 0, amount: 1, subject: 'パン屋', facility: true, owner: 0 },
+        ] };
+        const controller = CardBoardTransfers.create();
+        const startedAt = performance.now();
+        controller.play({ container: document.getElementById('cardboardBoard'), events, simultaneous: true });
+        const finished = [], samples = [];
+        const actors = [...document.querySelectorAll('.cardboard-transfer')].map(element => {
+            const animation = element.getAnimations()[0];
+            const route = `${element.dataset.from}>${element.dataset.to}`;
+            animation.finished.then(() => finished.push({ route, at: performance.now() - startedAt })).catch(() => {});
+            return { element, animation, route };
+        });
+        let stopped = false;
+        const sample = () => {
+            if (stopped) return;
+            samples.push({ at: performance.now() - startedAt, actors: actors.map(({ element, animation, route }) => ({
+                route, time: animation.currentTime, state: animation.playState, connected: element.isConnected,
+                opacity: Number(getComputedStyle(element).opacity), rect: element.getBoundingClientRect().toJSON() })) });
+            requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+        setTimeout(() => {
+            stopped = true;
+            const unchanged = before === JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+            resolve({ finished, samples, unchanged, elapsed: performance.now() - startedAt });
+            controller.clear();
+        }, 1500);
+    }));
+    const file = testInfo.outputPath('static-table-control.json');
+    await fs.writeFile(file, JSON.stringify(evidence, null, 2));
+    await testInfo.attach('static-table-control', { path: file, contentType: 'application/json' });
+    expect(evidence.unchanged).toBe(true);
+    expect(evidence.finished).toHaveLength(7);
+    expect(evidence.finished.every(event => event.at < 1500)).toBe(true);
+    for (const route of ['0>1', '0>2', '0>3', 'null>0', 'null>1', 'null>2', 'null>3']) {
+        const positions = evidence.samples.flatMap(sample => sample.actors.filter(actor => actor.route === route &&
+            actor.connected && actor.opacity > 0.5 && actor.time >= 60 && actor.time < 540)
+            .map(actor => `${actor.rect.left}:${actor.rect.top}`));
+        expect(new Set(positions).size, route).toBeGreaterThanOrEqual(2);
+    }
+});
