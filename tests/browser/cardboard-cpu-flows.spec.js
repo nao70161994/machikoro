@@ -313,3 +313,51 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
 
 }
 }
+
+test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画される', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.route('**/__raf-control', route => route.fulfill({ contentType: 'text/html',
+        body: '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}.coin{position:absolute;width:16px;height:16px;background:gold;border-radius:50%}</style><body></body>' }));
+    await page.goto('/__raf-control');
+    await page.screenshot({ path: testInfo.outputPath('raf-control-start.png') });
+    const evidence = await page.evaluate(() => new Promise(resolve => {
+        const startedAt = performance.now();
+        const finished = [], samples = [];
+        const actors = Array.from({ length: 7 }, (_, index) => {
+            const element = document.createElement('span');
+            element.className = 'coin';
+            element.style.top = `${20 + index * 40}px`;
+            element.style.left = '20px';
+            document.body.appendChild(element);
+            const animation = element.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(400px)' }],
+                { duration: 600, easing: 'linear', fill: 'both' });
+            animation.pause();
+            animation.currentTime = 0;
+            animation.finished.then(() => finished.push({ index, at: performance.now() - startedAt }));
+            return { element, animation };
+        });
+        let stopped = false;
+        const sample = () => {
+            if (stopped) return;
+            samples.push({ at: performance.now() - startedAt, actors: actors.map(({ element, animation }) => ({
+                time: animation.currentTime, state: animation.playState, x: element.getBoundingClientRect().left })) });
+            requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+        requestAnimationFrame(() => requestAnimationFrame(() => actors.forEach(({ animation }) => animation.play())));
+        setTimeout(() => {
+            stopped = true;
+            resolve({ finished, samples, elapsed: performance.now() - startedAt, dpr: devicePixelRatio, visible: !document.hidden });
+        }, 1500);
+    }));
+    const file = testInfo.outputPath('raf-control.json');
+    await fs.writeFile(file, JSON.stringify(evidence, null, 2));
+    await testInfo.attach('raf-control', { path: file, contentType: 'application/json' });
+    expect(evidence.finished).toHaveLength(7);
+    expect(evidence.finished.every(event => event.at < 1500)).toBe(true);
+    for (let index = 0; index < 7; index++) {
+        const positions = evidence.samples.filter(sample => sample.actors[index].time >= 60 && sample.actors[index].time < 540)
+            .map(sample => sample.actors[index].x);
+        expect(new Set(positions).size).toBeGreaterThanOrEqual(2);
+    }
+});
