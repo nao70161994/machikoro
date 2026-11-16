@@ -556,3 +556,22 @@ runTest('所有者札は同じ配置の再通知でDOMを再生成せず名前�
         assert.strictEqual(writes, before + 1);
     }
 });
+
+runTest('所属札は他の札が塞ぐ前に隣接する収支領域を確保し無理な配置は要求しない', () => {
+    const field = require('../js/cardBoardField');
+    const bounds = { left: 4, top: 116, right: 316, bottom: 457 };
+    const leftOwner = { left: 18, top: 182, right: 62, bottom: 204 };
+    const leftCard = { left: 18, top: 208, right: 58, bottom: 364 };
+    const topCards = { left: 82, top: 145, right: 238, bottom: 185 };
+    const input = JSON.stringify({ bounds, leftOwner, leftCard, topCards });
+    const space = field.ownerReceiptSpace(leftOwner, bounds, [leftOwner, leftCard, topCards]);
+    assert.deepStrictEqual(space, { left: 18, top: 152, right: 62, bottom: 178 });
+    const topLeftName = { left: 34, top: 145, right: 78, bottom: 167 };
+    const topRightName = { left: 242, top: 145, right: 286, bottom: 167 };
+    const overlaps = rect => rect.left < space.right + 2 && rect.right > space.left - 2 &&
+        rect.top < space.bottom + 2 && rect.bottom > space.top - 2;
+    assert.ok(overlaps(topLeftName));
+    assert.ok(!overlaps(topRightName));
+    assert.strictEqual(field.ownerReceiptSpace(leftOwner, bounds, [bounds]), null);
+    assert.strictEqual(JSON.stringify({ bounds, leftOwner, leftCard, topCards }), input);
+});
