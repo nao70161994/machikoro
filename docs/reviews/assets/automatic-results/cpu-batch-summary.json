@@ -1,0 +1,102 @@
+[
+  {
+    "scene": "320-late",
+    "run": 43891643961,
+    "created": 7,
+    "finished": 7,
+    "firstFinishedAfterCreationMs": 642,
+    "geometrySamples": 2,
+    "badgeStatuses": [
+      "complete",
+      "complete"
+    ],
+    "turnChangedAtMs": 9197,
+    "final": {
+      "turn": 1,
+      "actor": 1,
+      "phase": "roll",
+      "log": [
+        {
+          "type": "system",
+          "message": "👤 街2のターン"
+        }
+      ]
+    }
+  },
+  {
+    "scene": "844-late",
+    "run": 43891643961,
+    "created": 7,
+    "finished": 7,
+    "firstFinishedAfterCreationMs": 626,
+    "geometrySamples": 2,
+    "badgeStatuses": [
+      "complete",
+      "complete"
+    ],
+    "turnChangedAtMs": 10102,
+    "final": {
+      "turn": 1,
+      "actor": 1,
+      "phase": "roll",
+      "log": [
+        {
+          "type": "system",
+          "message": "👤 街2のターン"
+        }
+      ]
+    }
+  },
+  {
+    "scene": "320-early",
+    "run": 43891643961,
+    "created": 7,
+    "finished": 7,
+    "firstFinishedAfterCreationMs": 645,
+    "geometrySamples": 5,
+    "badgeStatuses": [
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "turnChangedAtMs": 6642,
+    "final": {
+      "turn": 1,
+      "actor": 1,
+      "phase": "roll",
+      "log": [
+        {
+          "type": "system",
+          "message": "👤 街2のターン"
+        }
+      ]
+    }
+  },
+  {
+    "scene": "844-early",
+    "run": 43891643961,
+    "created": 7,
+    "finished": 7,
+    "firstFinishedAfterCreationMs": 693,
+    "geometrySamples": 3,
+    "badgeStatuses": [
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "turnChangedAtMs": 7121,
+    "final": {
+      "turn": 1,
+      "actor": 1,
+      "phase": "roll",
+      "log": [
+        {
+          "type": "system",
+          "message": "👤 街2のターン"
+        }
+      ]
+    }
+  }
+]

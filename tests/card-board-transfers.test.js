@@ -9,12 +9,16 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
     { from: 0, to: 1, amount: 2 }, { from: 0, to: 1, amount: 3 },
     { from: null, to: 0, amount: 4 }, { from: 1, to: 2, amount: 0 },
 ] };
-function fixture() {
-    let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null;
+function fixture({ initialStartTime = 1000, timelineTime } = {}) {
+    let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null, endpointShift = 0;
     const animated = [];
+    const frameQueue = new Map();
+    let nextFrame = 0;
     const motion = { matches: false, addEventListener(type, callback) { this.callback = callback; },
         removeEventListener() { this.callback = null; } };
-    const documentRef = { defaultView: { matchMedia: () => motion,
+    const documentRef = { timeline: { currentTime: timelineTime }, defaultView: { matchMedia: () => motion,
+        requestAnimationFrame(callback) { const handle = ++nextFrame; frameQueue.set(handle, callback); return handle; },
+        cancelAnimationFrame(handle) { frameQueue.delete(handle); },
         MutationObserver: class {
             constructor(callback) { observerCallback = callback; }
             observe() {}
@@ -28,14 +32,28 @@ function fixture() {
         appendChild(child) { this.children.push(child); child.parentNode = this; }
         remove() { if (this.parentNode) this.parentNode.children.splice(this.parentNode.children.indexOf(this), 1); this.isConnected = false; }
         setAttribute(name, value) { this.attributes[name] = value; }
-        animate(frames, options) { animated.push({ frames, options }); return { cancel: () => { cancelled++; }, finished: Promise.resolve() }; }
+        getAttribute(name) { return this.attributes[name] ?? null; }
+        animate(frames, options) {
+            const record = { frames, options, updates: 0, animation: null };
+            const animation = { currentTime: 125, startTime: initialStartTime, playState: 'running',
+                effect: { setKeyframes(next) { record.frames = next; record.updates++; } },
+                pause() { this.playState = 'paused'; },
+                play() { this.playState = 'running'; record.plays = (record.plays || 0) + 1; },
+                cancel() { cancelled++; this.playState = 'idle'; }, finished: Promise.resolve() };
+            record.animation = animation;
+            animated.push(record);
+            return animation;
+        }
         getBoundingClientRect() { return { left: 0, top: 0, width: 600, height: 400 }; }
         querySelector(selector) {
             if (selector.includes('"2"')) return null;
-            return { getBoundingClientRect: () => ({ left: selector.includes('"1"') ? 400 : 20, top: 20, width: 100, height: 40 }) };
+            return { getBoundingClientRect: () => ({ left: (selector.includes('"1"') ? 400 : 20) + endpointShift, top: 20, width: 100, height: 40 }) };
         }
     }
     return { container: new Element(), animated, timer: () => timer, timerDelay: () => timerDelay, cancelled: () => cancelled,
+        frameQueue,
+        flushFrame() { const pending = [...frameQueue.values()]; frameQueue.clear(); pending.forEach(callback => callback()); },
+        setEndpointShift(value) { endpointShift = value; },
         setAppReducedMotion(value) { appReducedMotion = value; },
         notifyPreferenceChanged() { observerCallback?.(); }, motion };
 }
@@ -305,6 +323,10 @@ runTest('施設の初出順とowner fallbackを字幕と同じ700ms刻みで送�
     assert.ok(animated.every(item => item.options.duration === 600));
     assert.ok(animated.every(item => item.options.easing === 'linear'), 'fade区間を全体easeで前倒ししない');
     assert.deepStrictEqual(animated[0].frames.slice(1, 3).map(frame => [frame.offset, frame.opacity]), [[0.15, 1], [0.85, 1]]);
+    assert.ok(animated[0].frames.every(frame => /^translate\(-50%, -50%\) translate\([-\d.]+px, [-\d.]+px\) scale\(/.test(frame.transform)),
+        '中心合わせとpixel移動は全keyframeで同じ関数列にする');
+    assert.strictEqual(animated[0].frames.at(-1).opacity, 0, '到着時のフェードを保持する');
+    assert.strictEqual(animated[0].frames[0].opacity, 0, '順番確認の遅延中はコインを先に見せない');
     assert.strictEqual(animated[0].frames[1].easing, 'ease-in-out', '移動区間の加減速は維持する');
     const flights = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
     assert.deepStrictEqual(flights.map(coin => [coin.dataset.facility, coin.dataset.owner, coin.dataset.step]), [
@@ -327,4 +349,245 @@ runTest('同じ施設からの複数経路は同じ紹介ステップ内に収�
     assert.ok(animated.every(item => item.options.delay + item.options.duration < 1900));
     assert.strictEqual(container.children[0].children.filter(child => child.className === 'cardboard-transfer').length, 2);
     controller.clear();
+});
+
+runTest('自動送金は同じ送受信者の全施設を合算し並列600msで全経路を開始する', () => {
+    const { container, animated, timerDelay } = fixture();
+    const controller = CardBoardTransfers.create();
+    const resolved = { participantNames: ['街A', '街B'], activations: [
+        { facility: true, subject: '麦畑', owner: 0, from: null, to: 0, amount: 1 },
+        { facility: true, subject: 'パン屋', owner: 0, from: null, to: 0, amount: 2 },
+        { facility: true, subject: 'カフェ', owner: 1, from: 0, to: 1, amount: 3 },
+    ] };
+    const before = JSON.stringify(resolved);
+    const canonicalProjection = CardBoardTransfers.project(resolved);
+    controller.play({ container, events: resolved, simultaneous: true, delayMs: 500 });
+    const coins = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
+    assert.strictEqual(coins.length, 2);
+    assert.deepStrictEqual(coins.map(coin => coin.textContent), ['●', '●']);
+    assert.deepStrictEqual(coins.map(coin => coin.dataset.amount), ['3', '3']);
+    assert.deepStrictEqual(coins.map(coin => JSON.parse(coin.dataset.subjects)), [['麦畑', 'パン屋'], ['カフェ']]);
+    assert.deepStrictEqual(coins.map(coin => [coin.dataset.from, coin.dataset.to, coin.dataset.mode]),
+        [['null', '0', 'parallel'], ['0', '1', 'parallel']]);
+    assert.ok(coins[0].title.includes('麦畑・パン屋：銀行 → 街A：3コイン'));
+    assert.deepStrictEqual(animated.map(record => [record.options.duration, record.options.delay]), [[600, 0], [600, 0]]);
+    assert.ok(animated.every(record => record.frames[0].opacity === 1), '並列の確定結果は開始時から識別できる');
+    assert.strictEqual(timerDelay(), 3200, '既存cleanup方針を維持する');
+    assert.strictEqual(JSON.stringify(resolved), before);
+    assert.deepStrictEqual(CardBoardTransfers.project(resolved), canonicalProjection, '公開projectionは施設ごとを維持する');
+    controller.clear();
+});
+
+runTest('自動配置のretargetは現在時刻と開始時刻とcleanupを変えず同じ幾何では書き込まない', () => {
+    const { container, animated, setEndpointShift, timer, timerDelay, cancelled } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    const cleanup = timer();
+    const lease = timerDelay();
+    const clocks = animated.map(({ animation }) => [animation.currentTime, animation.startTime, animation.playState]);
+    assert.strictEqual(controller.retarget(), true);
+    assert.ok(animated.every(record => record.updates === 0));
+    const original = animated.map(record => JSON.stringify(record.frames));
+    setEndpointShift(25);
+    assert.strictEqual(controller.retarget(), true);
+    assert.ok(animated.every(record => record.updates === 1));
+    assert.ok(animated.every((record, index) => JSON.stringify(record.frames) !== original[index]));
+    assert.deepStrictEqual(animated.map(({ animation }) => [animation.currentTime, animation.startTime, animation.playState]), clocks);
+    assert.strictEqual(timer(), cleanup);
+    assert.strictEqual(timerDelay(), lease);
+    assert.strictEqual(controller.retarget(), true);
+    assert.ok(animated.every(record => record.updates === 1));
+    animated.forEach(({ animation }) => { animation.playState = 'finished'; });
+    assert.strictEqual(controller.retarget(), false, '完了した経路を再開しない');
+    controller.clear();
+    assert.strictEqual(cancelled(), animated.length);
+    assert.strictEqual(timer(), null);
+    assert.strictEqual(controller.retarget(), false);
+    assert.strictEqual(container.children.length, 0);
+});
+
+runTest('manualとReduced Motionはretarget対象外で設定変更時もmotionを再開しない', () => {
+    for (const reduced of [false, true]) {
+        const { container, animated, setEndpointShift } = fixture();
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: reduced, reducedMotion: reduced });
+        setEndpointShift(20);
+        assert.strictEqual(controller.retarget(), false);
+        assert.strictEqual(animated.length, reduced ? 0 : 2);
+        assert.ok(animated.every(record => record.updates === 0));
+        controller.clear();
+    }
+    const { container, animated, motion } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    motion.callback({ matches: true });
+    assert.strictEqual(controller.retarget(), false);
+    assert.ok(animated.every(record => record.animation.playState === 'idle'));
+    controller.clear();
+});
+
+runTest('自動送金はnative開始をpauseせずretargetで時計を再設定しない', () => {
+    const { container, animated, frameQueue, setEndpointShift, timer } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, simultaneous: true });
+    const cleanup = timer();
+    const clocks = animated.map(({ animation }) => [animation.currentTime, animation.startTime]);
+    assert.strictEqual(frameQueue.size, 0, 'native開始を追加RAF待機へ変換しない');
+    assert.ok(animated.every(({ animation }) => animation.playState === 'running'));
+    setEndpointShift(30);
+    controller.retarget();
+    assert.deepStrictEqual(animated.map(({ animation }) => [animation.currentTime, animation.startTime]), clocks);
+    assert.ok(animated.every(record => !record.plays), 'retargetでplayを呼び直さない');
+    assert.strictEqual(timer(), cleanup);
+    controller.clear();
+    assert.ok(animated.every(({ animation }) => animation.playState === 'idle'));
+});
+
+runTest('clear・置換・Reduced Motion・非表示ではnative演出を停止し再開しない', () => {
+    for (const reason of ['clear', 'replace', 'reduced', 'hidden']) {
+        const { container, animated, frameQueue, motion } = fixture();
+        let visibility;
+        container.ownerDocument.addEventListener = (name, callback) => { if (name === 'visibilitychange') visibility = callback; };
+        container.ownerDocument.removeEventListener = () => {};
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        const old = [...animated];
+        if (reason === 'clear') controller.clear();
+        if (reason === 'replace') controller.play({ container, events, simultaneous: true });
+        if (reason === 'reduced') motion.callback({ matches: true });
+        if (reason === 'hidden') { container.ownerDocument.hidden = true; visibility(); }
+        assert.ok(old.every(record => record.animation.playState === 'idle' && !record.plays), reason);
+        assert.strictEqual(frameQueue.size, 0);
+        controller.clear();
+    }
+});
+
+runTest('自動送金の多人数上限は省略経路数を明示し公開明細を欠落させない', () => {
+    const f = fixture();
+    const sample = { participantNames: Array.from({ length: 10 }, (_, index) => `街${index + 1}`),
+        activations: Array.from({ length: 15 }, (_, index) => ({ from: Math.floor(index / 9),
+            to: index % 9 + 1, amount: 1, subject: `施設${index}`, facility: true, owner: index % 9 + 1 })) };
+    const projected = CardBoardTransfers.project(sample);
+    const controller = CardBoardTransfers.create();
+    controller.play({ container: f.container, events: sample, simultaneous: true });
+    const layer = f.container.children.find(child => child.className === 'cardboard-transfers');
+    const summary = layer.children.find(child => child.className === 'cardboard-transfer-summary');
+    assert.match(summary.textContent, /送金演出は12\/14経路/);
+    assert.match(summary.attributes['aria-label'], /全経路は発動・支払いの内訳/);
+    assert.deepStrictEqual(CardBoardTransfers.project(sample), projected);
+    assert.ok(f.animated.length <= 12);
+    controller.clear();
+});
+
+runTest('一括結果のowner収支は正負0を全件から計上し上限省略とoverflowを混同しない', () => {
+    assert.deepStrictEqual(CardBoardTransfers.projectOwnerNets({ participantNames: ['A', 'B', 'C'], activations: [
+        { from: 0, to: 1, amount: 3 }, { from: null, to: 0, amount: 2 }, { from: null, to: 2, amount: 0 },
+    ] }), [{ owner: 0, net: -1 }, { owner: 1, net: 3 }, { owner: 2, net: 0 }]);
+    assert.strictEqual(CardBoardTransfers.projectOwnerNets({ participantNames: ['A'], activations: [
+        { from: null, to: 0, amount: Number.MAX_SAFE_INTEGER }, { from: null, to: 0, amount: 1 },
+    ] }), null, 'projectの同経路加算上限を含め不正な部分金額を表示しない');
+});
+
+runTest('owner金額の一括配置は名前と障害物と他badgeを避け全員配置できない時全件失敗する', () => {
+    const box = (left, top, width, height) => ({ left, top, right: left + width, bottom: top + height, width, height });
+    const owners = [{ owner: 0, width: 78, anchor: box(40, 70, 80, 22) },
+        { owner: 1, width: 78, anchor: box(340, 70, 80, 22) }];
+    const bounds = box(0, 0, 500, 250);
+    const obstacles = owners.map(owner => owner.anchor);
+    const plan = CardBoardTransfers.placeNetBadges(owners, bounds, obstacles);
+    assert.strictEqual(plan.length, 2);
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 2), null, '探索予算を使い切った後の候補から再開しない');
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 3).length, 2);
+    assert.deepStrictEqual(plan.map(entry => entry.owner), [0, 1]);
+    const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    for (const placed of plan) assert.ok(obstacles.every(obstacle => !intersects(placed, obstacle)));
+    assert.ok(!intersects(plan[0], plan[1]));
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, [bounds]), null);
+    assert.deepStrictEqual(CardBoardTransfers.placeNetBadges([], bounds, []), []);
+});
+
+runTest('自動coinの終点は所有者の文字と金額札を避け画面内で市場側へ寄る', () => {
+    const name = { left: 100, top: 100, width: 100, height: 20 };
+    const clip = { left: 0, top: 0, width: 600, height: 400 };
+    assert.deepStrictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, clip), { x: 210, y: 110 });
+    const blocked = { left: 200, top: 90, right: 240, bottom: 130 };
+    const point = CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, clip, [blocked]);
+    assert.ok(point);
+    const coin = { left: point.x - 8, right: point.x + 8, top: point.y - 8, bottom: point.y + 8 };
+    const overlap = box => coin.left < box.right && coin.right > box.left && coin.top < box.bottom && coin.bottom > box.top;
+    assert.ok(!overlap(blocked));
+    assert.ok(!overlap({ left: 100, top: 100, right: 200, bottom: 120 }));
+    assert.strictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: 300, y: 110 }, name), null);
+    assert.strictEqual(CardBoardTransfers.safeCoinEndpoint(name, { x: NaN, y: 110 }, clip), null);
+});
+
+runTest('独立overlayは盤面の固定境界へ追従し取消後にbodyへ残らない', () => {
+    const { container, animated } = fixture();
+    const root = new container.constructor();
+    let left = 20;
+    container.getBoundingClientRect = () => ({ left, top: 40, width: 600, height: 400 });
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, overlayRoot: root, events, simultaneous: true });
+    assert.strictEqual(container.children.length, 0);
+    assert.strictEqual(root.children.length, 1);
+    const layer = root.children[0];
+    assert.match(layer.className, /cardboard-transfers-viewport/);
+    assert.strictEqual(layer.style.left, '20px');
+    assert.strictEqual(layer.style.top, '40px');
+    assert.strictEqual(layer.style.width, '600px');
+    const clocks = animated.map(({ animation }) => [animation.currentTime, animation.startTime]);
+    left = 30;
+    controller.retarget();
+    assert.strictEqual(layer.style.left, '30px');
+    assert.deepStrictEqual(animated.map(({ animation }) => [animation.currentTime, animation.startTime]), clocks);
+    controller.clear();
+    assert.strictEqual(root.children.length, 0);
+    assert.ok(animated.every(({ animation }) => animation.playState === 'idle'));
+});
+
+runTest('新しい並列経路だけを共有document時計へ揃え再配置で時計を変えない', () => {
+    for (const timelineTime of [0, 1234]) {
+        const { container, animated, setEndpointShift } = fixture({ initialStartTime: null, timelineTime });
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        assert.ok(animated.length > 0);
+        assert.ok(animated.every(record => record.animation.startTime === timelineTime));
+        const clocks = animated.map(record => [record.animation.startTime, record.animation.currentTime]);
+        setEndpointShift(20);
+        controller.retarget();
+        assert.deepStrictEqual(animated.map(record => [record.animation.startTime, record.animation.currentTime]), clocks);
+        controller.clear();
+    }
+    for (const options of [{ initialStartTime: null, timelineTime: null },
+        { initialStartTime: null, timelineTime: NaN }, { initialStartTime: 900, timelineTime: 1234 }]) {
+        const { container, animated } = fixture(options);
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        assert.ok(animated.every(record => record.animation.startTime === options.initialStartTime));
+        controller.clear();
+    }
+    const { container, animated } = fixture({ initialStartTime: null, timelineTime: 1234 });
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, delayMs: 500 });
+    assert.ok(animated.every(record => record.animation.startTime === null));
+    controller.clear();
+});
+
+runTest('owner収支札は12px格子の間にある狭い空白を障害物端から見つける', () => {
+    const bounds = { left: 0, top: 0, right: 100, bottom: 80 };
+    const owners = [{ owner: 0, width: 40, anchor: { left: 40, top: 50, right: 60, bottom: 60 } }];
+    const obstacles = [{ left: 0, top: 0, right: 100, bottom: 5 },
+        { left: 0, top: 36, right: 100, bottom: 80 }];
+    const before = JSON.stringify({ owners, bounds, obstacles });
+    const plan = CardBoardTransfers.placeNetBadges(owners, bounds, obstacles);
+    assert.strictEqual(plan.length, 1);
+    assert.strictEqual(plan[0].width, 40);
+    assert.strictEqual(plan[0].height, 26);
+    assert.ok(plan[0].top >= 7 && plan[0].top <= 8, '上下の2px間隔を保つ狭い空間だけに配置する');
+    assert.ok(plan[0].left >= bounds.left && plan[0].right <= bounds.right);
+    assert.ok(obstacles.every(obstacle => !(plan[0].left < obstacle.right + 2 && plan[0].right > obstacle.left - 2 &&
+        plan[0].top < obstacle.bottom + 2 && plan[0].bottom > obstacle.top - 2)));
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 1), null);
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 2).length, 1);
+    assert.strictEqual(JSON.stringify({ owners, bounds, obstacles }), before);
 });

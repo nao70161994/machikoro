@@ -230,7 +230,7 @@ runTest('市場closeは保存視点の有効性に応じて同taskで復帰と�
 runTest('閲覧位置の復元は最近傍pixelを使いWebKitの切捨て偏りを避ける', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
     const start = source.indexOf('        function alignPoint(point, anchor,');
-    const end = source.indexOf('        function paint()', start);
+    const end = source.indexOf('        function paint(', start);
     assert.ok(start >= 0 && end > start);
     let destination;
     const context = { worldToCanvas: point => point, scroll: (left, top) => { destination = { left, top }; } };
@@ -446,4 +446,132 @@ runTest('建設通知は320pxの購入施設と名前を避け市場の空間を
 
     const pc = context.buildNoticePosition(290, 76, { left: 4, top: 68, right: 1436, bottom: 876 }, [own], [own], market);
     assert.deepStrictEqual({ ...pc }, { left: 1138, top: 792 }, '空いているPC右下は従来位置を維持する');
+});
+
+runTest('明示した結果確認だけが逐次字幕と既定送金を呼びsession離脱後は再生しない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function validateResultReplay()');
+    const end = source.indexOf('    function updateCurrentResult(', start);
+    assert.ok(start >= 0 && end > start);
+    const classes = new Set();
+    const calls = [];
+    const game = { turnCount: 3, currentPlayerIndex: 0, players: [], log: [], phase: 'build' };
+    const events = { activations: [] };
+    const context = { replayResult: { events, game, session: 'one', turn: 3, actor: 0 },
+        activeReplayGuard: null, facts: { game }, session: 'one', mounted: true, enabled: () => true, document: { hidden: false },
+        node: () => ({ classList: { add: name => classes.add(name), remove: name => classes.delete(name) }, offsetWidth: 1 }),
+        reducedMotionEnabled: () => false,
+        activationTags: { clear() {}, play: options => calls.push(['tags', options]) },
+        transfers: { clear() {}, play: options => calls.push(['transfers', options]) } };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    context.playResultReplay();
+    assert.deepStrictEqual(calls.map(call => call[0]), ['tags', 'transfers']);
+    assert.strictEqual(calls[1][1].simultaneous, undefined, '明示確認は並列autoへ混ぜない');
+    assert.strictEqual(calls[0][1].delayMs, 0);
+    assert.strictEqual(calls[0][1].isCurrent(), true);
+    assert.ok(classes.has('cardboard-preview-playing'));
+    context.session = 'two';
+    assert.strictEqual(calls[0][1].isCurrent(), false);
+    context.playResultReplay();
+    assert.strictEqual(calls.length, 2);
+});
+
+runTest('明示再生の共通guardは不変再描画を保持しphase・reroll・ログ変更で字幕と送金を同時取消する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function validateResultReplay()');
+    const end = source.indexOf('    function updateCurrentResult(', start);
+    for (const change of [game => { game.phase = 'roll'; }, game => { game.usedReroll = true; },
+        game => { game.log = [...game.log]; }, game => { game.log[game.log.length - 1] = {}; },
+        game => { game.log.push({}); }, game => { game.turnCount++; }]) {
+        const game = { turnCount: 3, currentPlayerIndex: 0, players: [], phase: 'build', log: [{}, {}] };
+        let tagClears = 0, transferClears = 0, removed = 0;
+        const context = { replayResult: { events: {}, game, session: 'one', turn: 3, actor: 0 },
+            activeReplayGuard: null, facts: { game }, session: 'one', mounted: true, enabled: () => true,
+            document: { hidden: false }, reducedMotionEnabled: () => false,
+            node: () => ({ classList: { add() {}, remove() { removed++; } }, offsetWidth: 1 }),
+            activationTags: { clear() { tagClears++; }, play(options) { context.tagCurrent = options.isCurrent; } },
+            transfers: { clear() { transferClears++; }, play() {} } };
+        require('vm').runInNewContext(source.slice(start, end), context);
+        context.playResultReplay();
+        const baseline = [tagClears, transferClears, removed];
+        // Rendering may replace the projection object without changing the game.
+        context.replayResult = { ...context.replayResult, events: {} };
+        context.validateResultReplay();
+        assert.strictEqual(context.tagCurrent(), true);
+        assert.deepStrictEqual([tagClears, transferClears, removed], baseline);
+        change(game);
+        assert.strictEqual(context.tagCurrent(), false);
+        context.validateResultReplay();
+        assert.strictEqual(context.activeReplayGuard, null);
+        assert.deepStrictEqual([tagClears, transferClears, removed], baseline.map(value => value + 1));
+        context.validateResultReplay();
+        assert.deepStrictEqual([tagClears, transferClears, removed], baseline.map(value => value + 1), '取消は一度だけ');
+    }
+});
+
+runTest('所有者札は同じ配置の再通知でDOMを再生成せず名前・移動・再マウント時に再計算する', () => {
+    const fs = require('fs');
+    const vm = require('vm');
+    const source = fs.readFileSync(require.resolve('../js/cardBoardField'), 'utf8');
+    const start = source.indexOf('    function updateOwnerLabels()');
+    const end = source.indexOf('    function ensureTable()', start);
+    let writes = 0;
+    const stop = new Error('placement starts');
+    const bounds = { left: 0, top: 0, right: 800, bottom: 300, width: 800, height: 300 };
+    const card = { getBoundingClientRect: () => ({ left: 100, top: 80, right: 200, bottom: 180, width: 100, height: 100 }) };
+    const panel = { getBoundingClientRect: () => bounds, querySelector: () => card,
+        querySelectorAll: () => [card], getAttribute: () => '0', classList: { remove() { throw new Error('unexpected class write'); } } };
+    let panels = [panel];
+    const viewport = { getBoundingClientRect: () => bounds, querySelectorAll: () => [card],
+        clientLeft: 0, clientTop: 0, clientWidth: 800, clientHeight: 300, scrollLeft: 0, scrollTop: 0 };
+    const style = new Proxy({}, { set() { throw new Error('unexpected style write'); } });
+    const layer = { childNodes: [{}], style, replaceChildren() { writes++; throw stop; } };
+    // Allow the first layout's dimension writes; stop before the actual planner.
+    const dimensions = {};
+    layer.style = dimensions;
+    const nodes = { cardboardTableViewport: viewport, cardboardOwnerLabels: layer,
+        cardboardSeats: { querySelectorAll: () => panels } };
+    const context = { node: id => nodes[id], enabled: () => true, mounted: true, ownerLabelsInspecting: false,
+        ownerLabelsGeometry: null, ownerLabelsPanels: [], ownerLabelsLayer: null,
+        window: { innerWidth: 844, innerHeight: 390, getComputedStyle: () => ({ fontFamily: 'sans-serif', getPropertyValue: () => '#abc' }) },
+        facts: { game: { players: [{ name: '街1' }] } } };
+    vm.createContext(context);
+    vm.runInContext(source.slice(start, end), context);
+    const plan = () => context.updateOwnerLabels();
+    assert.throws(plan, error => error === stop);
+    assert.strictEqual(writes, 1);
+    layer.style = style;
+    plan();
+    assert.strictEqual(writes, 1, '同一geometryでは削除もstyle再代入も行わない');
+    layer.style = dimensions;
+    for (const change of [() => { viewport.scrollLeft++; }, () => { bounds.left++; },
+        () => { context.facts.game.players[0].name = '名前変更'; },
+        () => { panels = [{ ...panel }]; }, () => { layer.childNodes = []; }]) {
+        change();
+        const before = writes;
+        assert.throws(plan, error => error === stop);
+        assert.strictEqual(writes, before + 1);
+        layer.childNodes = [{}];
+        plan();
+        assert.strictEqual(writes, before + 1);
+    }
+});
+
+runTest('所属札は他の札が塞ぐ前に隣接する収支領域を確保し無理な配置は要求しない', () => {
+    const field = require('../js/cardBoardField');
+    const bounds = { left: 4, top: 116, right: 316, bottom: 457 };
+    const leftOwner = { left: 18, top: 182, right: 62, bottom: 204 };
+    const leftCard = { left: 18, top: 208, right: 58, bottom: 364 };
+    const topCards = { left: 82, top: 145, right: 238, bottom: 185 };
+    const input = JSON.stringify({ bounds, leftOwner, leftCard, topCards });
+    const space = field.ownerReceiptSpace(leftOwner, bounds, [leftOwner, leftCard, topCards]);
+    assert.deepStrictEqual(space, { left: 18, top: 152, right: 62, bottom: 178 });
+    const topLeftName = { left: 34, top: 145, right: 78, bottom: 167 };
+    const topRightName = { left: 242, top: 145, right: 286, bottom: 167 };
+    const overlaps = rect => rect.left < space.right + 2 && rect.right > space.left - 2 &&
+        rect.top < space.bottom + 2 && rect.bottom > space.top - 2;
+    assert.ok(overlaps(topLeftName));
+    assert.ok(!overlaps(topRightName));
+    assert.strictEqual(field.ownerReceiptSpace(leftOwner, bounds, [bounds]), null);
+    assert.strictEqual(JSON.stringify({ bounds, leftOwner, leftCard, topCards }), input);
 });

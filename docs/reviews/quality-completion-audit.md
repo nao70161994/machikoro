@@ -4,6 +4,12 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
 
+### v368の統合と残作業（2026-11-17 JST）
+
+[市場の種類数・絞込件数](market-context.md)と[自動収支・明示した発動確認](automatic-results.md)を主ブランチへ選択移植した。補助の11caseは全成功・retry0、原本画像の独立レビューでも重大な切れ・被覆なし。名札が他席の収支領域を塞ぐ問題を修正し、SWをv368へ更新する。主版の一括Push・全CIと簡潔な新CPU4件の実行はこれから行う。下記v367の成功をv368の成功とは扱わない。
+
+以下の「検証中」は当時の履歴であり、現在の判定はこの節とv367最終結果を優先する。Goal未完了、Draft PR #19、マージ保留。
+
 ### v367主CIの一括成功（2026-11-16 JST）
 
 主883a0831の [Nightly43727592329](https://github.com/nao70161994/machikoro/actions/runs/43727592329) は6分割/Node/release/PWA/online/simulation/soak/最終coverageが全成功。[原本集計](assets/nightly-quality/v367/nightly-browser-coverage.json) は375実行（WebKit372・Chromium3）、許可skip1、retry0、stable=true。全件の重複/欠落検査も成功した。同一主HEADのRelease43724454030と16画面43724454082も成功。旧use期待値の失敗を修復したことを最終全件で確認した。

@@ -36,6 +36,9 @@ const CardBoardField = (() => {
     /** @type {CanvasRenderingContext2D | null} */
     let ownerLabelMeasure = null;
     let ownerLabelsInspecting = false;
+    let ownerLabelsGeometry = null;
+    let ownerLabelsPanels = [];
+    let ownerLabelsLayer = null;
     let mounted = false;
     let actionOrigin = null;
     let statusOrigin = null;
@@ -86,6 +89,9 @@ const CardBoardField = (() => {
     let themeFocus = null;
     const transfers = typeof CardBoardTransfers !== 'undefined' ? CardBoardTransfers.create() : null;
     let activationTags = null;
+    let replayResult = null;
+    /** @type {(() => boolean) | null} */
+    let activeReplayGuard = null;
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const disclosureSelector = '#cardboardEventDetails, .compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
     function closeDisclosures(except = null) {
@@ -193,27 +199,68 @@ const CardBoardField = (() => {
         return segments;
     }
 
+    // Keep an adjacent receipt pocket when the table has room. This is a
+    // placement hint only: full names and the final all-owner collision check
+    // remain authoritative. Never shrink a name or a card to make it fit.
+    function ownerReceiptSpace(anchor, bounds, obstacles) {
+        const width = Math.max(36, Math.min(96, anchor.right - anchor.left));
+        const height = 26;
+        const overlap = (a, b) => a.left < b.right + 2 && a.right > b.left - 2 &&
+            a.top < b.bottom + 2 && a.bottom > b.top - 2;
+        for (const [left, top] of [[anchor.left, anchor.top - height - 4],
+            [anchor.left, anchor.bottom + 4], [anchor.left - width - 4, anchor.top], [anchor.right + 4, anchor.top]]) {
+            const rect = { left, top, right: left + width, bottom: top + height };
+            if (rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom &&
+                    !obstacles.some(obstacle => overlap(rect, obstacle))) return rect;
+        }
+        return null;
+    }
+
     function updateOwnerLabels() {
         const viewport = node('cardboardTableViewport');
         const layer = node('cardboardOwnerLabels');
         if (!viewport || !layer) return;
-        layer.replaceChildren();
         const panels = Array.from(node('cardboardSeats')?.querySelectorAll('.cardboard-player') || []);
-        panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
-        if (!enabled() || !mounted || ownerLabelsInspecting || panels.length > 4) return;
+        if (!enabled() || !mounted || ownerLabelsInspecting || panels.length > 4) {
+            layer.replaceChildren();
+            panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
+            ownerLabelsGeometry = null;
+            ownerLabelsPanels = [];
+            ownerLabelsLayer = null;
+            return;
+        }
         const bounds = viewport.getBoundingClientRect();
         const innerLeft = bounds.left + viewport.clientLeft;
         const innerTop = bounds.top + viewport.clientTop;
         const innerRight = innerLeft + viewport.clientWidth;
         const innerBottom = innerTop + viewport.clientHeight;
-        layer.style.width = `${viewport.clientWidth}px`;
-        layer.style.height = `${viewport.clientHeight}px`;
-        layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
         const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
             .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
         const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
             .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
+        // Read the geometry before changing the existing labels. Repeated
+        // camera/layout notifications with identical inputs must not remove
+        // their SVGs, toggle heading opacity or queue another table repaint.
+        const rectKey = rect => [rect.left, rect.top, rect.right, rect.bottom];
+        const geometry = JSON.stringify([rectKey(bounds), viewport.clientWidth, viewport.clientHeight,
+            viewport.clientLeft, viewport.clientTop, viewport.scrollLeft, viewport.scrollTop,
+            window.innerWidth, window.innerHeight, window.getComputedStyle(viewport).fontFamily,
+            facts?.game?.players?.map(player => player.name), obstacles.map(rectKey),
+            panels.map(panel => [panel.getAttribute('data-player-index'), rectKey(panel.getBoundingClientRect()),
+                rectKey(panel.querySelector('.cardboard-player-heading')?.getBoundingClientRect() || bounds),
+                window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent')])]);
+        if (ownerLabelsLayer === layer && ownerLabelsGeometry === geometry && layer.childNodes.length &&
+                panels.length === ownerLabelsPanels.length && panels.every((panel, index) => panel === ownerLabelsPanels[index])) return;
+        ownerLabelsGeometry = geometry;
+        ownerLabelsPanels = panels;
+        ownerLabelsLayer = layer;
+        layer.style.width = `${viewport.clientWidth}px`;
+        layer.style.height = `${viewport.clientHeight}px`;
+        layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
+        layer.replaceChildren();
+        panels.forEach(panel => panel.classList.remove('cardboard-owner-labeled', 'cardboard-owner-bracketed'));
         const placed = [];
+        const receiptSpaces = [];
         const bracketCandidates = [];
         const marketBounds = node('cardboardCenter')?.getBoundingClientRect();
         const preferMarketHeading = panels.length === 2 && bounds.width <= 500 && window.innerHeight >= window.innerWidth;
@@ -400,10 +447,11 @@ const CardBoardField = (() => {
                         ? top >= bottomEdge
                         : top + height <= topEdge;
                 };
-                const ranked = available.map(position => ({ position, score: score(position) }));
+                const ranked = available.map(position => ({ position, score: score(position),
+                    blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect)) }));
                 // Shorter names must not make a ragged row's tail outrank a free
                 // market-facing heading. Keep collision/owner-distance guards.
-                ranked.sort((a, b) => Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
+                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
                 if (ranked[0]) {
                     placement = { width, height, lines, position: ranked[0].position };
                     break;
@@ -497,6 +545,10 @@ const CardBoardField = (() => {
             layer.appendChild(label);
             panel.classList.add('cardboard-owner-labeled');
             placed.push(labelRect);
+            const receiptSpace = ownerReceiptSpace(labelRect,
+                { left: innerLeft + gap, top: innerTop + gap, right: innerRight - gap, bottom: innerBottom - gap },
+                [...obstacles, ...placed, ...receiptSpaces]);
+            if (receiptSpace) receiptSpaces.push(receiptSpace);
         }
         // Wait until every badge is placed: a later owner's name must not be
         // crossed by an earlier owner's bracket. Unsafe groups keep the link.
@@ -612,6 +664,7 @@ const CardBoardField = (() => {
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
             tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
                 onPaint: syncOwnerLabels,
+                onSettled: () => transfers?.retarget(),
                 onReadingChange: (index, minScale) => tableLayout?.setReadingSeat(index, minScale),
                 onContextChange: ({ label, pan, playerIndex, canReturn }) => {
                     ownerLabelsInspecting = playerIndex !== null;
@@ -631,14 +684,16 @@ const CardBoardField = (() => {
                     const title = `${label} · ${text}`;
                     if (hint.title !== title) hint.title = title;
                 },
-                onViewChange: () => {
+                onViewChange: ({ reason } = { reason: 'navigation' }) => {
+                    activeReplayGuard = null;
                     scheduleOwnerLabels();
                     if (buildFlight) clearBuildFlight();
                     activationTags?.clear();
+                    node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
                     // Clear effects anchored to the old geometry, but preserve
                     // a fresh result queued after layout. Its frame reads the
                     // new bounds and still checks session/turn/replay guards.
-                    transfers?.clear();
+                    if (reason !== 'layout' || !transfers?.retarget()) transfers?.clear();
                 } });
         }
     }
@@ -1122,6 +1177,8 @@ const CardBoardField = (() => {
 
     function clearFeedback() {
         marketReturnView = null;
+        replayResult = null;
+        activeReplayGuard = null;
         clearBuildFlight();
         purchaseOrigin = null;
         clearBuildNotice();
@@ -1428,6 +1485,10 @@ const CardBoardField = (() => {
         node('cardboardBoard')?.addEventListener('click', event => {
             if (event.defaultPrevented) return;
             const source = /** @type {HTMLElement} */ (event.target);
+            if (source.closest?.('[data-cardboard-replay-result]')) {
+                playResultReplay();
+                return;
+            }
             const detail = source.closest?.('.cardboard-card[data-action="showCardDetail"], .cardboard-landmark[data-action="showLandmarkDetail"]');
             // Camera capture suppresses drag/pinch clicks before this handler.
             // Readable cards still count as inspection without a camera change.
@@ -1705,6 +1766,44 @@ const CardBoardField = (() => {
         focusVisible(target);
     }
 
+    function validateResultReplay() {
+        if (!activeReplayGuard || activeReplayGuard()) return;
+        activeReplayGuard = null;
+        activationTags?.clear();
+        transfers?.clear();
+        node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
+    }
+
+    function playResultReplay() {
+        const result = replayResult;
+        const game = facts?.game;
+        if (!result || result.game !== game || result.session !== session || result.turn !== game.turnCount ||
+                result.actor !== game.currentPlayerIndex || facts.replaying || !mounted || !enabled() || document.hidden) return;
+        activationTags?.clear();
+        transfers?.clear();
+        const log = game.log;
+        const phase = game.phase;
+        const rerolled = game.usedReroll === true;
+        const firstEntry = log[0], lastEntry = log[log.length - 1], length = log.length;
+        const stillCurrent = () => mounted && enabled() && !document.hidden && !facts?.replaying &&
+            facts?.game === game && session === result.session && game.turnCount === result.turn &&
+            game.currentPlayerIndex === result.actor && game.phase === phase && (game.usedReroll === true) === rerolled &&
+            game.log === log && log.length === length && log[0] === firstEntry && log[log.length - 1] === lastEntry;
+        activeReplayGuard = stillCurrent;
+        const details = node('cardboardEventDetails');
+        details?.classList.remove('cardboard-preview-playing');
+        if (!reducedMotionEnabled()) {
+            void details?.offsetWidth;
+            details?.classList.add('cardboard-preview-playing');
+        }
+        if (!activationTags && typeof CardBoardActivationTags !== 'undefined') {
+            activationTags = CardBoardActivationTags.create({ container: node('cardboardBoard'), viewport: node('cardboardTableViewport') });
+        }
+        activationTags?.play({ events: result.events, players: game.players, reducedMotion: reducedMotionEnabled(), delayMs: 0,
+            isCurrent: () => activeReplayGuard === stillCurrent && stillCurrent() });
+        transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'), events: result.events, delayMs: 0 });
+    }
+
     function updateCurrentResult(events, game, selfIndex) {
         const result = node('cardboardCurrentResult');
         if (!result) return;
@@ -1775,13 +1874,16 @@ const CardBoardField = (() => {
         });
         details.dataset.activationPreview = String(Boolean(preview));
         heading.textContent = preview ? `${headingText} · 施設${count}回` : headingText;
-        if (preview) replaceHtml(detail, preview);
+        if (preview) replaceHtml(detail, `<span class="cardboard-result-overview">${facts.escapeHtml(detailText)}</span>${preview}`);
         else detail.textContent = detailText;
         summary.setAttribute('aria-label', `${result.textContent}。出目と収支を確認`);
         summary.title = result.textContent;
+
+
     }
 
     function draw() {
+        validateResultReplay();
         if (!facts || !node('cardboardBoard')) return;
         const { game, escapeHtml, enabledLandmarks, getEffectText } = facts;
         if (!game?.players?.length) return;
@@ -1852,13 +1954,14 @@ const CardBoardField = (() => {
         const newRoll = feedback?.refresh(facts) === true;
         const events = turnEventsFor(game, facts.display);
         updateCurrentResult(events, game, selfIndex);
+        replayResult = { events, game, session, turn: game.turnCount, actor: currentIndex };
         const freshResultLogs = feedback?.takeResultLogs() || [];
         const freshEvents = freshResultLogs.length ? UiTurnEvents.project(freshResultLogs, {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
         }) : null;
         const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
-        if (newRoll) node('cardboardBoard')?.style.setProperty('--cardboard-event-lead', freshDiceResolution ? '500ms' : '0ms');
+        if (newRoll) node('cardboardBoard')?.style.setProperty('--cardboard-event-lead', '0ms');
         // Feedback consumes only newly appended consequences after a pending
         // choice. Never pulse the older facilities retained in the turn receipt.
         const additionalActivations = new Map();
@@ -2014,7 +2117,9 @@ const CardBoardField = (() => {
         }) : '';
         // This enhances the current-turn receipt, without replaying a transient
         // construction event on redraw, Undo, restore, or theme changes.
-        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }));
+        const replayHtml = events.dice && events.activations?.some(event => event.facility)
+            ? '<button type="button" data-cardboard-replay-result>発動を順に確認</button>' : '';
+        replaceHtml(receipt, replayHtml + UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }));
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.scrollTop = freshResultLogs.length || previousDice !== dice ? 0 : previousReceiptScroll;
@@ -2100,16 +2205,9 @@ const CardBoardField = (() => {
                     confirmation.appendChild(total);
                     node('cardboardBoard').appendChild(confirmation);
                 }
-                if (!activationTags && typeof CardBoardActivationTags !== 'undefined') {
-                    activationTags = CardBoardActivationTags.create({ container: node('cardboardBoard'), viewport: node('cardboardTableViewport') });
-                }
-                activationTags?.play({ events: freshEvents, players: game.players, reducedMotion: reducedMotionEnabled(),
-                    delayMs: newRoll && freshDiceResolution ? 500 : 0, isCurrent: () =>
-                    sequence === transferSequence && mounted && enabled() && !document.hidden && !facts?.replaying &&
-                    session === capturedSession && facts?.game?.turnCount === capturedTurn &&
-                    facts?.game?.currentPlayerIndex === capturedActor && (facts?.game?.usedReroll === true) === capturedReroll });
-                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'),
-                    events: freshEvents, delayMs: newRoll && freshDiceResolution ? 500 : 0 });
+                activationTags?.clear();
+                transfers?.play({ container: node('cardboardBoard'), overlayRoot: document.body, summaryContainer: node('cardboardDiceReceipt'),
+                    events: freshEvents, simultaneous: true, delayMs: 0 });
             });
         }
         if (newRoll) {
@@ -2120,17 +2218,13 @@ const CardBoardField = (() => {
             // pulse afresh, including a quick reroll of the same facilities.
             if (!reducedMotionEnabled()) void board.offsetWidth;
             board.classList.add('cardboard-new-roll');
-            const preview = node('cardboardEventDetails');
-            if (!facts.replaying && !reducedMotionEnabled() && !document.hidden &&
-                    preview?.querySelectorAll('.cardboard-event-preview-card').length > 1) {
-                preview.classList.add('cardboard-preview-playing');
-            }
+
 
             feedbackTimer = setTimeout(() => {
                 feedbackTimer = null;
                 node('cardboardBoard')?.classList.remove('cardboard-new-roll', 'cardboard-roll-reviewed');
-            // The eighth activation can start 560ms after the first and runs
-            // for 760ms. Keep the roll state through the final highlight.
+            // Collective feedback retains its existing bounded lifetime.
+            // Only explicit review introduces facilities one at a time.
             }, CARDBOARD_ROLL_FEEDBACK_MS);
         }
         if ((newRoll || freshResultLogs.length > 0) && !facts.replaying &&
@@ -2164,7 +2258,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

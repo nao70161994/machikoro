@@ -136,9 +136,11 @@ jobs:
               run: node scripts/check-playwright-container.js
             - name: Complete browser E2E shard
               # Keep the same tests, projects, retries and assertions as Release.
+              # The new CPU-animation file alone requests headed WebKit;
+              # existing cases retain headless mode. Xvfb supplies its display.
               # Cases own their contexts; shard per case instead of leaving a
               # large file on one runner. Each runner still uses one worker.
-              run: npm run test:browser-e2e -- --workers=1 --fully-parallel --shard=${{ matrix.shard }}/6 --reporter=line,json,blob
+              run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npm run test:browser-e2e -- --workers=1 --fully-parallel --shard=${{ matrix.shard }}/6 --reporter=line,json,blob
               env:
                   PLAYWRIGHT_JSON_OUTPUT_NAME: artifacts/report-${{ matrix.shard }}.json
                   PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report
