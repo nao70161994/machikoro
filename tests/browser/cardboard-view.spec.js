@@ -2264,3 +2264,70 @@ test('320pxの初回貸金業建設通知は所有施設と名前と市場操作
     expect(await state(page)).toEqual(purchased);
     await page.screenshot({ path: testInfo.outputPath('first-loan-notice-320.png') });
 });
+
+test('市場の種類数と絞込件数は4幅で一覧と一致し操作と文字領域を保つ', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 });
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD;
+        render();
+        acceptHotseatHandoff();
+    });
+    const canonical = await state(page);
+    const evidence = [];
+    const disclosure = page.locator('#cardboardMarket .compact-market-filter-disclosure');
+    const summary = disclosure.locator(':scope > summary');
+    const goals = page.locator('#cardboardMarket .compact-market-goal-disclosure');
+    async function setFilter(filter) {
+        if (!await disclosure.evaluate(element => element.open)) await summary.click();
+        await disclosure.locator(`[data-action="setCardFilter"][data-card-filter="${filter}"]`).click();
+        if (await disclosure.evaluate(element => element.open)) await summary.click();
+        await expect(disclosure).not.toHaveAttribute('open', '');
+    }
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+        await page.setViewportSize(viewport);
+        await camera(page, 'overview');
+        await setFilter('');
+        const all = await page.locator('#cardboardMarket .compact-market-facilities [data-action="buildCard"]').evaluateAll(buttons =>
+            buttons.map(button => ({ name: button.dataset.cardName, affordable: !button.disabled,
+                blue: button.closest('.compact-market-item').classList.contains('compact-market-blue') })));
+        expect(all.length).toBeGreaterThan(0);
+        for (const filter of ['', 'blue', 'affordable']) {
+            await setFilter(filter);
+            const expected = all.filter(card => filter === 'blue' ? card.blue : filter === 'affordable' ? card.affordable : true)
+                .map(card => card.name);
+            const actual = await page.locator('#cardboardMarket .compact-market-facilities [data-action="buildCard"]')
+                .evaluateAll(buttons => buttons.map(button => button.dataset.cardName));
+            expect(actual).toEqual(expected);
+            expect(new Set(actual).size).toBe(actual.length);
+            const caption = filter ? `${filter === 'blue' ? '青' : '建設可'} ${actual.length}/${all.length}種` : `全${all.length}種`;
+            await expect(summary).toHaveText(`絞込：${caption}`);
+            const geometry = await summary.evaluate(element => {
+                const box = element.getBoundingClientRect();
+                const range = document.createRange();
+                range.selectNodeContents(element);
+                const text = range.getBoundingClientRect();
+                const goal = document.querySelector('#cardboardMarket .compact-market-goal-disclosure > summary').getBoundingClientRect();
+                return { box: box.toJSON(), text: text.toJSON(), goal: goal.toJSON(),
+                    contained: text.left >= box.left && text.right <= box.right && text.top >= box.top && text.bottom <= box.bottom,
+                    overlapsGoal: text.left < goal.right && text.right > goal.left && text.top < goal.bottom && text.bottom > goal.top };
+            });
+            evidence.push({ viewport, filter, caption, names: actual, geometry });
+            expect(geometry.contained, JSON.stringify(geometry)).toBe(true);
+            expect(geometry.overlapsGoal, JSON.stringify(geometry)).toBe(false);
+            await summary.click();
+            await expect(disclosure).toHaveAttribute('open', '');
+            await summary.click();
+            await expect(disclosure).not.toHaveAttribute('open', '');
+            await expect(summary).toBeFocused();
+            expect(await state(page)).toEqual(canonical);
+        }
+        await goals.locator(':scope > summary').click();
+        await expect(goals).toHaveAttribute('open', '');
+        await goals.locator(':scope > summary').click();
+        await expect(goals).not.toHaveAttribute('open', '');
+        expect(await state(page)).toEqual(canonical);
+        await page.screenshot({ path: testInfo.outputPath(`market-context-${viewport.width}.png`) });
+    }
+    await fs.writeFile(testInfo.outputPath('market-context.json'), JSON.stringify(evidence, null, 2));
+});
