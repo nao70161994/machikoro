@@ -55,14 +55,22 @@ const UiCompactMarket = (() => {
         return `<article class="compact-market-item compact-market-landmark${built ? ' compact-market-built' : !canBuildThis ? ' compact-market-unavailable' : ''}"><button type="button" class="compact-market-buy${canBuildThis ? ' can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}"${canBuildThis ? '' : ' disabled'} aria-label="${safeName}、${status}。${effect}"><span class="compact-market-art" aria-hidden="true">${renderArt(name, true)}</span><strong class="compact-market-name">${safeName}</strong><span class="compact-market-price${compactStatus ? ' compact-market-price-has-short' : ''}"${canBuildThis || built ? '' : ' data-build-status="unavailable"'}><span class="compact-market-price-full">${priceLabel}</span>${compactStatus}</span><span class="compact-market-effect visually-hidden">${effect}</span></button><button type="button" class="compact-market-detail" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く"><span aria-hidden="true">i</span></button></article>`;
     }
 
-    function buildFacilitiesHtml(options) {
+    function buildFacilityListing(options) {
         const browseAll = options.cardFilter === 'affordable' && !options.canBuildCardAction;
-        return (buildMenu.buildVisibleCardButtonsHtml({
+        let count = 0;
+        const html = buildMenu.buildVisibleCardButtonsHtml({
             ...options,
             cardFilter: browseAll ? '' : options.cardFilter,
-            renderBuildCardButton: (card, stock, canBuildThis, highlighted) =>
-                renderFacility(card, stock, canBuildThis, highlighted, options),
-        }) || buildMenu.buildCardEmptyStateHtml(options.cardFilter));
+            renderBuildCardButton: (card, stock, canBuildThis, highlighted) => {
+                count++;
+                return renderFacility(card, stock, canBuildThis, highlighted, options);
+            },
+        }) || buildMenu.buildCardEmptyStateHtml(options.cardFilter);
+        return { html, count, browseAll };
+    }
+
+    function buildFacilitiesHtml(options) {
+        return buildFacilityListing(options).html;
     }
 
     function buildLandmarksHtml(options) {
@@ -77,8 +85,19 @@ const UiCompactMarket = (() => {
         const filter = options.filterBtnsHtml ?? buildMenu.buildCardFilterBarHtml(options.cardFilter);
         const note = options.cardFilter === 'affordable' && !options.canBuildCardAction
             ? '<p class="compact-market-browse-note">今は全施設を表示 · 建設時に購入可能な施設へ絞ります</p>' : '';
-        const filterLabel = { blue: '青', green: '緑', red: '赤', purple: '紫', affordable: '建設可' }[options.cardFilter] || '全て';
-        return `<section class="compact-market" aria-label="中央市場"><header class="compact-market-header"><h2>中央市場</h2><button type="button" class="compact-market-expand" data-action="expandMarket" aria-controls="cardboardMarketDialog" aria-haspopup="dialog" aria-expanded="false" aria-label="中央市場を大きく表示">拡大</button>${options.undoBtn || ''}</header>${options.marketStatusHtml || ''}<details class="compact-market-filter-disclosure"><summary>絞込：${options.escapeHtml(filterLabel)}</summary><nav class="compact-market-filters" aria-label="施設の絞り込み">${filter}</nav></details><div class="compact-market-browse-guidance"${note ? '' : ' hidden'}>${note}</div><div class="compact-market-facilities" role="region" aria-label="中央市場の施設一覧" tabindex="0">${buildFacilitiesHtml(options)}</div><details class="compact-market-goal-disclosure"><summary>目標</summary><section class="compact-market-goals" aria-label="自分のランドマーク建設"><h3>ランドマーク</h3><div class="compact-market-landmarks">${buildLandmarksHtml(options)}</div></section></details></section>`;
+        const listing = buildFacilityListing(options);
+        // Count the shared policy's current stocked, enabled facility types,
+        // never the full catalogue, waiting deck or landmark goals.
+        let total = listing.count;
+        if (options.cardFilter && !listing.browseAll) {
+            total = 0;
+            buildMenu.buildVisibleCardButtonsHtml({ ...options, cardFilter: '',
+                renderBuildCardButton: () => { total++; return ''; } });
+        }
+        const filterLabel = { blue: '青', green: '緑', red: '赤', purple: '紫', affordable: '建設可' }[options.cardFilter] || '';
+        const context = filterLabel && !listing.browseAll ? `${filterLabel} ${listing.count}/${total}種` : `全${total}種`;
+        const contextDescription = `在庫のある施設${total}種のうち${listing.count}種を一覧に表示。売切れ・対象外の施設とランドマークは含みません`;
+        return `<section class="compact-market" aria-label="中央市場"><header class="compact-market-header"><h2>中央市場</h2><button type="button" class="compact-market-expand" data-action="expandMarket" aria-controls="cardboardMarketDialog" aria-haspopup="dialog" aria-expanded="false" aria-label="中央市場を大きく表示">拡大</button>${options.undoBtn || ''}</header>${options.marketStatusHtml || ''}<details class="compact-market-filter-disclosure"><summary title="${options.escapeHtml(contextDescription)}" aria-label="絞込：${options.escapeHtml(context)}。${options.escapeHtml(contextDescription)}">絞込：${options.escapeHtml(context)}</summary><nav class="compact-market-filters" aria-label="施設の絞り込み">${filter}</nav></details><div class="compact-market-browse-guidance"${note ? '' : ' hidden'}>${note}</div><div class="compact-market-facilities" role="region" aria-label="中央市場の施設一覧" tabindex="0">${listing.html}</div><details class="compact-market-goal-disclosure"><summary>目標</summary><section class="compact-market-goals" aria-label="自分のランドマーク建設"><h3>ランドマーク</h3><div class="compact-market-landmarks">${buildLandmarksHtml(options)}</div></section></details></section>`;
     }
     return Object.freeze({ buildHtml, buildFacilitiesHtml, buildLandmarksHtml });
 })();
