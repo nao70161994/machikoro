@@ -420,11 +420,45 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
         render();
     });
     await expect(page.locator('.cardboard-owner-label')).toHaveCount(4);
+    const runtimeFree = process.env.STATIC_TABLE_RUNTIME_FREE === '1';
+    if (runtimeFree) {
+        const frozen = await page.evaluate(() => {
+            const root = document.documentElement.cloneNode(true);
+            root.querySelectorAll('script, base').forEach(element => element.remove());
+            const base = document.createElement('base');
+            base.href = location.origin + '/';
+            root.querySelector('head').prepend(base);
+            return { html: '<!DOCTYPE html>' + root.outerHTML,
+                rects: [...document.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter')]
+                    .map(element => element.getBoundingClientRect().toJSON()) };
+        });
+        await page.route('**/diagnostic-runtime-free', route => route.fulfill({ contentType: 'text/html', body: frozen.html }));
+        await page.goto('/diagnostic-runtime-free');
+        await page.evaluate(async () => {
+            await document.fonts.ready;
+            await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
+        });
+        await page.addScriptTag({ url: '/js/cardBoardTransfers.js' });
+        const geometry = await page.evaluate(rects => {
+            const current = [...document.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter')]
+                .map(element => element.getBoundingClientRect().toJSON());
+            return { count: current.length, expected: rects.length, hasRuntime: typeof GameRuntimeState !== 'undefined',
+                maxDelta: current.length === rects.length ? Math.max(...current.flatMap((rect, index) =>
+                    ['left', 'top', 'width', 'height'].map(key => Math.abs(rect[key] - rects[index][key])))) : null };
+        }, frozen.rects);
+        await fs.writeFile(testInfo.outputPath('runtime-free-geometry.json'), JSON.stringify(geometry, null, 2));
+        expect(geometry.hasRuntime).toBe(false);
+        expect(geometry.count).toBeGreaterThan(100);
+        expect(geometry.count).toBe(geometry.expected);
+        expect(geometry.maxDelta).not.toBeNull();
+        expect(geometry.maxDelta).toBeLessThanOrEqual(0.5);
+    }
     await page.screenshot({ path: testInfo.outputPath('static-table-start.png') });
-    const evidence = await page.evaluate(() => new Promise(resolve => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        const before = JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
-        const events = { participantNames: game.players.map(player => player.name), activations: [
+    const evidence = await page.evaluate(runtimeFree => new Promise(resolve => {
+        const game = runtimeFree ? null : GameRuntimeState.runtime.snapshot().game;
+        const board = document.getElementById('cardboardBoard');
+        const before = runtimeFree ? board.outerHTML : JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+        const events = { participantNames: runtimeFree ? ['街1', '街2', '街3', '街4'] : game.players.map(player => player.name), activations: [
             ...[1, 2, 3].map(owner => ({ from: 0, to: owner, amount: 1, subject: 'カフェ', facility: true, owner })),
             ...[0, 1, 2, 3].map(owner => ({ from: null, to: owner, amount: owner === 0 ? 2 : 1, subject: 'コーン畑', facility: true, owner })),
             { from: null, to: 0, amount: 1, subject: 'パン屋', facility: true, owner: 0 },
@@ -453,11 +487,11 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
         requestAnimationFrame(sample);
         setTimeout(() => {
             stopped = true;
-            const unchanged = before === JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
-            resolve({ finished, samples, unchanged, elapsed: performance.now() - startedAt });
+            const unchanged = before === (runtimeFree ? board.outerHTML : JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER)));
+            resolve({ finished, samples, unchanged, unchangedKind: runtimeFree ? 'frozen-board-dom' : 'canonical-state', elapsed: performance.now() - startedAt });
             controller.clear();
         }, 1500);
-    }));
+    }), runtimeFree);
     const file = testInfo.outputPath('static-table-control.json');
     await fs.writeFile(file, JSON.stringify(evidence, null, 2));
     await testInfo.attach('static-table-control', { path: file, contentType: 'application/json' });
