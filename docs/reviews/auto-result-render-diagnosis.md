@@ -25,3 +25,11 @@ Linux WebKitで処理が抑制される[上流報告](https://github.com/microso
 a031238dはautoのpause/currentTime=0/2RAF再開を除去してnative開始へ委任。retargetは時計を触らず、hidden開始を拒否しvisibilitychangeで停止、clearでlistenerを除去する。旧unitの2RAF契約はnative開始・時計不変・clear/置換/reduced/hiddenで停止・再開なしへ同じscopeで更新。Node2ファイル/checkJs4構成/独立レビュー成功。[43732399483](https://github.com/nao70161994/machikoro/actions/runs/43732399483) はCPU844終盤finished欠落。静止対照はfinished検証を通過しても可視移動2frameが不足して失敗した。完了件数だけを成功扱いにしない。
 
 3a78dac2はautoのcoin/owner金額planeだけをbody直下へ分離。固定boundsは盤面のclient rectへ追従し、同一値を書かず、retargetでも時計を変えない。endpointはlayer内の金額も避ける。manualは元のcontainer。Nodeでroot境界追従/取消後の残留なし/時計不変を追加し、型検査・独立レビューも成功。しかし [43732983605](https://github.com/nao70161994/machikoro/actions/runs/43732983605) はCPUと静止対照の両方で失敗。主採用は保留。独立planeによる原因解消・性能向上の主張はしない。browser observerの監視rootは、実際の描画先を採取するためbodyへ変更したが、全経路/時間/可視移動/非被覆のassertは維持する。
+
+## Observer計測とlayout zoom候補
+
+08964ea9 / [43777023995](https://github.com/nao70161994/machikoro/actions/runs/43777023995) は844終盤で失敗。上限付きobserver計測は47 callback、camera ResizeObserverは3回・合計51ms・最大44ms、body MutationObserverは25回・合計11ms・最大4msだった。計測範囲内ではobserverの無限連鎖を確認できない。native worldは4509×1482pxから4917×1482pxへ変わり、viewportは824×218pxまで縮む。これだけで描画面積が原因だとは断定しない。
+
+0584abd8は俯瞰・角度0・対応ブラウザに限りCSS zoomを用い、論理camera matrixを維持して6係数をzoomで除す候補。正面閲覧は従来transform、destroyで元zoom/transformを復元する。Node関連3ファイル・checkJs・構文・差分検査は成功。実CSSの座標一致は数学テストだけでは証明できないため、100枚超のカード/ランドマーク/市場のclient矩形を旧方式と比較する。幅・個数・最大差0.5pxと、従来の7経路の可視移動/完了/名前非被覆を全て保持する。静止対照の方式切替がCPU対局の描画を温めないよう別caseにする。
+
+[ネイティブ検証43778316234](https://github.com/nao70161994/machikoro/actions/runs/43778316234) を起動。結果未確認。候補は主PR未採用であり、性能改善・商用品質を達成したとは扱わない。正面閲覧/復帰/resize等の追加確認も採用前に必要。
