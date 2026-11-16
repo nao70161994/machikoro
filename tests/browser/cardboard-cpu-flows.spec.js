@@ -407,26 +407,35 @@ test(`RAF対照: ${frameControl} 空の同一モバイル文脈で7経路が600m
 
 }
 
-test('静止盤面対照: 終盤の実カード卓上で7経路を描画する', async ({ page }, testInfo) => {
+for (const frameControl of (process.env.STATIC_TABLE_FRAME_CONTROLS || 'original').split(',')) {
+test(`静止盤面対照: ${frameControl} 終盤の実カード卓上で7経路を描画する`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.addInitScript(hide => { window.staticTableHideGame = hide; }, process.env.STATIC_TABLE_HIDE_GAME === '1');
-    await page.addInitScript(simple => {
-        if (!simple) return;
+    await page.addInitScript(control => {
+        if (control === 'original') return;
         const nativeAnimate = Element.prototype.animate;
         Element.prototype.animate = function (frames, options) {
             if (this.classList.contains('cardboard-transfer') && Array.isArray(frames)) {
-                const endpoint = String(frames[2]?.transform || '');
-                const distances = [...endpoint.matchAll(/calc\(-50% \+ ([-\d.]+)px\)/g)].map(match => Number(match[1]));
-                if (distances.length !== 2) throw new Error('diagnostic endpoint missing');
-                frames = [{ transform: 'translate(-8px, -8px)', opacity: 1 },
-                    { transform: `translate(${distances[0] - 8}px, ${distances[1] - 8}px)`, opacity: 1 }];
+                if (control === 'opaque') frames = frames.map(frame => ({ ...frame, opacity: 1 }));
+                else if (control === 'split') frames = frames.map(frame => ({ ...frame,
+                    transform: String(frame.transform).replace(/translate\(-50%, -50%\)/g,
+                        'translate(-50%, -50%) translate(0px, 0px)')
+                        .replace(/translate\(calc\(-50% \+ ([-\d.]+)px\), calc\(-50% \+ ([-\d.]+)px\)\)/g,
+                            'translate(-50%, -50%) translate($1px, $2px)') }));
+                else if (control === 'simple') {
+                    const endpoint = String(frames[2]?.transform || '');
+                    const distances = [...endpoint.matchAll(/calc\(-50% \+ ([-\d.]+)px\)/g)].map(match => Number(match[1]));
+                    if (distances.length !== 2) throw new Error('diagnostic endpoint missing');
+                    frames = [{ transform: 'translate(-8px, -8px)', opacity: 1 },
+                        { transform: `translate(${distances[0] - 8}px, ${distances[1] - 8}px)`, opacity: 1 }];
+                } else throw new Error('unknown frame control');
             }
             return nativeAnimate.call(this, frames, options);
         };
-    }, process.env.STATIC_TABLE_SIMPLE_FRAMES === '1');
+    }, frameControl);
     await page.goto('/');
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
@@ -530,3 +539,4 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
         expect(new Set(positions).size, route).toBeGreaterThanOrEqual(2);
     }
 });
+}

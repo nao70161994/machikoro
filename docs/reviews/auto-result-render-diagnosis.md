@@ -55,3 +55,7 @@ c6170721 / [43778804091](https://github.com/nao70161994/machikoro/actions/runs/4
 175e6842 / [43779549238](https://github.com/nao70161994/machikoro/actions/runs/43779549238) はCPU844終盤が失敗、静止盤面は全7経路の可視移動・完了を含め成功（1成功/1失敗）。初期opacityだけの変更で根本解消したとは言えず、以前の成功/再失敗もあるため再現性を確認する。artifact14187890960。
 
 次は同じ候補に対し空画面のsimple/facility keyframe2対照・従来CPU/静止・実盤面のsimple keyframeをまとめて実行する。simple実盤面は診断用animate wrapperで16pxコインの始終点を数値translateへ換え、全7経路/時間/可視位置/正本不変のassertを維持する。製品採用のために演出を簡略化したテストだけを成功条件としない。
+
+04b4b56b / [43779889182](https://github.com/nao70161994/machikoro/actions/runs/43779889182) は5条件中3成功/2失敗。blankのsimpleとfacility keyframeはともに成功。実盤面のoriginalは全7finished950msだが最初のsampleからcurrentTime600で可視途中位置0となり失敗、simpleは全7finished1471msで時刻0/268/350/594/600のsampleを取り成功。CPUは失敗。キーフレーム単独もruntime単独も必要十分な原因とは言えず、盤面と複雑な動きの組み合わせを残す。artifact14188145709の両static原本JSONを確認した。
+
+次の4静止条件はoriginal、opaque（4frameの全opacityを1）、split（percent中心合わせとpx移動を別translateへ）、simple（数値translate2frame）を同じjobで比較。元の全経路/時間/可視途中位置/正本検査を維持し、blankの既知成功を重複実行しない。市場種類数の4幅操作/文字包含/状態不変検査も同時実行する。市場の件数表示は共有描画policyから算出し、関連Node2ファイル成功。独立実装担当とソース確認済みだが、画面確認前なので主PR未採用。
