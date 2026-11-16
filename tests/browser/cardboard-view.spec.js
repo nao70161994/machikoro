@@ -2272,6 +2272,14 @@ test('市場の種類数と絞込件数は4幅で一覧と一致し操作と文�
         render();
         acceptHotseatHandoff();
     });
+    const dialog = page.locator('#cardboardMarketDialog');
+    async function closeMarketDialog() {
+        if (await dialog.isVisible()) await page.locator('#cardboardMarketClose').click();
+        await expect(dialog).not.toBeVisible();
+    }
+    // BUILD may open the normal market dialog. Return through its real close
+    // button before measuring and operating the overview's summaries.
+    await closeMarketDialog();
     const canonical = await state(page);
     const evidence = [];
     const disclosure = page.locator('#cardboardMarket .compact-market-filter-disclosure');
@@ -2282,6 +2290,7 @@ test('市場の種類数と絞込件数は4幅で一覧と一致し操作と文�
         await disclosure.locator(`[data-action="setCardFilter"][data-card-filter="${filter}"]`).click();
         if (await disclosure.evaluate(element => element.open)) await summary.click();
         await expect(disclosure).not.toHaveAttribute('open', '');
+        await closeMarketDialog();
     }
     for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
         { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
@@ -2315,17 +2324,23 @@ test('市場の種類数と絞込件数は4幅で一覧と一致し操作と文�
             evidence.push({ viewport, filter, caption, names: actual, geometry });
             expect(geometry.contained, JSON.stringify(geometry)).toBe(true);
             expect(geometry.overlapsGoal, JSON.stringify(geometry)).toBe(false);
+            // The overview summary intentionally opens the full market,
+            // where filter controls can be operated at their normal size.
             await summary.click();
+            await expect(dialog).toBeVisible();
             await expect(disclosure).toHaveAttribute('open', '');
             await summary.click();
             await expect(disclosure).not.toHaveAttribute('open', '');
+            await closeMarketDialog();
             await expect(summary).toBeFocused();
             expect(await state(page)).toEqual(canonical);
         }
         await goals.locator(':scope > summary').click();
+        await expect(dialog).toBeVisible();
         await expect(goals).toHaveAttribute('open', '');
         await goals.locator(':scope > summary').click();
         await expect(goals).not.toHaveAttribute('open', '');
+        await closeMarketDialog();
         expect(await state(page)).toEqual(canonical);
         await page.screenshot({ path: testInfo.outputPath(`market-context-${viewport.width}.png`) });
     }

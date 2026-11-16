@@ -208,11 +208,11 @@ const CardBoardTransfers = (() => {
             view = null;
         }
         function flightFrames(from, to, origin = from) {
-            const translate = point => point.x === origin.x && point.y === origin.y
-                ? 'translate(-50%, -50%)'
-                : `translate(calc(-50% + ${point.x - origin.x}px), calc(-50% + ${point.y - origin.y}px))`;
+            // Keep percentage centering separate from pixel travel so every
+            // keyframe has the same interpolable transform function list.
+            const translate = point => `translate(-50%, -50%) translate(${point.x - origin.x}px, ${point.y - origin.y}px)`;
             return [
-                { transform: `${translate(from)} scale(.8)`, opacity: 1, easing: 'ease-out' },
+                { transform: `${translate(from)} scale(.8)`, opacity: simultaneousMotion ? 1 : 0, easing: 'ease-out' },
                 { transform: `${translate(from)} scale(1)`, opacity: 1, offset: .15, easing: 'ease-in-out' },
                 { transform: `${translate(to)} scale(1)`, opacity: 1, offset: .85, easing: 'ease-in' },
                 { transform: `${translate(to)} scale(.8)`, opacity: 0 },

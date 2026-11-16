@@ -323,6 +323,10 @@ runTest('施設の初出順とowner fallbackを字幕と同じ700ms刻みで送�
     assert.ok(animated.every(item => item.options.duration === 600));
     assert.ok(animated.every(item => item.options.easing === 'linear'), 'fade区間を全体easeで前倒ししない');
     assert.deepStrictEqual(animated[0].frames.slice(1, 3).map(frame => [frame.offset, frame.opacity]), [[0.15, 1], [0.85, 1]]);
+    assert.ok(animated[0].frames.every(frame => /^translate\(-50%, -50%\) translate\([-\d.]+px, [-\d.]+px\) scale\(/.test(frame.transform)),
+        '中心合わせとpixel移動は全keyframeで同じ関数列にする');
+    assert.strictEqual(animated[0].frames.at(-1).opacity, 0, '到着時のフェードを保持する');
+    assert.strictEqual(animated[0].frames[0].opacity, 0, '順番確認の遅延中はコインを先に見せない');
     assert.strictEqual(animated[0].frames[1].easing, 'ease-in-out', '移動区間の加減速は維持する');
     const flights = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
     assert.deepStrictEqual(flights.map(coin => [coin.dataset.facility, coin.dataset.owner, coin.dataset.step]), [
@@ -367,6 +371,7 @@ runTest('自動送金は同じ送受信者の全施設を合算し並列600msで
         [['null', '0', 'parallel'], ['0', '1', 'parallel']]);
     assert.ok(coins[0].title.includes('麦畑・パン屋：銀行 → 街A：3コイン'));
     assert.deepStrictEqual(animated.map(record => [record.options.duration, record.options.delay]), [[600, 0], [600, 0]]);
+    assert.ok(animated.every(record => record.frames[0].opacity === 1), '並列の確定結果は開始時から識別できる');
     assert.strictEqual(timerDelay(), 3200, '既存cleanup方針を維持する');
     assert.strictEqual(JSON.stringify(resolved), before);
     assert.deepStrictEqual(CardBoardTransfers.project(resolved), canonicalProjection, '公開projectionは施設ごとを維持する');
