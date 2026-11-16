@@ -163,8 +163,21 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                     }));
                     const badgeElements = [...document.querySelectorAll('.cardboard-owner-net')];
                     const protectedElements = [...document.querySelectorAll('.cardboard-owner-label, .cardboard-card, .cardboard-landmark, #cardboardCenter, #cardboardControls, #cardboardCameraTools, #cardboardRoster, #cardboardViewHint')];
-                    const badges = badgeElements.map(badge => ({ owner: Number(badge.dataset.playerIndex), net: Number(badge.dataset.net),
-                        text: badge.textContent, scrollWidth: badge.scrollWidth, clientWidth: badge.clientWidth, rect: badge.getBoundingClientRect().toJSON(), aria: badge.getAttribute('aria-label') }));
+                    const badges = badgeElements.map(badge => {
+                        const rect = badge.getBoundingClientRect();
+                        const range = document.createRange();
+                        range.selectNodeContents(badge);
+                        const textRect = range.getBoundingClientRect();
+                        const style = getComputedStyle(badge);
+                        const clip = badge.closest('.cardboard-transfers').getBoundingClientRect();
+                        return { owner: Number(badge.dataset.playerIndex), net: Number(badge.dataset.net),
+                            text: badge.textContent, scrollWidth: badge.scrollWidth, clientWidth: badge.clientWidth,
+                            rect: rect.toJSON(), aria: badge.getAttribute('aria-label'),
+                            visible: Number(style.opacity) > 0.5 && style.visibility === 'visible' && rect.width > 0 && rect.height > 0,
+                            textContained: textRect.left >= rect.left && textRect.right <= rect.right &&
+                                textRect.top >= rect.top && textRect.bottom <= rect.bottom,
+                            insideClip: rect.left >= clip.left && rect.right <= clip.right && rect.top >= clip.top && rect.bottom <= clip.bottom };
+                    });
                     const collides = (a, b) => a.width > 0 && a.height > 0 && b.width > 0 && b.height > 0 &&
                         a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
                     const badgeOverlaps = badges.flatMap((badge, index) => [
@@ -179,8 +192,17 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         const own = labelRects.find(label => label.owner === badge.owner);
                         return own && labelRects.every(label => distance(own) <= distance(label));
                     });
+                    const layer = document.querySelector('.cardboard-transfers');
+                    // Preserve the exact pure-planner input once per geometry
+                    // change so an unplaced result can be reproduced off-browser.
+                    const plannerInput = layer?.dataset.netBadgeInput;
+                    if (plannerInput && plannerInput !== trace.lastNetBadgeInput) {
+                        trace.netBadgeInputs ||= [];
+                        trace.netBadgeInputs.push(JSON.parse(plannerInput));
+                        trace.lastNetBadgeInput = plannerInput;
+                    }
                     trace.geometry.push({ at: performance.now() - trace.startedAt, actors, labelOverlaps, badges, badgeOverlaps, badgeOwners,
-                        badgeStatus: document.querySelector('.cardboard-transfers')?.dataset.netBadges });
+                        badgeStatus: layer?.dataset.netBadges });
                 }
                 requestAnimationFrame(sample);
             };
@@ -192,7 +214,9 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
     try {
         await expect.poll(() => page.evaluate(() => window.cpuEventTimeline.events.some(event => event.kind === 'transfer-created')), { timeout: 15000 }).toBe(true);
         await expect.poll(() => page.evaluate(() => window.cpuEventTimeline.geometry.length), { timeout: 15000 }).toBeGreaterThan(0);
-        await page.screenshot({ path: testInfo.outputPath('cpu-events-during.png') });
+        // Keep PNG capture outside the 600ms measurement window. Event
+        // visuals have separate reviewed fixtures; every real-time movement,
+        // ownership, clipping and completion assertion below stays required.
         await expect.poll(() => page.evaluate(() => window.cpuEventTimeline.events.some(event => event.kind === 'turn-change')), { timeout: 15000 }).toBe(true);
         await page.screenshot({ path: testInfo.outputPath('cpu-events-next-turn.png') });
     } finally {
@@ -204,7 +228,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         const file = testInfo.outputPath('cpu-events-timeline.json');
         await fs.writeFile(file, JSON.stringify(evidence, null, 2));
         await testInfo.attach('cpu-events-timeline', { path: file, contentType: 'application/json' });
-        for (const name of ['start', 'during', 'next-turn']) {
+        for (const name of ['start', 'next-turn']) {
             const path = testInfo.outputPath(`cpu-events-${name}.png`);
             if (await fs.stat(path).catch(() => null)) await testInfo.attach(`cpu-events-${name}`, { path, contentType: 'image/png' });
         }
@@ -242,6 +266,8 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             expect(sample.badges.map(badge => badge.text)).toEqual([dense ? '0' : '−1', '+2', '+2', '+2']);
             expect(sample.badges.every(badge => badge.aria === `街${badge.owner + 1}の直近に解決した収支、${badge.net < 0 ? 'マイナス' : badge.net > 0 ? 'プラス' : ''}${Math.abs(badge.net)}コイン`)).toBe(true);
             expect(sample.badges.every(badge => badge.scrollWidth <= badge.clientWidth), '全桁を札の幅内へ表示する').toBe(true);
+            expect(sample.badges.every(badge => badge.visible && badge.textContained && badge.insideClip),
+                `全文が可視の札と描画領域に上下左右とも収まる ${JSON.stringify(sample.badges)}`).toBe(true);
             expect(sample.badgeOwners, JSON.stringify(sample)).toBe(true);
             expect(sample.badgeOverlaps, JSON.stringify(sample)).toEqual([]);
         }

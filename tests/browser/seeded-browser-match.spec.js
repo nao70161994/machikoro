@@ -118,6 +118,15 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
                     }
                 }
             }).observe(board, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
+            // Automatic routes use a fixed body-level overlay; explicit review
+            // remains inside the board. Count real coin elements in that layer,
+            // without observing unrelated body attributes or accepting empties.
+            new MutationObserver(records => {
+                for (const record of records) for (const added of record.addedNodes) {
+                    if (added.nodeType !== Node.ELEMENT_NODE || !added.matches('.cardboard-transfers.cardboard-transfers-viewport')) continue;
+                    window.__matchPresentation.transfers += added.querySelectorAll('.cardboard-transfer').length;
+                }
+            }).observe(document.body, { childList: true });
         }
         window.__matchMonitor = setInterval(() => {
             const game = GameRuntimeState.runtime.snapshot().game;

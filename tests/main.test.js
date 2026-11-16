@@ -3829,7 +3829,11 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
         path.join(__dirname, '..', '.github/workflows/nightly-release-test.yml'),
         'utf8'
     );
-    assert.ok(nightlyWorkflow.includes('run: npm run test:browser-e2e -- --workers=1'));
+    assert.ok(nightlyWorkflow.includes("run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npm run test:browser-e2e -- --workers=1 --fully-parallel --shard=${{ matrix.shard }}/6 --reporter=line,json,blob"));
+    const cpuResultsSpec = fs.readFileSync(path.join(__dirname, 'browser/cardboard-cpu-results.spec.js'), 'utf8');
+    assert.ok(cpuResultsSpec.includes('headless: false'));
+    assert.ok(cpuResultsSpec.includes('expect(headless).toBe(false)'));
+    assert.ok(cpuResultsSpec.includes("type: 'browser-display', description: 'headed-xvfb'"));
 });
 
 runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検証する', () => {

@@ -1,7 +1,13 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect, devices } = require('@playwright/test');
 const fs = require('node:fs/promises');
 
+// A PC-width playthrough uses the desktop browser profile. Keep the original
+// iPhone project profile for every phone width, including DPR and touch.
+const desktopPlaythrough = process.env.UI_PLAYTHROUGH_WIDTH === '1440';
 test.use({
+    ...(desktopPlaythrough ? { userAgent: devices['Desktop Safari'].userAgent,
+        deviceScaleFactor: devices['Desktop Safari'].deviceScaleFactor,
+        isMobile: false, hasTouch: false, screen: { width: 1440, height: 900 } } : {}),
     serviceWorkers: 'block',
     video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
@@ -275,6 +281,16 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         await page.setViewportSize(viewport);
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/', { waitUntil: 'domcontentloaded' });
+        report.browserProfile = await page.evaluate(() => ({ userAgent: navigator.userAgent,
+            devicePixelRatio: devicePixelRatio, maxTouchPoints: navigator.maxTouchPoints,
+            screenWidth: screen.width, screenHeight: screen.height }));
+        report.browserProfile.kind = desktopPlaythrough ? 'desktop-safari' : 'project-mobile';
+        if (desktopPlaythrough) {
+            expect(report.browserProfile.devicePixelRatio).toBe(devices['Desktop Safari'].deviceScaleFactor);
+            expect(report.browserProfile.maxTouchPoints).toBe(0);
+            expect(report.browserProfile.screenWidth).toBe(1440);
+            expect(report.browserProfile.screenHeight).toBe(900);
+        }
         // All setup changes go through visible controls and their real handlers.
         await click(page.locator('#tabTournament'), '表示設定へ');
         await click(page.locator('#designSwitcher > summary'), '画面デザイン設定');
