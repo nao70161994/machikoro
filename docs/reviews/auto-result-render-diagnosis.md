@@ -51,3 +51,7 @@ c6170721 / [43778804091](https://github.com/nao70161994/machikoro/actions/runs/4
 43779138561は失敗。runtime不存在・100枚超の個数/矩形差0.5px以内を通過した後もfinished0/samples0、frozen-board-dom不変true、経過1568ms。artifact14187905397の原寸開始画像ではカードアートと4方向卓を確認でき、明らかな全体欠落なし。常駐runtimeは再現の必要条件ではない。独立レビューは対照を成立と評価しつつCSS animation時計/canvas画素/SVG内imageロードは引継保証外と指摘した。
 
 次の候補はflightFramesの最初のopacityだけ0から1へ変更する。成功したblank対照は最初から不透明であり、実Transfersは透明な最初のkeyframeを持つため、その差を切り分ける。経路・時間・終端フェードは維持する。これは原因仮説であり、WebKitが透明開始を抑制するとの確定説明ではない。Node Transfers・構文・差分検査は成功、実ブラウザで従来CPU/静止2件を確認してから判断する。
+
+175e6842 / [43779549238](https://github.com/nao70161994/machikoro/actions/runs/43779549238) はCPU844終盤が失敗、静止盤面は全7経路の可視移動・完了を含め成功（1成功/1失敗）。初期opacityだけの変更で根本解消したとは言えず、以前の成功/再失敗もあるため再現性を確認する。artifact14187890960。
+
+次は同じ候補に対し空画面のsimple/facility keyframe2対照・従来CPU/静止・実盤面のsimple keyframeをまとめて実行する。simple実盤面は診断用animate wrapperで16pxコインの始終点を数値translateへ換え、全7経路/時間/可視位置/正本不変のassertを維持する。製品採用のために演出を簡略化したテストだけを成功条件としない。

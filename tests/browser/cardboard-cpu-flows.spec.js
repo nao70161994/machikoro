@@ -348,13 +348,14 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
 });
 }
 
-test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画される', async ({ page }, testInfo) => {
+for (const frameControl of ['simple', 'facility']) {
+test(`RAF対照: ${frameControl} 空の同一モバイル文脈で7経路が600msで描画される`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.route('**/__raf-control', route => route.fulfill({ contentType: 'text/html',
         body: '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}.coin{position:absolute;width:16px;height:16px;background:gold;border-radius:50%}</style><body></body>' }));
     await page.goto('/__raf-control');
     await page.screenshot({ path: testInfo.outputPath('raf-control-start.png') });
-    const evidence = await page.evaluate(() => new Promise(resolve => {
+    const evidence = await page.evaluate(frameControl => new Promise(resolve => {
         const startedAt = performance.now();
         const finished = [], samples = [];
         const actors = Array.from({ length: 7 }, (_, index) => {
@@ -363,7 +364,15 @@ test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画さ
             element.style.top = `${20 + index * 40}px`;
             element.style.left = '20px';
             document.body.appendChild(element);
-            const animation = element.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(400px)' }],
+            const frames = frameControl === 'simple'
+                ? [{ transform: 'translateX(0)' }, { transform: 'translateX(400px)' }]
+                : [
+                    { transform: 'translate(-50%, -50%) scale(.8)', opacity: 1, easing: 'ease-out' },
+                    { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15, easing: 'ease-in-out' },
+                    { transform: 'translate(calc(-50% + 400px), calc(-50% + 0px)) scale(1)', opacity: 1, offset: .85, easing: 'ease-in' },
+                    { transform: 'translate(calc(-50% + 400px), calc(-50% + 0px)) scale(.8)', opacity: 0 },
+                ];
+            const animation = element.animate(frames,
                 { duration: 600, easing: 'linear', fill: 'both' });
             animation.pause();
             animation.currentTime = 0;
@@ -383,7 +392,7 @@ test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画さ
             stopped = true;
             resolve({ finished, samples, elapsed: performance.now() - startedAt, dpr: devicePixelRatio, visible: !document.hidden });
         }, 1500);
-    }));
+    }), frameControl);
     const file = testInfo.outputPath('raf-control.json');
     await fs.writeFile(file, JSON.stringify(evidence, null, 2));
     await testInfo.attach('raf-control', { path: file, contentType: 'application/json' });
@@ -396,12 +405,28 @@ test('RAF対照: 空の同一モバイル文脈でも7経路が600msで描画さ
     }
 });
 
+}
+
 test('静止盤面対照: 終盤の実カード卓上で7経路を描画する', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.addInitScript(hide => { window.staticTableHideGame = hide; }, process.env.STATIC_TABLE_HIDE_GAME === '1');
+    await page.addInitScript(simple => {
+        if (!simple) return;
+        const nativeAnimate = Element.prototype.animate;
+        Element.prototype.animate = function (frames, options) {
+            if (this.classList.contains('cardboard-transfer') && Array.isArray(frames)) {
+                const endpoint = String(frames[2]?.transform || '');
+                const distances = [...endpoint.matchAll(/calc\(-50% \+ ([-\d.]+)px\)/g)].map(match => Number(match[1]));
+                if (distances.length !== 2) throw new Error('diagnostic endpoint missing');
+                frames = [{ transform: 'translate(-8px, -8px)', opacity: 1 },
+                    { transform: `translate(${distances[0] - 8}px, ${distances[1] - 8}px)`, opacity: 1 }];
+            }
+            return nativeAnimate.call(this, frames, options);
+        };
+    }, process.env.STATIC_TABLE_SIMPLE_FRAMES === '1');
     await page.goto('/');
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
