@@ -77,3 +77,7 @@ splitを製品候補のflightFramesへ反映する。全4frameのtransform関数
 89af03cb / [43782573118](https://github.com/nao70161994/machikoro/actions/runs/43782573118) はWebKit CPU失敗、市場4幅成功、同一条件Chromium CPU成功。開始時刻設定でWebKitの可視移動は解決しなかった。市場は件数/全文Range/目標非交差/通常click/最小44px/正本不変を4幅で確認、原寸PNGの目視レビューはこれから。artifact14189201265。
 
 次は同一製品・WebKitのまま、(1)開始/演出中のスクリーンショット取得なし、(2)元の取得を残してXvfb上のheaded表示、を比較する。これらは観測/表示経路の診断であり、WebKit失敗を除外する根拠や物理Safari品質の証明にはしない。全7経路/時間/途中可視位置/状態のassertは同一で、前後画像を撮る別fixtureと動き測定を分ける必要があるか確認する。
+
+bd29b387 / [43783172294](https://github.com/nao70161994/machikoro/actions/runs/43783172294) は、headlessの画像取得なしCPUが失敗、Xvfbでheaded表示し元の画像取得を保つ同一CPUが成功。artifact14189805683。375既存caseの失敗や製品ルールの問題とは混同しない。原因自体は未確定だが、WebKitの実行モードとの組み合わせで差がある。独立レビューは、同じ製品/ブラウザ版/DPR/fixture/全assertを維持し、既存375headlessを変更せず、新しい実描画caseのみheadedで追加検証する方式を条件付きで支持した。物理端末の証拠にはしない。
+
+まずheadedでCPU序盤/終盤320/844の4条件・静止・手動844/320・市場4幅の8caseをretry0で確認する。成功前にCI方式変更や候補採用を完了扱いにしない。headless失敗の原本とコマンドは残す。

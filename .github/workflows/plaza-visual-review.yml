@@ -20,23 +20,16 @@ jobs:
             - run: node scripts/check-playwright-container.js
             - name: Check candidate composition roots
               run: npm run test:types
-            - name: WebKit without capture during motion
+            - name: WebKit headed full motion and market validation
               if: ${{ !cancelled() }}
               env:
                   COIN_ANIMATION_CAPTURE: 'direct'
-                  COIN_SCREEN_CAPTURE: 'none'
-              run: npx playwright test cardboard-cpu-flows.spec.js --grep '844px 終盤' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
-            - name: WebKit headed display control with ordinary captures
-              if: ${{ !cancelled() }}
-              env:
-                  COIN_ANIMATION_CAPTURE: 'direct'
-              run: xvfb-run --auto-servernum npx playwright test cardboard-cpu-flows.spec.js --grep '844px 終盤' --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/headed-comparison
+              run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '標準CPUの一括結果|静止盤面対照|明示した発動確認|市場の種類数' --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/quality-candidate
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:
                   name: quality-candidate-native
                   path: |
                       test-results/quality-candidate/
-                      test-results/headed-comparison/
                       playwright-report/
                   if-no-files-found: warn
