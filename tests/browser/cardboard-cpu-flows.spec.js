@@ -419,6 +419,34 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
         render();
     });
     await expect(page.locator('.cardboard-owner-label')).toHaveCount(4);
+    const geometry = await page.evaluate(() => {
+        const world = document.getElementById('cardboardSeats');
+        const elements = [...world.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter')];
+        const capture = () => elements.map(element => element.getBoundingClientRect().toJSON());
+        const before = capture();
+        const nativeWidth = world.offsetWidth;
+        const zoom = Number(world.style.zoom) || 1;
+        const originalTransform = world.style.transform;
+        const matrix = new DOMMatrix(originalTransform);
+        let alternative, alternativeWidth;
+        try {
+            world.style.zoom = '1';
+            world.style.transform = `matrix(${[matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f].map(value => value * zoom).join(',')})`;
+            alternative = capture();
+            alternativeWidth = world.offsetWidth;
+        } finally {
+            world.style.zoom = String(zoom);
+            world.style.transform = originalTransform;
+        }
+        return { zoom, nativeWidth, alternativeWidth, count: before.length,
+            maxDelta: Math.max(...before.flatMap((rect, index) => ['left', 'top', 'width', 'height']
+                .map(key => Math.abs(rect[key] - alternative[index][key])))) };
+    });
+    await fs.writeFile(testInfo.outputPath('layout-zoom-geometry.json'), JSON.stringify(geometry, null, 2));
+    expect(geometry.zoom).toBeLessThan(1);
+    expect(geometry.nativeWidth).toBe(geometry.alternativeWidth);
+    expect(geometry.count).toBeGreaterThan(100);
+    expect(geometry.maxDelta, '描画方式の変更でカードや市場のclient矩形を変えない').toBeLessThanOrEqual(0.5);
     await page.screenshot({ path: testInfo.outputPath('static-table-start.png') });
     const evidence = await page.evaluate(() => new Promise(resolve => {
         const game = GameRuntimeState.runtime.snapshot().game;

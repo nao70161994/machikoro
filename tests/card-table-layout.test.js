@@ -56,3 +56,18 @@ runTest('市場の拡大は既存の中央空間内だけで行い余白不足�
     assert.strictEqual(marketScaleWithinHole(market, { width: NaN, height: 380 }), 1);
     assert.deepStrictEqual(market, { width: 344, height: 380 });
 });
+
+runTest('俯瞰のlayout zoomはカメラのclient座標を変えず未対応時はtransformを維持する', () => {
+    const { paintProjection } = require('../js/cardTableCamera');
+    for (const scale of [0.04, 0.17, 0.6, 1, 1.8]) {
+        const matrix = { a: scale, b: 0, c: 0, d: scale, e: 30.125, f: 7.375 };
+        for (const enabled of [false, true]) {
+            const projection = paintProjection(matrix, scale, enabled);
+            const values = projection.transform.slice(7, -1).split(',').map(Number);
+            const original = [matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f];
+            values.forEach((value, index) => assert.ok(Math.abs(value * projection.zoom - original[index]) < 1e-12));
+            if (!enabled || scale >= 1) assert.strictEqual(projection.zoom, 1);
+            else assert.strictEqual(projection.zoom, scale);
+        }
+    }
+});
