@@ -296,12 +296,12 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             requestAnimationFrame(sample);
         });
     }, dense);
-    await page.screenshot({ path: testInfo.outputPath('cpu-events-start.png') });
+    if (process.env.COIN_SCREEN_CAPTURE !== 'none') await page.screenshot({ path: testInfo.outputPath('cpu-events-start.png') });
     await page.evaluate(() => scheduleCPU());
     try {
         await expect.poll(() => page.evaluate(() => window.cpuEventTimeline.events.some(event => event.kind === 'transfer-created')), { timeout: 15000 }).toBe(true);
         await expect.poll(() => page.evaluate(() => window.cpuEventTimeline.geometry.length), { timeout: 15000 }).toBeGreaterThan(0);
-        await page.screenshot({ path: testInfo.outputPath('cpu-events-during.png') });
+        if (process.env.COIN_SCREEN_CAPTURE !== 'none') await page.screenshot({ path: testInfo.outputPath('cpu-events-during.png') });
         await expect.poll(() => page.evaluate(() => window.cpuEventTimeline.events.some(event => event.kind === 'turn-change')), { timeout: 15000 }).toBe(true);
         await page.screenshot({ path: testInfo.outputPath('cpu-events-next-turn.png') });
     } finally {

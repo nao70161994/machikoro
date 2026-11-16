@@ -73,3 +73,7 @@ splitを製品候補のflightFramesへ反映する。全4frameのtransform関数
 次の候補はfresh parallel batchの開始時刻だけを共有document.timeline.currentTimeへ一度設定する。finite numberかつstartTime未確定の場合だけで、既に開始済み・手動演出・timeline未解決には触らず、retargetで再設定しない。[Web Animations §4.4.4](https://www.w3.org/TR/web-animations-1/#setting-the-start-time-of-an-animation)の開始時刻設定はpending taskを解除するが、それだけで可視描画が滑らかになる保証ではない。Nodeで共有時刻0/1234、未解決/NaN/既開始/手動のfallback、retarget時計不変を確認し関連2ファイル成功。
 
 補助専用Chromium mobile projectを追加し、DPR3/viewport/screen/touch/isMobile/UA・CPU速度・全assertを既存モバイルと揃えてengine差も観測する。物理iPhone検証やWebKit失敗除外の代わりにはしない。補助workflow/configは主PRへ移植しない。
+
+89af03cb / [43782573118](https://github.com/nao70161994/machikoro/actions/runs/43782573118) はWebKit CPU失敗、市場4幅成功、同一条件Chromium CPU成功。開始時刻設定でWebKitの可視移動は解決しなかった。市場は件数/全文Range/目標非交差/通常click/最小44px/正本不変を4幅で確認、原寸PNGの目視レビューはこれから。artifact14189201265。
+
+次は同一製品・WebKitのまま、(1)開始/演出中のスクリーンショット取得なし、(2)元の取得を残してXvfb上のheaded表示、を比較する。これらは観測/表示経路の診断であり、WebKit失敗を除外する根拠や物理Safari品質の証明にはしない。全7経路/時間/途中可視位置/状態のassertは同一で、前後画像を撮る別fixtureと動き測定を分ける必要があるか確認する。

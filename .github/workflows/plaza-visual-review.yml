@@ -20,22 +20,23 @@ jobs:
             - run: node scripts/check-playwright-container.js
             - name: Check candidate composition roots
               run: npm run test:types
-            - name: Native shared animation clock and market context
+            - name: WebKit without capture during motion
               if: ${{ !cancelled() }}
               env:
                   COIN_ANIMATION_CAPTURE: 'direct'
-              run: npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '844px 終盤|市場の種類数' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
-            - name: Chromium mobile engine comparison
+                  COIN_SCREEN_CAPTURE: 'none'
+              run: npx playwright test cardboard-cpu-flows.spec.js --grep '844px 終盤' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
+            - name: WebKit headed display control with ordinary captures
               if: ${{ !cancelled() }}
               env:
                   COIN_ANIMATION_CAPTURE: 'direct'
-              run: npx playwright test cardboard-cpu-flows.spec.js --grep '844px 終盤' --project=mobile-chromium-coin-diagnostic --workers=1 --retries=0 --output=test-results/chromium-comparison
+              run: xvfb-run --auto-servernum npx playwright test cardboard-cpu-flows.spec.js --grep '844px 終盤' --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/headed-comparison
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:
                   name: quality-candidate-native
                   path: |
                       test-results/quality-candidate/
-                      test-results/chromium-comparison/
+                      test-results/headed-comparison/
                       playwright-report/
                   if-no-files-found: warn
