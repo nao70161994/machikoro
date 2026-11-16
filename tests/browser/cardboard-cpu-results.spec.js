@@ -192,8 +192,17 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         const own = labelRects.find(label => label.owner === badge.owner);
                         return own && labelRects.every(label => distance(own) <= distance(label));
                     });
+                    const layer = document.querySelector('.cardboard-transfers');
+                    // Preserve the exact pure-planner input once per geometry
+                    // change so an unplaced result can be reproduced off-browser.
+                    const plannerInput = layer?.dataset.netBadgeInput;
+                    if (plannerInput && plannerInput !== trace.lastNetBadgeInput) {
+                        trace.netBadgeInputs ||= [];
+                        trace.netBadgeInputs.push(JSON.parse(plannerInput));
+                        trace.lastNetBadgeInput = plannerInput;
+                    }
                     trace.geometry.push({ at: performance.now() - trace.startedAt, actors, labelOverlaps, badges, badgeOverlaps, badgeOwners,
-                        badgeStatus: document.querySelector('.cardboard-transfers')?.dataset.netBadges });
+                        badgeStatus: layer?.dataset.netBadges });
                 }
                 requestAnimationFrame(sample);
             };

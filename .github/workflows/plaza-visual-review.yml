@@ -1,4 +1,4 @@
-name: Economy and regression candidate review
+name: CPU placement input diagnosis
 on:
     workflow_dispatch:
 permissions:
@@ -14,21 +14,8 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    - name: economy
-                      command: npx playwright test cardboard-economy.spec.js --project=mobile-webkit --workers=1 --retries=0
-                    - name: owned-geometry
-                      command: npx playwright test cardboard-overview.spec.js --grep '縦持ち2人戦の終盤は|卓の出目と枚数は' --project=mobile-webkit --workers=1 --retries=0
-                    - name: visual-candidates
-                      command: npx playwright test theme-visual-regression.spec.js --grep cardboard --project=mobile-webkit --workers=1 --retries=0 --update-snapshots
-                    - name: cpu-events
-                      command: npx playwright test cardboard-cpu-results.spec.js --project=mobile-webkit --headed --workers=1 --retries=0
-                    - name: seeded-2p
-                      command: npx playwright test seeded-browser-match.spec.js --project=chromium-desktop --workers=1 --retries=0
-                    - name: seeded-4p
-                      players: '4'
-                      command: npx playwright test seeded-browser-match.spec.js --project=chromium-desktop --workers=1 --retries=0
-                    - name: desktop-ui-game
-                      command: npx playwright test ui-playthrough.spec.js --project=mobile-webkit --headed --workers=1 --retries=0
+                    - name: cpu-placement-input
+                      command: npx playwright test cardboard-cpu-results.spec.js --grep '320px$' --project=mobile-webkit --headed --workers=1 --retries=0
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
