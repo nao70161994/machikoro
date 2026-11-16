@@ -2316,12 +2316,17 @@ test('市場の種類数と絞込件数は4幅で一覧と一致し操作と文�
                 const range = document.createRange();
                 range.selectNodeContents(element);
                 const text = range.getBoundingClientRect();
-                const goal = document.querySelector('#cardboardMarket .compact-market-goal-disclosure > summary').getBoundingClientRect();
+                const goalElement = document.querySelector('#cardboardMarket .compact-market-goal-disclosure > summary');
+                const goal = goalElement.getBoundingClientRect();
                 return { box: box.toJSON(), text: text.toJSON(), goal: goal.toJSON(),
+                    nativeHeight: element.offsetHeight, goalNativeWidth: goalElement.offsetWidth, goalNativeHeight: goalElement.offsetHeight,
                     contained: text.left >= box.left && text.right <= box.right && text.top >= box.top && text.bottom <= box.bottom,
                     overlapsGoal: text.left < goal.right && text.right > goal.left && text.top < goal.bottom && text.bottom > goal.top };
             });
             evidence.push({ viewport, filter, caption, names: actual, geometry });
+            expect(geometry.nativeHeight).toBeGreaterThanOrEqual(44);
+            expect(geometry.goalNativeWidth).toBeGreaterThanOrEqual(44);
+            expect(geometry.goalNativeHeight).toBeGreaterThanOrEqual(44);
             expect(geometry.contained, JSON.stringify(geometry)).toBe(true);
             expect(geometry.overlapsGoal, JSON.stringify(geometry)).toBe(false);
             // The overview summary intentionally opens the full market,

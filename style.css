@@ -11802,7 +11802,9 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] .compact-market-stock[data-short-stock] { font-size: 0; }
     html[data-design="cardboard"] .compact-market-stock[data-short-stock]::before { content: attr(data-short-stock); font-size: 11px; }
     html[data-design="cardboard"] .compact-market-detail { top: 0; width: 44px; }
-    html[data-design="cardboard"] :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure) > summary { justify-content: center; width: 44px; height: 44px; min-height: 44px; padding: 2px; font-size: 10px; line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+    html[data-design="cardboard"] :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure) > summary { justify-content: center; min-width: 44px; height: 44px; min-height: 44px; padding: 2px; font-size: 10px; line-height: 1.2; text-align: center; white-space: nowrap; }
+    html[data-design="cardboard"] .compact-market-filter-disclosure > summary { width: max-content; }
+    html[data-design="cardboard"] .compact-market-goal-disclosure > summary { width: 44px; }
     html[data-design="cardboard"] :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure)[open] { position: fixed; left: 50%; top: 50%; z-index: 30; width: min(340px, calc(100vw - 24px)); max-height: 65dvh; padding: 8px; transform: translate(-50%, -50%); overflow: auto; border: 1px solid #b7a36d; border-radius: 8px; background: #fffdf5; box-shadow: 0 5px 24px #18344766; }
     html[data-design="cardboard"] :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure)[open] > summary { width: 100%; font-size: 12px; }
     html[data-design="cardboard"] .compact-market-filter-disclosure[open] .compact-market-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 0 0; padding: 0; }
@@ -11820,7 +11822,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     /* Short landscape keeps controls on one row and gives the card shelf the full market width. */
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market {
         display: grid;
-        grid-template-columns: 44px 44px minmax(0, 1fr) 88px;
+        grid-template-columns: max-content 44px minmax(0, 1fr) 88px;
         grid-template-rows: 44px 154px;
         gap: 4px;
     }
@@ -14357,6 +14359,10 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     grid-column: 2;
     grid-row: 1;
 }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-filter-disclosure > summary {
+    width: max-content;
+    white-space: nowrap;
+}
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-goal-disclosure {
     grid-column: 3;
@@ -14419,6 +14425,10 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-filter-disclosure {
     grid-column: 1;
     grid-row: 2;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-filter-disclosure > summary {
+    padding-inline: 2px;
+    font-size: 10px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-goal-disclosure {
     grid-column: 2;
