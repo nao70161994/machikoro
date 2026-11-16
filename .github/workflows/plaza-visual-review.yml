@@ -20,11 +20,9 @@ jobs:
             - run: node scripts/check-playwright-container.js
             - name: Check candidate composition roots
               run: npm run test:types
-            - name: Native frozen board without app runtime
-              env:
-                  STATIC_TABLE_RUNTIME_FREE: '1'
+            - name: Native visible coin startup
               if: ${{ !cancelled() }}
-              run: npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '静止盤面対照' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
+              run: npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '静止盤面対照|844px 終盤' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:

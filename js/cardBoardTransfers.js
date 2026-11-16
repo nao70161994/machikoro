@@ -212,7 +212,7 @@ const CardBoardTransfers = (() => {
                 ? 'translate(-50%, -50%)'
                 : `translate(calc(-50% + ${point.x - origin.x}px), calc(-50% + ${point.y - origin.y}px))`;
             return [
-                { transform: `${translate(from)} scale(.8)`, opacity: 0, easing: 'ease-out' },
+                { transform: `${translate(from)} scale(.8)`, opacity: 1, easing: 'ease-out' },
                 { transform: `${translate(from)} scale(1)`, opacity: 1, offset: .15, easing: 'ease-in-out' },
                 { transform: `${translate(to)} scale(1)`, opacity: 1, offset: .85, easing: 'ease-in' },
                 { transform: `${translate(to)} scale(.8)`, opacity: 0 },

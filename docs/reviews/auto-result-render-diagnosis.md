@@ -43,3 +43,11 @@ c6170721 / [43778804091](https://github.com/nao70161994/machikoro/actions/runs/4
 独立レビューは、静止対照でもobserver/timer等のruntimeが残るため、次の強い対照として「同じ盤面DOM/CSSをruntimeなしの別ページで描画」を提案した。描画subtreeを外した今回の結果を見て、同origin上のDOM複製と矩形一致を用い、描画構造と常駐runtimeを分ける。局所visibility/clipには全体RAF停滞の明白な原因は見つからなかった。
 
 43778804091は失敗。ゲーム描画subtreeを非表示にしてもfinished0/期待7で、盤面の可視描画だけが唯一の原因という仮説は支持されない。artifact14187328140。次はruntimeなしの同じDOM/CSS対照へ進む。非表示操作自体が新しいlayout通知を起こし得るため、runtime原因の確定証拠とも扱わない。
+
+## 同一DOM/CSSからアプリruntimeを除く対照
+
+79400d86 / [43779138561](https://github.com/nao70161994/machikoro/actions/runs/43779138561) は、実際の終盤DOMを複製しscriptを除去、同originの診断URLへ遷移しTransfersだけを読み込む。DPR/viewport/CSS/画像を維持し、GameRuntimeStateが存在しないことと、100枚超のカード/ランドマーク/市場の個数・client矩形差0.5px以内を先に検査する。元の実ゲーム側のcanonical不変検査は維持する。runtimeなし側は正本が存在しないため、別のunchangedKind=frozen-board-domで盤面DOM不変を検査し、ゲーム状態保証と混同しない。演出7経路/1.5秒/各経路の異なる可視位置2回以上の検査は同じ。結果待ち。主PR未変更。
+
+43779138561は失敗。runtime不存在・100枚超の個数/矩形差0.5px以内を通過した後もfinished0/samples0、frozen-board-dom不変true、経過1568ms。artifact14187905397の原寸開始画像ではカードアートと4方向卓を確認でき、明らかな全体欠落なし。常駐runtimeは再現の必要条件ではない。独立レビューは対照を成立と評価しつつCSS animation時計/canvas画素/SVG内imageロードは引継保証外と指摘した。
+
+次の候補はflightFramesの最初のopacityだけ0から1へ変更する。成功したblank対照は最初から不透明であり、実Transfersは透明な最初のkeyframeを持つため、その差を切り分ける。経路・時間・終端フェードは維持する。これは原因仮説であり、WebKitが透明開始を抑制するとの確定説明ではない。Node Transfers・構文・差分検査は成功、実ブラウザで従来CPU/静止2件を確認してから判断する。
