@@ -1,40 +1,47 @@
-name: Automatic result candidate native review
+name: Integrated v368 actual UI game review
 on:
     workflow_dispatch:
 permissions:
     contents: read
 jobs:
-    quality-candidate:
+    actual-ui-game:
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        timeout-minutes: 30
         container:
             image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
             options: --ipc=host --init
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - width: 320
+                      players: 2
+                    - width: 390
+                      players: 4
+                    - width: 844
+                      players: 4
+                    - width: 1440
+                      players: 2
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+              with:
+                  ref: 46371bf8c06673f18ef2919473a00b01449f7489
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
               with:
                   node-version: '20'
                   cache: npm
             - run: npm ci
             - run: node scripts/check-playwright-container.js
-            - name: Check candidate composition roots
-              run: npm run test:types
-            - name: WebKit automatic and ordered result batch
-              if: ${{ !cancelled() }}
+            - name: Complete the original unseeded UI game with a visible browser
               env:
-                  COIN_ANIMATION_CAPTURE: 'direct'
-              run: >-
-                  xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '標準CPU|静止盤面対照: original|明示した発動確認' --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/quality-candidate
-            - name: Headless market four-width regression
-              if: ${{ !cancelled() }}
-              run: npx playwright test cardboard-view.spec.js --grep '市場の種類数と絞込件数' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/market-candidate
+                  RUN_UI_PLAYTHROUGH: '1'
+                  UI_PLAYTHROUGH_WIDTH: ${{ matrix.width }}
+                  UI_PLAYTHROUGH_PLAYER_COUNT: ${{ matrix.players }}
+                  UI_PLAYTHROUGH_CPU_SPEED: '1500'
+              run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test ui-playthrough.spec.js --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/ui-playthrough
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:
-                  name: quality-candidate-native
-                  path: |
-                      test-results/quality-candidate/
-                      test-results/market-candidate/
-                      playwright-report/
-                  if-no-files-found: warn
+                  name: v368-actual-ui-game-${{ matrix.players }}p-${{ matrix.width }}
+                  path: test-results/ui-playthrough/
+                  if-no-files-found: error

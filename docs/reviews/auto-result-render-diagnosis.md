@@ -97,3 +97,9 @@ f8b4522f / [43785672297](https://github.com/nao70161994/machikoro/actions/runs/4
 名前の配置時に、余裕があれば隣接36〜96×26の収支用空間を記録し、後続名はそれを塞がない既存合法候補を優先する。名前全文・既存衝突・所有施設への近さは維持。空間のない場合は名前を隠さず既存配置へfallback、金額の最終全員検査も維持する。pure helperと回帰を追加し関連Field18件成功。実ブラウザの効果はこれから検証する。
 
 同run市場caseは45秒枠で1440pxのaffordable click中に終了。320/390/844の原本PNGは生成済み。製品不具合の不在はまだ断定しないが、4幅12状態を一つのtestに重ねる構造を幅ごとの4caseへ分割し、各caseの45秒と全assert/通常clickを維持する。主ブランチにもこのテスト分割だけ反映した。
+
+予約の独立ソースレビューで具体的な安全性欠陥なし。予約は順位付けだけで、実金額幅や最終nearest-owner成立は保証しない。原本planner入力を[成功](assets/auto-result/owner-receipt-320-success.json)・[未配置](assets/auto-result/owner-receipt-320-unplaced.json)として保存。3b9b6f9eの一括検証は[43891643961](https://github.com/nao70161994/machikoro/actions/runs/43891643961)で進行中（2026-11-17 JST）。
+
+3b9b6f9e / [43891643961](https://github.com/nao70161994/machikoro/actions/runs/43891643961) は11件すべて成功・retries0。headedの4CPU（320/844×序盤/終盤）、実盤面静止1、順番確認844/320が7/7、headless市場320/390/844/1440が4/4。artifact14236853693。配置修正後に初めて4CPU条件が同じbatchで全成功した。これだけで安定性・物理端末・商用品質を証明したとはせず、原本JSON/画像確認と本採用後の全体CIを続ける。
+
+統合後の自然対局は主46371bf8をcheckoutで固定し、既存ui-playthrough.spec.jsを変更せずheadedで実行する。320/1440は2人、390/844は4人、通常CPU1500ms、乱数/出目は固定しない。開始から勝利と既存のカメラ/状態不変/実UIクリック検査を維持し、fixtureの4CPU成功とは別の証拠にする。
