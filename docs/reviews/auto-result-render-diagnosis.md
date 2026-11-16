@@ -41,3 +41,5 @@ a031238dはautoのpause/currentTime=0/2RAF再開を除去してnative開始へ�
 c6170721 / [43778804091](https://github.com/nao70161994/machikoro/actions/runs/43778804091) は静止対照だけを選び、実盤面から7経路を生成した直後にgameScreenをdisplay:noneへする診断。body直下の独立plane、測定済み経路、アプリruntimeは残す。完了7件・1.5秒以内・各routeの60～540ms内の異なる位置2回以上・正本不変という従来検査を維持。隠した盤面で製品品質や実プレイを証明するものではない。候補製品コードの追加変更はない。
 
 独立レビューは、静止対照でもobserver/timer等のruntimeが残るため、次の強い対照として「同じ盤面DOM/CSSをruntimeなしの別ページで描画」を提案した。描画subtreeを外した今回の結果を見て、同origin上のDOM複製と矩形一致を用い、描画構造と常駐runtimeを分ける。局所visibility/clipには全体RAF停滞の明白な原因は見つからなかった。
+
+43778804091は失敗。ゲーム描画subtreeを非表示にしてもfinished0/期待7で、盤面の可視描画だけが唯一の原因という仮説は支持されない。artifact14187328140。次はruntimeなしの同じDOM/CSS対照へ進む。非表示操作自体が新しいlayout通知を起こし得るため、runtime原因の確定証拠とも扱わない。
