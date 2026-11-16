@@ -63,3 +63,7 @@ c6170721 / [43778804091](https://github.com/nao70161994/machikoro/actions/runs/4
 c8506719 / [43780486228](https://github.com/nao70161994/machikoro/actions/runs/43780486228) はoriginalとopaqueが失敗、splitとsimpleが成功。市場caseはBUILDで自動的に開いた市場dialogを閉じず最初の俯瞰ボタンをクリックし、dialogの正しい操作遮蔽でtimeoutした。製品側クリック不具合とは扱わず、テストを実close→俯瞰→summaryから拡大市場→filter操作→実closeへ修正。assert/timeout/forceは緩和しない。artifact14187679967。
 
 splitを製品候補のflightFramesへ反映する。全4frameのtransform関数列を同じにし、percent中心合わせとpx移動を分離。時間/経路/scale/終端fadeは維持。並列は開始時からopacity1、順番確認は遅延中に先のcoinが見えないよう元のopacity0を維持する。両方の開始opacityと関数列/終端fadeをNodeで検査する。関連Node2ファイルは成功。これから4CPU条件・静止・順番確認2幅・市場4幅を一括検証し、商用品質・根本解決の判定は保留する。
+
+8bf2dedf / [43781122735](https://github.com/nao70161994/machikoro/actions/runs/43781122735) は8件中静止・手動844/320の3件成功、CPU4件と市場1件失敗。splitだけでCPUの問題は解消していない。市場は通常clickを通過し、横持ちsummaryの固定44px幅に長い件数captionが折り返してRangeの上下がはみ出す製品CSSの問題を検出。filterは内容幅＋折返しなし、対応grid trackも内容幅へ修正し、目標44px・dialog最小44pxと既存段数を維持する。文字包含を緩和せず、native44px下限検査も追加する。
+
+演出側は観測の切り分けを追加。テスト専用透過Element.animate wrapperで元のthis/引数/戻り値/例外を保持しWeakMapへAnimation参照を記録、生成coinの同じAnimationを固定して観測する。getAnimationsによる同期要求を避けるだけで、時計操作・経路/可視移動/finished/取消assertの削除はしない。先頭coinだけ100/300/800ms timerで予定/実時刻、pending/startTime/currentTime/document.timelineを記録し、追加style/矩形読み取りは行わない。独立レビューは条件付きで妥当と評価。getAnimationsが原因とはまだ言わない。次はCPU844終盤と修正市場4幅だけを一括実行し、既に通った手動対照は重複しない。

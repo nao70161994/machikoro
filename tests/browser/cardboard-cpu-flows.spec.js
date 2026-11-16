@@ -1,6 +1,21 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('node:fs/promises');
 
+// A diagnostic can observe the same Animation returned by animate() without
+// asking getAnimations() to synchronize style during a mutation callback.
+async function captureAnimationHandles(page) {
+    if (process.env.COIN_ANIMATION_CAPTURE !== 'direct') return;
+    await page.addInitScript(() => {
+        window.cpuAnimationHandles = new WeakMap();
+        const nativeAnimate = Element.prototype.animate;
+        Element.prototype.animate = function (...args) {
+            const animation = Reflect.apply(nativeAnimate, this, args);
+            window.cpuAnimationHandles.set(this, animation);
+            return animation;
+        };
+    });
+}
+
 // Run the actual mobile project settings, including DPR and touch support.
 // Preserve real actions and CPU scheduling while fixing only the random input.
 test.use({ serviceWorkers: 'block', video: 'off',
@@ -68,6 +83,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
             : 'return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"></svg>`;';
         await route.fulfill({ response, body: source.replace(original, replacement) });
     });
+    await captureAnimationHandles(page);
     await page.goto('/');
     await page.evaluate(dense => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
@@ -172,7 +188,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         record('tag-start', { name: element.querySelector('strong')?.textContent, text: element.textContent });
 
                     } else {
-                        const animation = element.getAnimations()[0];
+                        const animation = window.cpuAnimationHandles ? window.cpuAnimationHandles.get(element) : element.getAnimations()[0];
                         const timing = animation?.effect?.getTiming();
                         sampledTransfers.push({ element, animation });
                         const data = { owner: element.dataset.owner, name: element.dataset.facility,
@@ -185,6 +201,14 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                             netPlannerMs: element.closest('.cardboard-transfers')?.dataset.netPlannerMs });
                         resolveFirstTransfer();
                         if (animation) {
+                            const clockProbeStart = performance.now() - trace.startedAt;
+                            if (sampledTransfers.length === 1) for (const delay of [100, 300, 800]) {
+                                setTimeout(() => record('transfer-clock-sample', {
+                                    scheduledAt: clockProbeStart, delay, currentTime: animation.currentTime, startTime: animation.startTime,
+                                    pending: animation.pending, playState: animation.playState,
+                                    timeline: document.timeline.currentTime, hidden: document.hidden,
+                                }), delay);
+                            }
                             // A timer observes the existing animation; it never changes its clock.
                             setTimeout(() => record('transfer-start-sample', { ...data,
                                 connected: element.isConnected, currentTime: animation.currentTime,
@@ -225,7 +249,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                 }
                 previousFrameAt = now;
                 const actors = [...document.querySelectorAll('.cardboard-transfer')].map(element => {
-                    const animation = element.getAnimations()[0];
+                    const animation = window.cpuAnimationHandles ? window.cpuAnimationHandles.get(element) : element.getAnimations()[0];
                     return { from: element.dataset.from, to: element.dataset.to,
                         time: Number(animation?.currentTime), state: animation?.playState,
                         opacity: Number(getComputedStyle(element).opacity),
@@ -436,6 +460,7 @@ test(`静止盤面対照: ${frameControl} 終盤の実カード卓上で7経路�
             return nativeAnimate.call(this, frames, options);
         };
     }, frameControl);
+    await captureAnimationHandles(page);
     await page.goto('/');
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
@@ -505,7 +530,7 @@ test(`静止盤面対照: ${frameControl} 終盤の実カード卓上で7経路�
         if (window.staticTableHideGame) document.getElementById('gameScreen').style.display = 'none';
         const finished = [], samples = [];
         const actors = [...document.querySelectorAll('.cardboard-transfer')].map(element => {
-            const animation = element.getAnimations()[0];
+            const animation = window.cpuAnimationHandles ? window.cpuAnimationHandles.get(element) : element.getAnimations()[0];
             const route = `${element.dataset.from}>${element.dataset.to}`;
             animation.finished.then(() => finished.push({ route, at: performance.now() - startedAt })).catch(() => {});
             return { element, animation, route };
