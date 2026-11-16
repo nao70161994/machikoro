@@ -572,3 +572,22 @@ runTest('新しい並列経路だけを共有document時計へ揃え再配置で
     assert.ok(animated.every(record => record.animation.startTime === null));
     controller.clear();
 });
+
+runTest('owner収支札は12px格子の間にある狭い空白を障害物端から見つける', () => {
+    const bounds = { left: 0, top: 0, right: 100, bottom: 80 };
+    const owners = [{ owner: 0, width: 40, anchor: { left: 40, top: 50, right: 60, bottom: 60 } }];
+    const obstacles = [{ left: 0, top: 0, right: 100, bottom: 5 },
+        { left: 0, top: 36, right: 100, bottom: 80 }];
+    const before = JSON.stringify({ owners, bounds, obstacles });
+    const plan = CardBoardTransfers.placeNetBadges(owners, bounds, obstacles);
+    assert.strictEqual(plan.length, 1);
+    assert.strictEqual(plan[0].width, 40);
+    assert.strictEqual(plan[0].height, 26);
+    assert.ok(plan[0].top >= 7 && plan[0].top <= 8, '上下の2px間隔を保つ狭い空間だけに配置する');
+    assert.ok(plan[0].left >= bounds.left && plan[0].right <= bounds.right);
+    assert.ok(obstacles.every(obstacle => !(plan[0].left < obstacle.right + 2 && plan[0].right > obstacle.left - 2 &&
+        plan[0].top < obstacle.bottom + 2 && plan[0].bottom > obstacle.top - 2)));
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 1), null);
+    assert.strictEqual(CardBoardTransfers.placeNetBadges(owners, bounds, obstacles, 2).length, 1);
+    assert.strictEqual(JSON.stringify({ owners, bounds, obstacles }), before);
+});

@@ -109,6 +109,27 @@ const CardBoardTransfers = (() => {
                 positions.push([a.left, a.top - h - gap], [a.right - w, a.bottom + gap],
                     [a.left - w - gap, a.top], [a.right + gap, a.bottom - h]);
             }
+            // A 12px raster can skip an otherwise legal narrow gap. Add a
+            // bounded set of obstacle-edge projections, never a Cartesian
+            // product of every x/y edge. Existing collision/owner guards below
+            // still decide whether each complete badge is safe.
+            const edgePositions = new Set();
+            const edgeLimit = 256;
+            let edgeAttempts = 0;
+            const addEdge = (left, top) => {
+                if (edgeAttempts >= edgeLimit) return;
+                edgeAttempts++;
+                if (!Number.isFinite(left) || !Number.isFinite(top)) return;
+                const key = `${left}:${top}`;
+                if (!edgePositions.has(key)) { edgePositions.add(key); positions.push([left, top]); }
+            };
+            for (const edge of [bounds, ...obstacles]) {
+                if (edgeAttempts >= edgeLimit) break;
+                const xs = edge === bounds ? [bounds.left, bounds.right - w] : [edge.left - w - 2, edge.right + 2];
+                const ys = edge === bounds ? [bounds.top, bounds.bottom - h] : [edge.top - h - 2, edge.bottom + 2];
+                for (const left of xs) for (const top of [a.top, a.bottom - h]) addEdge(left, top);
+                for (const top of ys) for (const left of [a.left, a.right - w]) addEdge(left, top);
+            }
             // Search measured geometry, without further DOM reads.
             for (let top = bounds.top; top + h <= bounds.bottom; top += 12) {
                 for (let left = bounds.left; left + w <= bounds.right; left += 12) positions.push([left, top]);
