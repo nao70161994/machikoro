@@ -202,7 +202,7 @@ const CardBoardField = (() => {
     // Keep an adjacent receipt pocket when the table has room. This is a
     // placement hint only: full names and the final all-owner collision check
     // remain authoritative. Never shrink a name or a card to make it fit.
-    function ownerReceiptSpace(anchor, bounds, obstacles) {
+    function ownerReceiptSpace(anchor, bounds, obstacles, otherAnchors = []) {
         const width = Math.max(36, Math.min(96, anchor.right - anchor.left));
         const height = 26;
         const overlap = (a, b) => a.left < b.right + 2 && a.right > b.left - 2 &&
@@ -211,9 +211,43 @@ const CardBoardField = (() => {
             [anchor.left, anchor.bottom + 4], [anchor.left - width - 4, anchor.top], [anchor.right + 4, anchor.top]]) {
             const rect = { left, top, right: left + width, bottom: top + height };
             if (rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom &&
-                    !obstacles.some(obstacle => overlap(rect, obstacle))) return rect;
+                    !obstacles.some(obstacle => overlap(rect, obstacle)) &&
+                    otherAnchors.every(other => Math.hypot((rect.left + rect.right - anchor.left - anchor.right) / 2,
+                        (rect.top + rect.bottom - anchor.top - anchor.bottom) / 2) <=
+                        Math.hypot((rect.left + rect.right - other.left - other.right) / 2,
+                            (rect.top + rect.bottom - other.top - other.bottom) / 2))) return rect;
         }
         return null;
+    }
+
+    // Keep one receipt-height of room to competing facilities where possible:
+    // a future owner's full name must not consume this owner's only pocket.
+    // This ranks legal name candidates; it never relaxes collision or ownership.
+    function ownerReceiptScore(anchor, bounds, obstacles, competingCards, otherAnchors = []) {
+        const space = ownerReceiptSpace(anchor, bounds, obstacles, otherAnchors);
+        if (!space) return -1;
+        return Math.min(26, ...competingCards.map(card => Math.hypot(
+            Math.max(card.left - space.right, space.left - card.right, 0),
+            Math.max(card.top - space.bottom, space.top - card.bottom, 0))));
+    }
+
+    function ownerReceiptCandidateClear(anchor, bounds, obstacles, competingCards, otherAnchors, clearance) {
+        return ownerReceiptScore(anchor, bounds, obstacles, competingCards, otherAnchors) >= 26 &&
+            competingCards.every(card => Math.hypot(
+                Math.max(card.left - anchor.right, anchor.left - card.right, 0),
+                Math.max(card.top - anchor.bottom, anchor.top - card.bottom, 0)) >= anchor.bottom - anchor.top + clearance * 2);
+    }
+
+    function ownerReceiptSideCandidates(cards, width, height, bounds, gap) {
+        /** @type {[number, number][]} */
+        const candidates = [];
+        for (const card of cards) for (const left of [card.left - width - gap, card.right + gap]) {
+            for (const top of [card.top - 26, card.top + 26]) candidates.push([
+                Math.max(bounds.left + gap, Math.min(left, bounds.right - gap - width)),
+                Math.max(bounds.top + gap, Math.min(top, bounds.bottom - gap - height)),
+            ]);
+        }
+        return candidates;
     }
 
     function updateOwnerLabels() {
@@ -265,6 +299,9 @@ const CardBoardField = (() => {
         const marketBounds = node('cardboardCenter')?.getBoundingClientRect();
         const preferMarketHeading = panels.length === 2 && bounds.width <= 500 && window.innerHeight >= window.innerWidth;
         const shallow = bounds.height < 340;
+        // Tight portrait four-seat layouts need both the name and its receipt
+        // pocket. Preserve established two-seat and landscape placement.
+        const protectReceipts = panels.length === 4 && !shallow && bounds.width < 500;
         const fallbackWidth = shallow || bounds.width < 500 ? 96 : 124;
         const maximumWidth = shallow || bounds.width < 500 ? 176 : 200;
         const baseHeight = shallow ? 18 : 22;
@@ -414,6 +451,12 @@ const CardBoardField = (() => {
                         [card.left, card.bottom + gap], [card.right - width, card.bottom + gap],
                         [card.left - width - gap, card.top], [card.right + gap, card.top]);
                 }
+                // A side name may need the adjacent receipt's height above
+                // or below its usual position. Clamp only these additional
+                // candidates to the same viewport margins, then apply canPlace.
+                const receiptCandidates = new Set(protectReceipts ? ownerReceiptSideCandidates(ownCards, width, height,
+                    { left: innerLeft, top: innerTop, right: innerRight, bottom: innerBottom }, gap) : []);
+                candidates.push(...receiptCandidates);
                 const distance = (left, top, rect) => Math.hypot(
                     Math.max(rect.left - left - width, left - rect.right, 0),
                     Math.max(rect.top - top - height, top - rect.bottom, 0));
@@ -447,11 +490,21 @@ const CardBoardField = (() => {
                         ? top >= bottomEdge
                         : top + height <= topEdge;
                 };
-                const ranked = available.map(position => ({ position, score: score(position),
-                    blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect)) }));
+                const ranked = available.map(position => {
+                    const nameRect = { left: position[0], top: position[1], right: position[0] + width, bottom: position[1] + height };
+                    return { position, score: score(position), adjustedReceipt: receiptCandidates.has(position),
+                        crowdedReceipt: protectReceipts && !ownerReceiptCandidateClear(nameRect,
+                            { left: innerLeft + gap, top: innerTop + gap, right: innerRight - gap, bottom: innerBottom - gap },
+                            [...obstacles, ...placed, nameRect, ...receiptSpaces], otherCards, placed, clearance),
+                        blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect) || protectReceipts &&
+                            Math.hypot((rect.left + rect.right - nameRect.left - nameRect.right) / 2,
+                                (rect.top + rect.bottom - nameRect.top - nameRect.bottom) / 2) <
+                            Math.hypot((rect.left + rect.right - rect.anchor.left - rect.anchor.right) / 2,
+                                (rect.top + rect.bottom - rect.anchor.top - rect.anchor.bottom) / 2)) };
+                });
                 // Shorter names must not make a ragged row's tail outrank a free
                 // market-facing heading. Keep collision/owner-distance guards.
-                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
+                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(a.crowdedReceipt) - Number(b.crowdedReceipt) || Number(a.adjustedReceipt) - Number(b.adjustedReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
                 if (ranked[0]) {
                     placement = { width, height, lines, position: ranked[0].position };
                     break;
@@ -547,8 +600,8 @@ const CardBoardField = (() => {
             placed.push(labelRect);
             const receiptSpace = ownerReceiptSpace(labelRect,
                 { left: innerLeft + gap, top: innerTop + gap, right: innerRight - gap, bottom: innerBottom - gap },
-                [...obstacles, ...placed, ...receiptSpaces]);
-            if (receiptSpace) receiptSpaces.push(receiptSpace);
+                [...obstacles, ...placed, ...receiptSpaces], protectReceipts ? placed.filter(rect => rect !== labelRect) : []);
+            if (receiptSpace) receiptSpaces.push({ ...receiptSpace, anchor: labelRect });
         }
         // Wait until every badge is placed: a later owner's name must not be
         // crossed by an earlier owner's bracket. Unsafe groups keep the link.
@@ -2258,7 +2311,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

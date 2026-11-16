@@ -1,0 +1,2715 @@
+{
+  "startedAt": 1026,
+  "initialTurn": 0,
+  "initialActor": 0,
+  "cpuSpeed": 1500,
+  "cpuDifficulties": [
+    "weak",
+    "weak",
+    "weak",
+    "weak"
+  ],
+  "events": [
+    {
+      "kind": "resolved-roll",
+      "at": 2714,
+      "phase": "build",
+      "dice": 3
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 2,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-created",
+      "at": 2738,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 2,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 3349,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "カフェ",
+      "owner": "3",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "カフェ",
+      "owner": "2",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "カフェ",
+      "owner": "1",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "コーン畑・パン屋",
+      "owner": "0",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "コーン畑",
+      "owner": "1",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "コーン畑",
+      "owner": "2",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 4291,
+      "name": "コーン畑",
+      "owner": "3",
+      "text": "●"
+    },
+    {
+      "kind": "turn-change",
+      "at": 5865,
+      "turn": 1,
+      "actor": 1
+    }
+  ],
+  "geometry": [
+    {
+      "at": 2795,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.82015991210938,
+            "y": 389.4764099121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 389.4764099121094,
+            "right": 238.71109008789062,
+            "bottom": 405.3673400878906,
+            "left": 222.82015991210938
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.82015991210938,
+            "y": 389.4764099121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 389.4764099121094,
+            "right": 238.71109008789062,
+            "bottom": 405.3673400878906,
+            "left": 222.82015991210938
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.82015991210938,
+            "y": 389.4764099121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 389.4764099121094,
+            "right": 238.71109008789062,
+            "bottom": 405.3673400878906,
+            "left": 222.82015991210938
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 152.05453491210938,
+            "y": 278.5545349121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 278.5545349121094,
+            "right": 167.94546508789062,
+            "bottom": 294.4454650878906,
+            "left": 152.05453491210938
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 152.05453491210938,
+            "y": 278.5545349121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 278.5545349121094,
+            "right": 167.94546508789062,
+            "bottom": 294.4454650878906,
+            "left": 152.05453491210938
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 152.05453491210938,
+            "y": 278.5545349121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 278.5545349121094,
+            "right": 167.94546508789062,
+            "bottom": 294.4454650878906,
+            "left": 152.05453491210938
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 77,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 152.05453491210938,
+            "y": 278.5545349121094,
+            "width": 15.89093017578125,
+            "height": 15.89093017578125,
+            "top": 278.5545349121094,
+            "right": 167.94546508789062,
+            "bottom": 294.4454650878906,
+            "left": 152.05453491210938
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 2850,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 223.16201782226562,
+            "y": 385.2275085449219,
+            "width": 16,
+            "height": 16,
+            "top": 385.2275085449219,
+            "right": 239.16201782226562,
+            "bottom": 401.2275085449219,
+            "left": 223.16201782226562
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 384.42633056640625,
+            "width": 16,
+            "height": 16,
+            "top": 384.42633056640625,
+            "right": 238.765625,
+            "bottom": 400.42633056640625,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 219.4784698486328,
+            "y": 385.2275085449219,
+            "width": 16,
+            "height": 16,
+            "top": 385.2275085449219,
+            "right": 235.4784698486328,
+            "bottom": 401.2275085449219,
+            "left": 219.4784698486328
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 153.46429443359375,
+            "y": 280.79522705078125,
+            "width": 16,
+            "height": 16,
+            "top": 280.79522705078125,
+            "right": 169.46429443359375,
+            "bottom": 296.79522705078125,
+            "left": 153.46429443359375
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 150.17713928222656,
+            "y": 276.600830078125,
+            "width": 16,
+            "height": 16,
+            "top": 276.600830078125,
+            "right": 166.17713928222656,
+            "bottom": 292.600830078125,
+            "left": 150.17713928222656
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 153.46429443359375,
+            "y": 275.7996520996094,
+            "width": 16,
+            "height": 16,
+            "top": 275.7996520996094,
+            "right": 169.46429443359375,
+            "bottom": 291.7996520996094,
+            "left": 153.46429443359375
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 133,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 153.86068725585938,
+            "y": 276.600830078125,
+            "width": 16,
+            "height": 16,
+            "top": 276.600830078125,
+            "right": 169.86068725585938,
+            "bottom": 292.600830078125,
+            "left": 153.86068725585938
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 2918,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 225.53814697265625,
+            "y": 360.08428955078125,
+            "width": 16,
+            "height": 16,
+            "top": 360.08428955078125,
+            "right": 241.53814697265625,
+            "bottom": 376.08428955078125,
+            "left": 225.53814697265625
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 354.4804382324219,
+            "width": 16,
+            "height": 16,
+            "top": 354.4804382324219,
+            "right": 238.765625,
+            "bottom": 370.4804382324219,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 199.77362060546875,
+            "y": 360.08428955078125,
+            "width": 16,
+            "height": 16,
+            "top": 360.08428955078125,
+            "right": 215.77362060546875,
+            "bottom": 376.08428955078125,
+            "left": 199.77362060546875
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 162.24203491210938,
+            "y": 294.5539245605469,
+            "width": 16,
+            "height": 16,
+            "top": 294.5539245605469,
+            "right": 178.24203491210938,
+            "bottom": 310.5539245605469,
+            "left": 162.24203491210938
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 139.25003051757812,
+            "y": 265.2163391113281,
+            "width": 16,
+            "height": 16,
+            "top": 265.2163391113281,
+            "right": 155.25003051757812,
+            "bottom": 281.2163391113281,
+            "left": 139.25003051757812
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 162.24203491210938,
+            "y": 259.61248779296875,
+            "width": 16,
+            "height": 16,
+            "top": 259.61248779296875,
+            "right": 178.24203491210938,
+            "bottom": 275.61248779296875,
+            "left": 162.24203491210938
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 201,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 165.01455688476562,
+            "y": 265.2163391113281,
+            "width": 16,
+            "height": 16,
+            "top": 265.2163391113281,
+            "right": 181.01455688476562,
+            "bottom": 281.2163391113281,
+            "left": 165.01455688476562
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 2982,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 229.19625854492188,
+            "y": 321.375732421875,
+            "width": 16,
+            "height": 16,
+            "top": 321.375732421875,
+            "right": 245.19625854492188,
+            "bottom": 337.375732421875,
+            "left": 229.19625854492188
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 308.37811279296875,
+            "width": 16,
+            "height": 16,
+            "top": 308.37811279296875,
+            "right": 238.765625,
+            "bottom": 324.37811279296875,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 169.43756103515625,
+            "y": 321.375732421875,
+            "width": 16,
+            "height": 16,
+            "top": 321.375732421875,
+            "right": 185.43756103515625,
+            "bottom": 337.375732421875,
+            "left": 169.43756103515625
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 175.75555419921875,
+            "y": 315.7357482910156,
+            "width": 16,
+            "height": 16,
+            "top": 315.7357482910156,
+            "right": 191.75555419921875,
+            "bottom": 331.7357482910156,
+            "left": 175.75555419921875
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 122.42749786376953,
+            "y": 247.6896209716797,
+            "width": 15.999992370605469,
+            "height": 16.000015258789062,
+            "top": 247.6896209716797,
+            "right": 138.427490234375,
+            "bottom": 263.68963623046875,
+            "left": 122.42749786376953
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 175.75555419921875,
+            "y": 234.69200134277344,
+            "width": 16,
+            "height": 16,
+            "top": 234.69200134277344,
+            "right": 191.75555419921875,
+            "bottom": 250.69200134277344,
+            "left": 175.75555419921875
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 259,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 182.18618774414062,
+            "y": 247.6896209716797,
+            "width": 16,
+            "height": 16.000015258789062,
+            "top": 247.6896209716797,
+            "right": 198.18618774414062,
+            "bottom": 263.68963623046875,
+            "left": 182.18618774414062
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 3036,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 233.83010864257812,
+            "y": 272.34228515625,
+            "width": 16,
+            "height": 16,
+            "top": 272.34228515625,
+            "right": 249.83010864257812,
+            "bottom": 288.34228515625,
+            "left": 233.83010864257812
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 249.97866821289062,
+            "width": 16,
+            "height": 16,
+            "top": 249.97866821289062,
+            "right": 238.765625,
+            "bottom": 265.9786682128906,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 131.00979614257812,
+            "y": 272.34228515625,
+            "width": 16,
+            "height": 16,
+            "top": 272.34228515625,
+            "right": 147.00979614257812,
+            "bottom": 288.34228515625,
+            "left": 131.00979614257812
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 192.8736114501953,
+            "y": 342.5675048828125,
+            "width": 16,
+            "height": 16,
+            "top": 342.5675048828125,
+            "right": 208.8736114501953,
+            "bottom": 358.5675048828125,
+            "left": 192.8736114501953
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 101.1177978515625,
+            "y": 225.48793029785156,
+            "width": 16,
+            "height": 16,
+            "top": 225.48793029785156,
+            "right": 117.1177978515625,
+            "bottom": 241.48793029785156,
+            "left": 101.1177978515625
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 192.8736114501953,
+            "y": 203.1243133544922,
+            "width": 16,
+            "height": 16,
+            "top": 203.1243133544922,
+            "right": 208.8736114501953,
+            "bottom": 219.1243133544922,
+            "left": 192.8736114501953
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 319,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 203.9381103515625,
+            "y": 225.48793029785156,
+            "width": 16,
+            "height": 16,
+            "top": 225.48793029785156,
+            "right": 219.9381103515625,
+            "bottom": 241.48793029785156,
+            "left": 203.9381103515625
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 3090,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 237.67083740234375,
+            "y": 231.70144653320312,
+            "width": 16,
+            "height": 16,
+            "top": 231.70144653320312,
+            "right": 253.67083740234375,
+            "bottom": 247.70144653320312,
+            "left": 237.67083740234375
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 201.57493591308594,
+            "width": 16,
+            "height": 16,
+            "top": 201.57493591308594,
+            "right": 238.765625,
+            "bottom": 217.57493591308594,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 99.15939331054688,
+            "y": 231.70144653320312,
+            "width": 16,
+            "height": 16,
+            "top": 231.70144653320312,
+            "right": 115.15939331054688,
+            "bottom": 247.70144653320312,
+            "left": 99.15939331054688
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 207.0617218017578,
+            "y": 364.8067321777344,
+            "width": 16,
+            "height": 16,
+            "top": 364.8067321777344,
+            "right": 223.0617218017578,
+            "bottom": 380.8067321777344,
+            "left": 207.0617218017578
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 83.45549774169922,
+            "y": 207.0863037109375,
+            "width": 16,
+            "height": 16,
+            "top": 207.0863037109375,
+            "right": 99.45549774169922,
+            "bottom": 223.0863037109375,
+            "left": 83.45549774169922
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 207.0617218017578,
+            "y": 176.95980834960938,
+            "width": 16,
+            "height": 16,
+            "top": 176.95980834960938,
+            "right": 223.0617218017578,
+            "bottom": 192.95980834960938,
+            "left": 207.0617218017578
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 373,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 221.96693420410156,
+            "y": 207.0863037109375,
+            "width": 16,
+            "height": 16,
+            "top": 207.0863037109375,
+            "right": 237.96693420410156,
+            "bottom": 223.0863037109375,
+            "left": 221.96693420410156
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 3142,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 240.31903076171875,
+            "y": 203.6793212890625,
+            "width": 16,
+            "height": 16,
+            "top": 203.6793212890625,
+            "right": 256.31903076171875,
+            "bottom": 219.6793212890625,
+            "left": 240.31903076171875
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 168.2002410888672,
+            "width": 16,
+            "height": 16,
+            "top": 168.2002410888672,
+            "right": 238.765625,
+            "bottom": 184.2002410888672,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 77.19831848144531,
+            "y": 203.6793212890625,
+            "width": 16,
+            "height": 16,
+            "top": 203.6793212890625,
+            "right": 93.19831848144531,
+            "bottom": 219.6793212890625,
+            "left": 77.19831848144531
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 216.84451293945312,
+            "y": 380.14080810546875,
+            "width": 16,
+            "height": 16,
+            "top": 380.14080810546875,
+            "right": 232.84451293945312,
+            "bottom": 396.14080810546875,
+            "left": 216.84451293945312
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 71.2772216796875,
+            "y": 194.39825439453125,
+            "width": 16,
+            "height": 16,
+            "top": 194.39825439453125,
+            "right": 87.2772216796875,
+            "bottom": 210.39825439453125,
+            "left": 71.2772216796875
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 216.84451293945312,
+            "y": 158.919189453125,
+            "width": 16,
+            "height": 16,
+            "top": 158.919189453125,
+            "right": 232.84451293945312,
+            "bottom": 174.919189453125,
+            "left": 216.84451293945312
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 425,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 234.39791870117188,
+            "y": 194.39825439453125,
+            "width": 16,
+            "height": 16,
+            "top": 194.39825439453125,
+            "right": 250.39791870117188,
+            "bottom": 210.39825439453125,
+            "left": 234.39791870117188
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 3196,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 241.73133850097656,
+            "y": 188.7349090576172,
+            "width": 15.999984741210938,
+            "height": 16,
+            "top": 188.7349090576172,
+            "right": 257.7313232421875,
+            "bottom": 204.7349090576172,
+            "left": 241.73133850097656
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.765625,
+            "y": 150.40127563476562,
+            "width": 16,
+            "height": 16,
+            "top": 150.40127563476562,
+            "right": 238.765625,
+            "bottom": 166.40127563476562,
+            "left": 222.765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 65.486328125,
+            "y": 188.7349090576172,
+            "width": 16,
+            "height": 16,
+            "top": 188.7349090576172,
+            "right": 81.486328125,
+            "bottom": 204.7349090576172,
+            "left": 65.486328125
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.06175231933594,
+            "y": 388.318603515625,
+            "width": 16,
+            "height": 16,
+            "top": 388.318603515625,
+            "right": 238.06175231933594,
+            "bottom": 404.318603515625,
+            "left": 222.06175231933594
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 64.78245544433594,
+            "y": 187.6316375732422,
+            "width": 16,
+            "height": 16,
+            "top": 187.6316375732422,
+            "right": 80.78245544433594,
+            "bottom": 203.6316375732422,
+            "left": 64.78245544433594
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 222.06175231933594,
+            "y": 149.29800415039062,
+            "width": 16,
+            "height": 16,
+            "top": 149.29800415039062,
+            "right": 238.06175231933594,
+            "bottom": 165.29800415039062,
+            "left": 222.06175231933594
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 480,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 241.0274658203125,
+            "y": 187.6316375732422,
+            "width": 16,
+            "height": 16,
+            "top": 187.6316375732422,
+            "right": 257.0274658203125,
+            "bottom": 203.6316375732422,
+            "left": 241.0274658203125
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 3251,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 242.10260009765625,
+            "y": 186.89947509765625,
+            "width": 15.6385498046875,
+            "height": 15.6385498046875,
+            "top": 186.89947509765625,
+            "right": 257.74114990234375,
+            "bottom": 202.53802490234375,
+            "left": 242.10260009765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 222.94635009765625,
+            "y": 148.18072509765625,
+            "width": 15.6385498046875,
+            "height": 15.6385498046875,
+            "top": 148.18072509765625,
+            "right": 238.58489990234375,
+            "bottom": 163.81927490234375,
+            "left": 222.94635009765625
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 64.08696746826172,
+            "y": 186.89947509765625,
+            "width": 15.638565063476562,
+            "height": 15.6385498046875,
+            "top": 186.89947509765625,
+            "right": 79.72553253173828,
+            "bottom": 202.53802490234375,
+            "left": 64.08696746826172
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 222.9463348388672,
+            "y": 389.60260009765625,
+            "width": 15.638565063476562,
+            "height": 15.6385498046875,
+            "top": 389.60260009765625,
+            "right": 238.58489990234375,
+            "bottom": 405.24114990234375,
+            "left": 222.9463348388672
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 64.08695983886719,
+            "y": 186.8994598388672,
+            "width": 15.638565063476562,
+            "height": 15.638565063476562,
+            "top": 186.8994598388672,
+            "right": 79.72552490234375,
+            "bottom": 202.53802490234375,
+            "left": 64.08695983886719
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 222.9463348388672,
+            "y": 148.18072509765625,
+            "width": 15.638565063476562,
+            "height": 15.6385498046875,
+            "top": 148.18072509765625,
+            "right": 238.58489990234375,
+            "bottom": 163.81927490234375,
+            "left": 222.9463348388672
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 535,
+          "state": "running",
+          "opacity": 0.887051,
+          "rect": {
+            "x": 242.1025848388672,
+            "y": 186.8994598388672,
+            "width": 15.638565063476562,
+            "height": 15.638565063476562,
+            "top": 186.8994598388672,
+            "right": 257.74114990234375,
+            "bottom": 202.53802490234375,
+            "left": 242.1025848388672
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 240.765625,
+            "y": 410.421875,
+            "width": 36,
+            "height": 26,
+            "top": 410.421875,
+            "right": 276.765625,
+            "bottom": 436.421875,
+            "left": 240.765625
+          },
+          "aria": "街1の直近に解決した収支、マイナス1コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 259.921875,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 295.921875,
+            "bottom": 181.71875,
+            "left": 259.921875
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 196,
+            "y": 116,
+            "width": 36,
+            "height": 26,
+            "top": 116,
+            "right": 232,
+            "bottom": 142,
+            "left": 196
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 17.90625,
+            "y": 155.71875,
+            "width": 36,
+            "height": 26,
+            "top": 155.71875,
+            "right": 53.90625,
+            "bottom": 181.71875,
+            "left": 17.90625
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    }
+  ],
+  "resolvedGroups": [
+    "街1/コーン畑",
+    "街1/パン屋",
+    "街2/カフェ",
+    "街2/コーン畑",
+    "街3/カフェ",
+    "街3/コーン畑",
+    "街4/カフェ",
+    "街4/コーン畑"
+  ],
+  "netBadgeInputs": [
+    [
+      {
+        "left": 4,
+        "right": 316,
+        "top": 116,
+        "bottom": 457
+      },
+      [
+        {
+          "owner": 0,
+          "net": -1,
+          "text": "−1",
+          "anchor": {
+            "x": 240.765625,
+            "y": 386.421875,
+            "width": 44,
+            "height": 22,
+            "top": 386.421875,
+            "right": 284.765625,
+            "bottom": 408.421875,
+            "left": 240.765625
+          },
+          "width": 36
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "anchor": {
+            "x": 259.921875,
+            "y": 183.71875,
+            "width": 44,
+            "height": 22,
+            "top": 183.71875,
+            "right": 303.921875,
+            "bottom": 205.71875,
+            "left": 259.921875
+          },
+          "width": 36
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "anchor": {
+            "x": 240.765625,
+            "y": 124,
+            "width": 44,
+            "height": 22,
+            "top": 124,
+            "right": 284.765625,
+            "bottom": 146,
+            "left": 240.765625
+          },
+          "width": 36
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "anchor": {
+            "x": 17.90625,
+            "y": 183.71875,
+            "width": 44,
+            "height": 22,
+            "top": 183.71875,
+            "right": 61.90625,
+            "bottom": 205.71875,
+            "left": 17.90625
+          },
+          "width": 36
+        }
+      ],
+      [
+        {
+          "x": 272,
+          "y": 52,
+          "width": 44,
+          "height": 44,
+          "top": 52,
+          "right": 316,
+          "bottom": 96,
+          "left": 272
+        },
+        {
+          "x": 4,
+          "y": 4,
+          "width": 312,
+          "height": 44,
+          "top": 4,
+          "right": 316,
+          "bottom": 48,
+          "left": 4
+        },
+        {
+          "x": 92.18364715576172,
+          "y": 207.24949645996094,
+          "width": 135.63272094726562,
+          "height": 158.5010223388672,
+          "top": 207.24949645996094,
+          "right": 227.81636810302734,
+          "bottom": 365.7505187988281,
+          "left": 92.18364715576172
+        },
+        {
+          "x": 83.22606658935547,
+          "y": 386.4300537109375,
+          "width": 49.531578063964844,
+          "height": 41.482666015625,
+          "top": 386.4300537109375,
+          "right": 132.7576446533203,
+          "bottom": 427.9127197265625,
+          "left": 83.22606658935547
+        },
+        {
+          "x": 135.23422241210938,
+          "y": 387.1109924316406,
+          "width": 49.53155517578125,
+          "height": 41.482696533203125,
+          "top": 387.1109924316406,
+          "right": 184.76577758789062,
+          "bottom": 428.59368896484375,
+          "left": 135.23422241210938
+        },
+        {
+          "x": 187.2423553466797,
+          "y": 386.4300537109375,
+          "width": 49.53157043457031,
+          "height": 41.482666015625,
+          "top": 386.4300537109375,
+          "right": 236.77392578125,
+          "bottom": 427.9127197265625,
+          "left": 187.2423553466797
+        },
+        {
+          "x": 17.906312942504883,
+          "y": 209.72607421875,
+          "width": 41.482688903808594,
+          "height": 49.53155517578125,
+          "top": 209.72607421875,
+          "right": 59.38900184631348,
+          "bottom": 259.25762939453125,
+          "left": 17.906312942504883
+        },
+        {
+          "x": 18.58726692199707,
+          "y": 261.7342224121094,
+          "width": 41.482688903808594,
+          "height": 49.53155517578125,
+          "top": 261.7342224121094,
+          "right": 60.069955825805664,
+          "bottom": 311.2657775878906,
+          "left": 18.58726692199707
+        },
+        {
+          "x": 18.58726692199707,
+          "y": 313.74237060546875,
+          "width": 41.482688903808594,
+          "height": 49.53155517578125,
+          "top": 313.74237060546875,
+          "right": 60.069955825805664,
+          "bottom": 363.27392578125,
+          "left": 18.58726692199707
+        },
+        {
+          "x": 187.2423553466797,
+          "y": 144.40631103515625,
+          "width": 49.53157043457031,
+          "height": 41.482696533203125,
+          "top": 144.40631103515625,
+          "right": 236.77392578125,
+          "bottom": 185.88900756835938,
+          "left": 187.2423553466797
+        },
+        {
+          "x": 135.23422241210938,
+          "y": 145.08726501464844,
+          "width": 49.53155517578125,
+          "height": 41.482696533203125,
+          "top": 145.08726501464844,
+          "right": 184.76577758789062,
+          "bottom": 186.56996154785156,
+          "left": 135.23422241210938
+        },
+        {
+          "x": 83.22606658935547,
+          "y": 145.08726501464844,
+          "width": 49.531578063964844,
+          "height": 41.482696533203125,
+          "top": 145.08726501464844,
+          "right": 132.7576446533203,
+          "bottom": 186.56996154785156,
+          "left": 83.22606658935547
+        },
+        {
+          "x": 260.6109924316406,
+          "y": 313.74237060546875,
+          "width": 41.482696533203125,
+          "height": 49.53155517578125,
+          "top": 313.74237060546875,
+          "right": 302.09368896484375,
+          "bottom": 363.27392578125,
+          "left": 260.6109924316406
+        },
+        {
+          "x": 259.9300537109375,
+          "y": 261.7342224121094,
+          "width": 41.482666015625,
+          "height": 49.53155517578125,
+          "top": 261.7342224121094,
+          "right": 301.4127197265625,
+          "bottom": 311.2657775878906,
+          "left": 259.9300537109375
+        },
+        {
+          "x": 259.9300537109375,
+          "y": 209.72607421875,
+          "width": 41.482666015625,
+          "height": 49.53155517578125,
+          "top": 209.72607421875,
+          "right": 301.4127197265625,
+          "bottom": 259.25762939453125,
+          "left": 259.9300537109375
+        },
+        {
+          "x": 240.765625,
+          "y": 386.421875,
+          "width": 44,
+          "height": 22,
+          "top": 386.421875,
+          "right": 284.765625,
+          "bottom": 408.421875,
+          "left": 240.765625
+        },
+        {
+          "x": 17.90625,
+          "y": 183.71875,
+          "width": 44,
+          "height": 22,
+          "top": 183.71875,
+          "right": 61.90625,
+          "bottom": 205.71875,
+          "left": 17.90625
+        },
+        {
+          "x": 240.765625,
+          "y": 124,
+          "width": 44,
+          "height": 22,
+          "top": 124,
+          "right": 284.765625,
+          "bottom": 146,
+          "left": 240.765625
+        },
+        {
+          "x": 259.921875,
+          "y": 183.71875,
+          "width": 44,
+          "height": 22,
+          "top": 183.71875,
+          "right": 303.921875,
+          "bottom": 205.71875,
+          "left": 259.921875
+        },
+        {
+          "x": 4,
+          "y": 52,
+          "width": 264,
+          "height": 44,
+          "top": 52,
+          "right": 268,
+          "bottom": 96,
+          "left": 4
+        },
+        {
+          "x": 8,
+          "y": 98,
+          "width": 304,
+          "height": 16,
+          "top": 98,
+          "right": 312,
+          "bottom": 114,
+          "left": 8
+        }
+      ]
+    ]
+  ],
+  "lastNetBadgeInput": "[{\"left\":4,\"right\":316,\"top\":116,\"bottom\":457},[{\"owner\":0,\"net\":-1,\"text\":\"−1\",\"anchor\":{\"x\":240.765625,\"y\":386.421875,\"width\":44,\"height\":22,\"top\":386.421875,\"right\":284.765625,\"bottom\":408.421875,\"left\":240.765625},\"width\":36},{\"owner\":3,\"net\":2,\"text\":\"+2\",\"anchor\":{\"x\":259.921875,\"y\":183.71875,\"width\":44,\"height\":22,\"top\":183.71875,\"right\":303.921875,\"bottom\":205.71875,\"left\":259.921875},\"width\":36},{\"owner\":2,\"net\":2,\"text\":\"+2\",\"anchor\":{\"x\":240.765625,\"y\":124,\"width\":44,\"height\":22,\"top\":124,\"right\":284.765625,\"bottom\":146,\"left\":240.765625},\"width\":36},{\"owner\":1,\"net\":2,\"text\":\"+2\",\"anchor\":{\"x\":17.90625,\"y\":183.71875,\"width\":44,\"height\":22,\"top\":183.71875,\"right\":61.90625,\"bottom\":205.71875,\"left\":17.90625},\"width\":36}],[{\"x\":272,\"y\":52,\"width\":44,\"height\":44,\"top\":52,\"right\":316,\"bottom\":96,\"left\":272},{\"x\":4,\"y\":4,\"width\":312,\"height\":44,\"top\":4,\"right\":316,\"bottom\":48,\"left\":4},{\"x\":92.18364715576172,\"y\":207.24949645996094,\"width\":135.63272094726562,\"height\":158.5010223388672,\"top\":207.24949645996094,\"right\":227.81636810302734,\"bottom\":365.7505187988281,\"left\":92.18364715576172},{\"x\":83.22606658935547,\"y\":386.4300537109375,\"width\":49.531578063964844,\"height\":41.482666015625,\"top\":386.4300537109375,\"right\":132.7576446533203,\"bottom\":427.9127197265625,\"left\":83.22606658935547},{\"x\":135.23422241210938,\"y\":387.1109924316406,\"width\":49.53155517578125,\"height\":41.482696533203125,\"top\":387.1109924316406,\"right\":184.76577758789062,\"bottom\":428.59368896484375,\"left\":135.23422241210938},{\"x\":187.2423553466797,\"y\":386.4300537109375,\"width\":49.53157043457031,\"height\":41.482666015625,\"top\":386.4300537109375,\"right\":236.77392578125,\"bottom\":427.9127197265625,\"left\":187.2423553466797},{\"x\":17.906312942504883,\"y\":209.72607421875,\"width\":41.482688903808594,\"height\":49.53155517578125,\"top\":209.72607421875,\"right\":59.38900184631348,\"bottom\":259.25762939453125,\"left\":17.906312942504883},{\"x\":18.58726692199707,\"y\":261.7342224121094,\"width\":41.482688903808594,\"height\":49.53155517578125,\"top\":261.7342224121094,\"right\":60.069955825805664,\"bottom\":311.2657775878906,\"left\":18.58726692199707},{\"x\":18.58726692199707,\"y\":313.74237060546875,\"width\":41.482688903808594,\"height\":49.53155517578125,\"top\":313.74237060546875,\"right\":60.069955825805664,\"bottom\":363.27392578125,\"left\":18.58726692199707},{\"x\":187.2423553466797,\"y\":144.40631103515625,\"width\":49.53157043457031,\"height\":41.482696533203125,\"top\":144.40631103515625,\"right\":236.77392578125,\"bottom\":185.88900756835938,\"left\":187.2423553466797},{\"x\":135.23422241210938,\"y\":145.08726501464844,\"width\":49.53155517578125,\"height\":41.482696533203125,\"top\":145.08726501464844,\"right\":184.76577758789062,\"bottom\":186.56996154785156,\"left\":135.23422241210938},{\"x\":83.22606658935547,\"y\":145.08726501464844,\"width\":49.531578063964844,\"height\":41.482696533203125,\"top\":145.08726501464844,\"right\":132.7576446533203,\"bottom\":186.56996154785156,\"left\":83.22606658935547},{\"x\":260.6109924316406,\"y\":313.74237060546875,\"width\":41.482696533203125,\"height\":49.53155517578125,\"top\":313.74237060546875,\"right\":302.09368896484375,\"bottom\":363.27392578125,\"left\":260.6109924316406},{\"x\":259.9300537109375,\"y\":261.7342224121094,\"width\":41.482666015625,\"height\":49.53155517578125,\"top\":261.7342224121094,\"right\":301.4127197265625,\"bottom\":311.2657775878906,\"left\":259.9300537109375},{\"x\":259.9300537109375,\"y\":209.72607421875,\"width\":41.482666015625,\"height\":49.53155517578125,\"top\":209.72607421875,\"right\":301.4127197265625,\"bottom\":259.25762939453125,\"left\":259.9300537109375},{\"x\":240.765625,\"y\":386.421875,\"width\":44,\"height\":22,\"top\":386.421875,\"right\":284.765625,\"bottom\":408.421875,\"left\":240.765625},{\"x\":17.90625,\"y\":183.71875,\"width\":44,\"height\":22,\"top\":183.71875,\"right\":61.90625,\"bottom\":205.71875,\"left\":17.90625},{\"x\":240.765625,\"y\":124,\"width\":44,\"height\":22,\"top\":124,\"right\":284.765625,\"bottom\":146,\"left\":240.765625},{\"x\":259.921875,\"y\":183.71875,\"width\":44,\"height\":22,\"top\":183.71875,\"right\":303.921875,\"bottom\":205.71875,\"left\":259.921875},{\"x\":4,\"y\":52,\"width\":264,\"height\":44,\"top\":52,\"right\":268,\"bottom\":96,\"left\":4},{\"x\":8,\"y\":98,\"width\":304,\"height\":16,\"top\":98,\"right\":312,\"bottom\":114,\"left\":8}]]",
+  "final": {
+    "turn": 1,
+    "actor": 1,
+    "phase": "roll",
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 街2のターン"
+      }
+    ]
+  },
+  "snapshot": {
+    "playerCoins": [
+      13,
+      32,
+      32,
+      32
+    ],
+    "playerCardNames": [
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ"
+      ]
+    ],
+    "playerDormantIndices": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "playerLandmarks": [
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": true,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      }
+    ],
+    "playerItVenture": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "playerHasYakusho": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "hadAmusementParkAtRoll": false,
+    "shopStock": {
+      "麦畑": 6,
+      "牧場": 6,
+      "森林": 6,
+      "鉱山": 6,
+      "リンゴ園": 6,
+      "パン屋": 6,
+      "コンビニ": 6,
+      "チーズ工場": 6,
+      "家具工場": 6,
+      "青果市場": 6,
+      "カフェ": 2,
+      "ファミレス": 6,
+      "スタジアム": 4,
+      "テレビ局": 4,
+      "ビジネスセンター": 4,
+      "花畑": 6,
+      "サンマ漁船": 6,
+      "マグロ漁船": 6,
+      "フラワーショップ": 6,
+      "食品倉庫": 6,
+      "寿司屋": 6,
+      "ピザ屋": 6,
+      "バーガーショップ": 6,
+      "出版社": 4,
+      "税務署": 4,
+      "コーン畑": 2,
+      "ブドウ園": 6,
+      "雑貨屋": 6,
+      "改装屋": 6,
+      "貸金業": 6,
+      "ワイナリー": 6,
+      "引越し屋": 6,
+      "ドリンク工場": 6,
+      "高級フレンチ": 6,
+      "会員制BAR": 6,
+      "清掃業": 4,
+      "ITベンチャー": 4,
+      "公園": 4
+    },
+    "builtThisTurn": false,
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 街2のターン"
+      }
+    ],
+    "reviewSummary": {
+      "complete": true,
+      "totalsComplete": true,
+      "counts": {
+        "dice": 1,
+        "gain": 5,
+        "lose": 3,
+        "build": 1,
+        "special": 0,
+        "system": 3,
+        "error": 0
+      },
+      "totals": {
+        "gain": 8,
+        "lose": 19
+      }
+    }
+  },
+  "diceRngCalls": 3
+}
