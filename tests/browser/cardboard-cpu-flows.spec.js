@@ -401,6 +401,7 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.addInitScript(hide => { window.staticTableHideGame = hide; }, process.env.STATIC_TABLE_HIDE_GAME === '1');
     await page.goto('/');
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'cpu', difficulty: 'weak', name: `街${index + 1}` })));
@@ -431,6 +432,9 @@ test('静止盤面対照: 終盤の実カード卓上で7経路を描画する',
         const controller = CardBoardTransfers.create();
         const startedAt = performance.now();
         controller.play({ container: document.getElementById('cardboardBoard'), overlayRoot: document.body, events, simultaneous: true });
+        // Diagnostic only: keep the independent fixed plane and its measured
+        // paths, but remove the game subtree from layout/paint after creation.
+        if (window.staticTableHideGame) document.getElementById('gameScreen').style.display = 'none';
         const finished = [], samples = [];
         const actors = [...document.querySelectorAll('.cardboard-transfer')].map(element => {
             const animation = element.getAnimations()[0];
