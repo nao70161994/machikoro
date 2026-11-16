@@ -2,15 +2,6 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    // The logical camera matrix stays in viewport pixels. Native layout zoom
-    // reduces the table's paint surface; divide every transform component so
-    // the composed client-space geometry remains the same.
-    function paintProjection(matrix, scale, layoutZoom) {
-        const zoom = layoutZoom && Number.isFinite(scale) && scale > 0 && scale < 1 ? scale : 1;
-        return { zoom, transform: `matrix(${[matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f]
-            .map(value => value / zoom).join(',')})` };
-    }
-
     function create({ viewport, canvas, world, onViewChange = /** @type {(change: { reason: string }) => void} */ (() => {}), onPaint = () => {}, onSettled = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
@@ -42,8 +33,6 @@ const CardTableCamera = (() => {
         let returnView = null;
         let pinch = null;
         let paintedView = '';
-        const previousZoom = world.style.zoom;
-        const previousTransform = world.style.transform;
         const previousTouchAction = viewport.style.touchAction;
         viewport.style.touchAction = 'pan-x pan-y';
         const previousTabIndex = viewport.getAttribute('tabindex');
@@ -118,12 +107,7 @@ const CardTableCamera = (() => {
             canvas.style.height = `${height}px`;
             world.style.left = '0';
             world.style.top = '0';
-            const projection = paintProjection(matrix, scale, overviewMode && normalizeAngle(angle) === 0 &&
-                globalThis.CSS?.supports?.('zoom', '0.5') === true);
-            const zoom = String(projection.zoom);
-            if (world.style.zoom !== zoom) world.style.zoom = zoom;
-            world.style.transform = projection.transform;
-            viewport.dataset.tableRenderer = projection.zoom === 1 ? 'transform' : 'layout-zoom';
+            world.style.transform = `matrix(${matrix.a},${matrix.b},${matrix.c},${matrix.d},${matrix.e},${matrix.f})`;
             viewport.dataset.tableScale = scale.toFixed(3);
             viewport.dataset.tableAngle = String(normalizeAngle(angle));
             viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
@@ -690,19 +674,16 @@ const CardTableCamera = (() => {
             returnView = null;
             pinch = null;
             clearFocus();
-            world.style.zoom = previousZoom;
-            world.style.transform = previousTransform;
             viewport.style.touchAction = previousTouchAction;
             delete viewport.dataset.tableScale;
             delete viewport.dataset.tableAngle;
             delete viewport.dataset.tableMode;
-            delete viewport.dataset.tableRenderer;
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
         return Object.freeze({ refresh, syncLayout, syncViewport, preserveReadingPosition, captureView, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
-    return Object.freeze({ create, paintProjection });
+    return Object.freeze({ create });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableCamera;
