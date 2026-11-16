@@ -81,3 +81,7 @@ splitを製品候補のflightFramesへ反映する。全4frameのtransform関数
 bd29b387 / [43783172294](https://github.com/nao70161994/machikoro/actions/runs/43783172294) は、headlessの画像取得なしCPUが失敗、Xvfbでheaded表示し元の画像取得を保つ同一CPUが成功。artifact14189805683。375既存caseの失敗や製品ルールの問題とは混同しない。原因自体は未確定だが、WebKitの実行モードとの組み合わせで差がある。独立レビューは、同じ製品/ブラウザ版/DPR/fixture/全assertを維持し、既存375headlessを変更せず、新しい実描画caseのみheadedで追加検証する方式を条件付きで支持した。物理端末の証拠にはしない。
 
 まずheadedでCPU序盤/終盤320/844の4条件・静止・手動844/320・市場4幅の8caseをretry0で確認する。成功前にCI方式変更や候補採用を完了扱いにしない。headless失敗の原本とコマンドは残す。
+
+71e25ede / [43783873638](https://github.com/nao70161994/machikoro/actions/runs/43783873638) はheadedの8件中6成功。4CPU条件すべてで途中位置を採取でき、320序盤だけ収支札が全員配置されずunplacedで失敗。金額を一部の人だけに表示する変更や札の縮小・assert削除で隠さない。静止・手動2条件は成功。市場はheadedでhtmlがpointerを遮るためクリックtimeoutし、既に通ったheadless4幅と差がある。市場の新しい製品不具合と即断せず表示/入力座標の差も追跡する。artifact14189707498。
+
+次はheaded320序盤だけを再現し、札plannerへ渡す実bounds/owners/obstaclesを既存datasetから1回だけ原本JSONへ記録する。追加layout測定はしない。データをNodeの純粋plannerで再現し、アンカーの有効性・候補格子・探索budgetを分けて修正する。今はheadless375ケースの実行方法を変更せず、新しい描画4ケースの採用も保留する。

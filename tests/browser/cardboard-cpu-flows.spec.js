@@ -191,6 +191,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         const animation = window.cpuAnimationHandles ? window.cpuAnimationHandles.get(element) : element.getAnimations()[0];
                         const timing = animation?.effect?.getTiming();
                         sampledTransfers.push({ element, animation });
+                        if (!trace.netBadgeInput) trace.netBadgeInput = element.closest('.cardboard-transfers')?.dataset.netBadgeInput || null;
                         const data = { owner: element.dataset.owner, name: element.dataset.facility,
                             step: element.dataset.step, route: element.dataset.route,
                             from: element.dataset.from, to: element.dataset.to,
