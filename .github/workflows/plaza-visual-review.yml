@@ -24,7 +24,8 @@ jobs:
               if: ${{ !cancelled() }}
               env:
                   COIN_ANIMATION_CAPTURE: 'direct'
-              run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '標準CPU|静止盤面対照: original|明示した発動確認' --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/quality-candidate
+              run: >-
+                  xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '標準CPU|静止盤面対照: original|明示した発動確認' --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/quality-candidate
             - name: Headless market four-width regression
               if: ${{ !cancelled() }}
               run: npx playwright test cardboard-view.spec.js --grep '市場の種類数と絞込件数' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/market-candidate

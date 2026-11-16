@@ -89,3 +89,5 @@ bd29b387 / [43783172294](https://github.com/nao70161994/machikoro/actions/runs/4
 0278980b / [43784743053](https://github.com/nao70161994/machikoro/actions/runs/43784743053) のheaded320序盤単独は成功。artifact14189692488の原本JSONで7回の可視sampleすべて収支札4人complete、手番1へ正常進行を確認。前回8case時は9sampleすべてunplacedだったため、再現不安定な未解決問題として扱う。今回取得したplanner入力は成功時のものであり、失敗原因の証明には使わない。別途、12px格子が合法な狭い隙間を見逃す純粋helperの反例をNodeで再現したため、障害物端に沿う有限候補追加を検討する。実320失敗との因果は未確認。
 
 格子欠落の小修正：既存owner近傍と12px格子に加え、障害物端/領域端をownerの座標へ投影する候補を最大256件追加。無制限なedge直積を避け、札40×26の反例で旧null→合法top8、2px間隔・入力不変・探索budgetをNodeで検証。取得済成功320原本（4owners/21obstacles）も4人配置を保つ。関連Node31件と構文検査成功、独立ソースレビューで具体的な安全性欠陥なし。ただし有限探索の完全性は保証せず、実320の不安定さの原因解消ともまだ断言しない。次はheaded4CPU+静止+順番確認2幅と、既存のheadless市場4幅を一括実行する。既存375headlessの設定は変更しない。
+
+ea3f8455の補助workflowはgrep内の「: 」をYAML通常scalarに書いたため構文で拒否された（run43785575865、実テストjobなし）。製品/テスト失敗と混同せず、runをfolded block scalarへ修正する。
