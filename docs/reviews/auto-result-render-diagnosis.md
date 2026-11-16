@@ -67,3 +67,9 @@ splitを製品候補のflightFramesへ反映する。全4frameのtransform関数
 8bf2dedf / [43781122735](https://github.com/nao70161994/machikoro/actions/runs/43781122735) は8件中静止・手動844/320の3件成功、CPU4件と市場1件失敗。splitだけでCPUの問題は解消していない。市場は通常clickを通過し、横持ちsummaryの固定44px幅に長い件数captionが折り返してRangeの上下がはみ出す製品CSSの問題を検出。filterは内容幅＋折返しなし、対応grid trackも内容幅へ修正し、目標44px・dialog最小44pxと既存段数を維持する。文字包含を緩和せず、native44px下限検査も追加する。
 
 演出側は観測の切り分けを追加。テスト専用透過Element.animate wrapperで元のthis/引数/戻り値/例外を保持しWeakMapへAnimation参照を記録、生成coinの同じAnimationを固定して観測する。getAnimationsによる同期要求を避けるだけで、時計操作・経路/可視移動/finished/取消assertの削除はしない。先頭coinだけ100/300/800ms timerで予定/実時刻、pending/startTime/currentTime/document.timelineを記録し、追加style/矩形読み取りは行わない。独立レビューは条件付きで妥当と評価。getAnimationsが原因とはまだ言わない。次はCPU844終盤と修正市場4幅だけを一括実行し、既に通った手動対照は重複しない。
+
+ efb288ee / [43782065480](https://github.com/nao70161994/machikoro/actions/runs/43782065480) は2件失敗。Animation参照を直接保持してもCPUは失敗し、getAnimations問い合わせだけが原因とは言えない。先頭coinは予定100/300/800msの観測でcurrentTime0/startTime=null/pending=true、document.timelineは9566→9830ms、hidden=false。開始待ちが継続していた。artifact14188439259の原本CPU JSONを確認。市場は次にgoalNativeWidth40<44を検出。共通summaryの既存min-height44にmin-width44も明記し、新しい寸法検査を削らない。
+
+次の候補はfresh parallel batchの開始時刻だけを共有document.timeline.currentTimeへ一度設定する。finite numberかつstartTime未確定の場合だけで、既に開始済み・手動演出・timeline未解決には触らず、retargetで再設定しない。[Web Animations §4.4.4](https://www.w3.org/TR/web-animations-1/#setting-the-start-time-of-an-animation)の開始時刻設定はpending taskを解除するが、それだけで可視描画が滑らかになる保証ではない。Nodeで共有時刻0/1234、未解決/NaN/既開始/手動のfallback、retarget時計不変を確認し関連2ファイル成功。
+
+補助専用Chromium mobile projectを追加し、DPR3/viewport/screen/touch/isMobile/UA・CPU速度・全assertを既存モバイルと揃えてengine差も観測する。物理iPhone検証やWebKit失敗除外の代わりにはしない。補助workflow/configは主PRへ移植しない。

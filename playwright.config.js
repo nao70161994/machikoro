@@ -26,6 +26,24 @@ module.exports = defineConfig({
             },
         },
         {
+            name: 'mobile-chromium-coin-diagnostic',
+            testMatch: /(?:cardboard-cpu-flows|cardboard-view)\.spec\.js/,
+            use: {
+                browserName: 'chromium',
+                viewport: { width: 390, height: 664 },
+                screen: { width: 390, height: 844 },
+                deviceScaleFactor: 3,
+                isMobile: true,
+                hasTouch: true,
+                // Keep the existing mobile-WebKit fixture's UA as a control;
+                // this is an engine comparison, not a physical iPhone claim.
+                userAgent: devices['iPhone 13'].userAgent,
+                serviceWorkers: 'block',
+                video: 'off',
+                trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
+            },
+        },
+        {
             name: 'chromium-desktop',
             testMatch: /(?:seeded-browser-match|plaza-online|facility-image-offline)\.spec\.js/,
             use: {

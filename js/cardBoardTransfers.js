@@ -422,6 +422,9 @@ const CardBoardTransfers = (() => {
             let animationIndex = 0;
             let lastFlightEnd = 0;
             const stepRoutes = new Map();
+            // Start a fresh parallel batch on one document-clock instant.
+            // Never seek a retargeted flight or alter manual timeline delays.
+            const parallelStartTime = parallel ? documentRef.timeline?.currentTime : undefined;
             for (const { route, from, to } of displayed) {
                 if (reducedMotion || route.amount === 0 || !from || !to) continue;
                 const coin = documentRef.createElement('span');
@@ -454,6 +457,8 @@ const CardBoardTransfers = (() => {
                     const duration = parallel || route.facility ? 600 : 900;
                     if (route.facility) stepRoutes.set(route.facility.step, sameStep + 1);
                     const animation = coin.animate(flightFrames(from, to), { duration, delay, easing: 'linear', fill: 'both' });
+                    if (parallel && typeof parallelStartTime === 'number' && Number.isFinite(parallelStartTime) &&
+                            animation.startTime === null) animation.startTime = parallelStartTime;
                     if (!route.facility) animationIndex++;
                     lastFlightEnd = Math.max(lastFlightEnd, delay + duration);
                     animation.finished?.catch(() => {});

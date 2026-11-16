@@ -20,16 +20,22 @@ jobs:
             - run: node scripts/check-playwright-container.js
             - name: Check candidate composition roots
               run: npm run test:types
-            - name: Native animation observation and market context
+            - name: Native shared animation clock and market context
               if: ${{ !cancelled() }}
               env:
                   COIN_ANIMATION_CAPTURE: 'direct'
               run: npx playwright test cardboard-cpu-flows.spec.js cardboard-view.spec.js --grep '844px 終盤|市場の種類数' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/quality-candidate
+            - name: Chromium mobile engine comparison
+              if: ${{ !cancelled() }}
+              env:
+                  COIN_ANIMATION_CAPTURE: 'direct'
+              run: npx playwright test cardboard-cpu-flows.spec.js --grep '844px 終盤' --project=mobile-chromium-coin-diagnostic --workers=1 --retries=0 --output=test-results/chromium-comparison
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:
                   name: quality-candidate-native
                   path: |
                       test-results/quality-candidate/
+                      test-results/chromium-comparison/
                       playwright-report/
                   if-no-files-found: warn

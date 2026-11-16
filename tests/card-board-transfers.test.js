@@ -9,14 +9,14 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
     { from: 0, to: 1, amount: 2 }, { from: 0, to: 1, amount: 3 },
     { from: null, to: 0, amount: 4 }, { from: 1, to: 2, amount: 0 },
 ] };
-function fixture() {
+function fixture({ initialStartTime = 1000, timelineTime } = {}) {
     let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null, endpointShift = 0;
     const animated = [];
     const frameQueue = new Map();
     let nextFrame = 0;
     const motion = { matches: false, addEventListener(type, callback) { this.callback = callback; },
         removeEventListener() { this.callback = null; } };
-    const documentRef = { defaultView: { matchMedia: () => motion,
+    const documentRef = { timeline: { currentTime: timelineTime }, defaultView: { matchMedia: () => motion,
         requestAnimationFrame(callback) { const handle = ++nextFrame; frameQueue.set(handle, callback); return handle; },
         cancelAnimationFrame(handle) { frameQueue.delete(handle); },
         MutationObserver: class {
@@ -35,7 +35,7 @@ function fixture() {
         getAttribute(name) { return this.attributes[name] ?? null; }
         animate(frames, options) {
             const record = { frames, options, updates: 0, animation: null };
-            const animation = { currentTime: 125, startTime: 1000, playState: 'running',
+            const animation = { currentTime: 125, startTime: initialStartTime, playState: 'running',
                 effect: { setKeyframes(next) { record.frames = next; record.updates++; } },
                 pause() { this.playState = 'paused'; },
                 play() { this.playState = 'running'; record.plays = (record.plays || 0) + 1; },
@@ -543,4 +543,32 @@ runTest('独立overlayは盤面の固定境界へ追従し取消後にbodyへ残
     controller.clear();
     assert.strictEqual(root.children.length, 0);
     assert.ok(animated.every(({ animation }) => animation.playState === 'idle'));
+});
+
+runTest('新しい並列経路だけを共有document時計へ揃え再配置で時計を変えない', () => {
+    for (const timelineTime of [0, 1234]) {
+        const { container, animated, setEndpointShift } = fixture({ initialStartTime: null, timelineTime });
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        assert.ok(animated.length > 0);
+        assert.ok(animated.every(record => record.animation.startTime === timelineTime));
+        const clocks = animated.map(record => [record.animation.startTime, record.animation.currentTime]);
+        setEndpointShift(20);
+        controller.retarget();
+        assert.deepStrictEqual(animated.map(record => [record.animation.startTime, record.animation.currentTime]), clocks);
+        controller.clear();
+    }
+    for (const options of [{ initialStartTime: null, timelineTime: null },
+        { initialStartTime: null, timelineTime: NaN }, { initialStartTime: 900, timelineTime: 1234 }]) {
+        const { container, animated } = fixture(options);
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events, simultaneous: true });
+        assert.ok(animated.every(record => record.animation.startTime === options.initialStartTime));
+        controller.clear();
+    }
+    const { container, animated } = fixture({ initialStartTime: null, timelineTime: 1234 });
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events, delayMs: 500 });
+    assert.ok(animated.every(record => record.animation.startTime === null));
+    controller.clear();
 });
