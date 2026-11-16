@@ -616,10 +616,30 @@ runTest('134pxカードの実320入力は隣席の唯一の収支空間を塞が
     const ownCards = allCards.slice(6, 9);
     const competing = allCards.filter(card => !ownCards.includes(card));
     const inner = { left: bounds.left + 4, top: bounds.top + 4, right: bounds.right - 4, bottom: bounds.bottom - 4 };
-    // The new side candidate shifts by one receipt-height, then clamps to the
-    // same viewport padding. It keeps the full name width/height unchanged.
-    const moved = { ...original, top: Math.max(inner.top, original.top - 26) };
-    moved.bottom = moved.top + original.bottom - original.top;
+    const priorSpaces = prior.map(anchor => CardBoardField.ownerReceiptSpace(anchor, inner, nameObstacles,
+        prior.filter(other => other !== anchor))).filter(Boolean);
+    const overlapName = (a, b) => a.left < b.right + 3 && a.right > b.left - 3 && a.top < b.bottom + 3 && a.bottom > b.top - 3;
+    const rectangleDistance = (a, b) => Math.hypot(Math.max(b.left - a.right, a.left - b.right, 0),
+        Math.max(b.top - a.bottom, a.top - b.bottom, 0));
+    // Run the production candidate generator and admission predicate. This is
+    // not a manually selected coordinate which the real renderer might ignore.
+    const candidates = CardBoardField.ownerReceiptSideCandidates(ownCards, original.right - original.left,
+        original.bottom - original.top, bounds, 4).map(([left, top]) => ({ left, top, right: left + 44, bottom: top + 22 }))
+        .filter(rect => !nameObstacles.some(obstacle => overlapName(rect, obstacle)) &&
+            Math.min(...ownCards.map(card => rectangleDistance(rect, card))) <=
+                Math.min(...competing.map(card => rectangleDistance(rect, card))) + 0.5 &&
+            CardBoardField.ownerReceiptCandidateClear(rect, inner, [...nameObstacles, rect, ...priorSpaces], competing, prior, 3));
+    assert.strictEqual(candidates.length, 1);
+    const moved = candidates[0];
+    assert.deepStrictEqual(moved, { left: 240.77392578125, top: 120, right: 284.77392578125, bottom: 142 });
+    const failedNativeSelection = { left: 243.25, top: 159.859375, right: 287.25, bottom: 181.859375 };
+    assert.strictEqual(CardBoardField.ownerReceiptScore(failedNativeSelection, inner,
+        [...nameObstacles, failedNativeSelection, ...priorSpaces], competing, prior), 26);
+    assert.strictEqual(CardBoardField.ownerReceiptCandidateClear(failedNativeSelection, inner,
+        [...nameObstacles, failedNativeSelection, ...priorSpaces], competing, prior, 3), false,
+    '予約だけ空いても名札と隣席カードの間27.867pxに次名札22px＋余白6pxは入らない');
+    assert.strictEqual(CardBoardField.ownerReceiptCandidateClear(original, inner,
+        [...nameObstacles, original, ...priorSpaces], competing, prior, 3), false);
     assert.strictEqual(CardBoardField.ownerReceiptScore(original, inner, [...nameObstacles, original], competing, prior), 13.31982421875);
     assert.strictEqual(CardBoardField.ownerReceiptScore(moved, inner, [...nameObstacles, moved], competing, prior), 26);
     const overlap = (a, b, gap) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
