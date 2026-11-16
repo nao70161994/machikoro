@@ -1262,7 +1262,7 @@ test('縦持ち2人戦の終盤は所有者名を市場と施設群の境界で�
         panels.every(panel => Number(panel.style.getPropertyValue('--table-owner-columns')) >= 6))).toBe(true);
     expect(Number(await page.locator('#cardboardTableViewport').getAttribute('data-table-scale'))).toBeGreaterThanOrEqual(0.21);
     expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
-        cards.every(card => card.offsetWidth === 160 && card.offsetHeight === 128))).toBe(true);
+        cards.every(card => card.offsetWidth === 160 && card.offsetHeight === 134))).toBe(true);
     const overviewScale = await page.locator('#cardboardTableViewport').getAttribute('data-table-scale');
     await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
     await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-angle', '180');
@@ -1456,7 +1456,7 @@ test('卓の出目と枚数は長い出目でも重ならず施設アートを�
                 inner.top >= outer.top && inner.bottom <= outer.bottom;
             // Unrotated seat 0 allows direct text separation checks in screen coordinates.
             const checks = {
-                width: card.offsetWidth === 160, height: card.offsetHeight === 128,
+                width: card.offsetWidth === 160, height: card.offsetHeight === 134,
                 diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px'),
                 countFont: getComputedStyle(badge).fontSize === '16px', countHeight: badge.offsetHeight === 22,
                 separated: diceText.right <= badge.getBoundingClientRect().left,

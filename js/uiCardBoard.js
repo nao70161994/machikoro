@@ -165,6 +165,15 @@ const UiCardBoard = (() => {
         }
         return left.length - right.length;
     }
+    // This is a space budget for the shared formatter's words, not an income
+    // estimate. Never trim a condition or multiplier into a misleading amount.
+    function overviewEffectLabel(summary) {
+        if (typeof summary !== 'string' || !summary.trim()) return '';
+        const text = summary.trim().replace(/ランドマーク/gu, '目標').replace(/コイン$/u, '');
+        const units = Array.from(text).reduce((total, character) => total + (/^[\x20-\x7e]$/.test(character) ? 1 : 2), 0);
+        return units <= 22 ? `基本 ${text}` : '効果は詳細へ';
+    }
+
     function buildPlayerHtml(player, options = {}) {
         const { escape, art } = helpers(options);
         const index = Number.isInteger(options.index) ? options.index : 0;
@@ -190,7 +199,7 @@ const UiCardBoard = (() => {
                 const majorIncomeClass = event?.net >= 5 ? ' cardboard-card-major-income' : '';
                 const effectText = typeof options.getEffectText === 'function' ? options.getEffectText(card) : '';
                 const effectSummary = effectText ? options.getEffectText(card, true) : '';
-                const effectHtml = effectText ? `<span class="cardboard-effect" title="${escape(effectText)}" data-effect-short="${escape(effectSummary)}">${escape(effectText)}</span>` : '';
+                const effectHtml = effectText ? `<span class="cardboard-effect" title="${escape(effectText)}" data-effect-short="${escape(effectSummary)}" data-effect-overview="${escape(overviewEffectLabel(effectSummary))}">${escape(effectText)}</span>` : '';
                 const activationStepClass = event ? ` cardboard-activation-step-${Math.min(event.order, 4)}` : '';
                 const eventHtml = event ? `<span class="cardboard-activation" data-short-label="#${event.order + 1} ${event.net > 0 ? '+' : ''}${event.net}·${event.count}">発動${event.order + 1}番目 · 確認済み：${event.net > 0 ? '+' : ''}${event.net}コイン · 発動${event.count}回</span>` : '';
                 const cardTitle = `${card.name} · ${colorNames[color] || '不明'} ${card.category} · 出目 ${dice.join('・') || '—'} · 所有 ×${count}${effectText ? ` · ${effectText}` : ''}${dormant ? ` · 休業 ${dormant}枚` : ''}${event ? ` · 今回 ${event.net > 0 ? '+' : ''}${event.net}コイン、${event.count}回発動` : ''}`;

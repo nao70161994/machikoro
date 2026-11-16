@@ -1,12 +1,12 @@
-name: Integrated v368 actual UI game review
+name: Economy and regression candidate review
 on:
     workflow_dispatch:
 permissions:
     contents: read
 jobs:
-    actual-ui-game:
+    candidate:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 32
         container:
             image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
             options: --ipc=host --init
@@ -14,34 +14,42 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    - width: 320
-                      players: 2
-                    - width: 390
-                      players: 4
-                    - width: 844
-                      players: 4
-                    - width: 1440
-                      players: 2
+                    - name: economy
+                      command: npx playwright test cardboard-economy.spec.js --project=mobile-webkit --workers=1 --retries=0
+                    - name: owned-geometry
+                      command: npx playwright test cardboard-overview.spec.js --grep '縦持ち2人戦の終盤は|卓の出目と枚数は' --project=mobile-webkit --workers=1 --retries=0
+                    - name: visual-candidates
+                      command: npx playwright test theme-visual-regression.spec.js --grep cardboard --project=mobile-webkit --workers=1 --retries=0 --update-snapshots
+                    - name: cpu-events
+                      command: npx playwright test cardboard-cpu-results.spec.js --project=mobile-webkit --headed --workers=1 --retries=0
+                    - name: seeded-2p
+                      command: npx playwright test seeded-browser-match.spec.js --project=chromium-desktop --workers=1 --retries=0
+                    - name: seeded-4p
+                      players: '4'
+                      command: npx playwright test seeded-browser-match.spec.js --project=chromium-desktop --workers=1 --retries=0
+                    - name: desktop-ui-game
+                      command: npx playwright test ui-playthrough.spec.js --project=mobile-webkit --headed --workers=1 --retries=0
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-              with:
-                  ref: 46371bf8c06673f18ef2919473a00b01449f7489
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
               with:
                   node-version: '20'
                   cache: npm
             - run: npm ci
             - run: node scripts/check-playwright-container.js
-            - name: Complete the original unseeded UI game with a visible browser
+            - name: Candidate validation
               env:
                   RUN_UI_PLAYTHROUGH: '1'
-                  UI_PLAYTHROUGH_WIDTH: ${{ matrix.width }}
-                  UI_PLAYTHROUGH_PLAYER_COUNT: ${{ matrix.players }}
+                  UI_PLAYTHROUGH_WIDTH: '1440'
+                  UI_PLAYTHROUGH_PLAYER_COUNT: '2'
                   UI_PLAYTHROUGH_CPU_SPEED: '1500'
-              run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test ui-playthrough.spec.js --project=mobile-webkit --headed --workers=1 --retries=0 --output=test-results/ui-playthrough
+                  CARDBOARD_MATCH_PLAYER_COUNT: ${{ matrix.players }}
+              run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ${{ matrix.command }}
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:
-                  name: v368-actual-ui-game-${{ matrix.players }}p-${{ matrix.width }}
-                  path: test-results/ui-playthrough/
+                  name: economy-candidate-${{ matrix.name }}
+                  path: |
+                      test-results/
+                      tests/browser/theme-visual-regression.spec.js-snapshots/
                   if-no-files-found: error

@@ -389,3 +389,28 @@ runTest('卓の出目数と所有枚数を別領域で表現し元の情報を�
     assert.ok(html.includes('所有 1枚'));
     assert.strictEqual(JSON.stringify(subject), before);
 });
+
+runTest('俯瞰の基本効果は共有説明だけを短縮し条件や特殊効果を架空の確定額にしない', () => {
+    const runtime = loadGameRuntime();
+    const detail = require('../js/uiCardDetail');
+    const getEffectText = (card, compact) => detail.cardEffectText(card, runtime.CARD_EFFECT_DESCRIPTIONS, compact);
+    for (const [name, expected] of [
+        ['麦畑', '基本 +1'], ['チーズ工場', '基本 牧場×+3'],
+        ['家具工場', '基本 森林・鉱山×+3'], ['コーン畑', '基本 目標0〜1軒：+1'],
+        ['会員制BAR', '基本 相手目標3軒〜：全額'], ['貸金業', '効果は詳細へ'],
+    ]) {
+        const card = runtime.createCardByName(name);
+        assert.ok(card, name);
+        const town = { ...player, cards: [card], dormantCards: [] };
+        const before = JSON.stringify(town);
+        const html = UiCardBoard.buildPlayerHtml(town, { ...options, getEffectText });
+        assert.ok(html.includes(`data-effect-overview="${expected}"`), `${name}: ${html}`);
+        assert.ok(html.includes(`data-effect-short="${getEffectText(card, true)}"`));
+        assert.ok(html.includes(`title="${getEffectText(card)}"`));
+        assert.strictEqual(JSON.stringify(town), before);
+    }
+    const escaped = UiCardBoard.buildPlayerHtml({ ...player, dormantCards: [] }, {
+        ...options, getEffectText: (_card, compact) => compact ? '+<1>' : '銀行から<1>コイン',
+    });
+    assert.ok(escaped.includes('data-effect-overview="基本 +&lt;1&gt;"'));
+});

@@ -13998,10 +13998,11 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     flex-direction: column;
     box-sizing: border-box;
     width: 160px;
-    height: 128px;
-    min-height: 128px;
+    /* Reserve a real economic footer without shrinking the art or name. */
+    height: 134px;
+    min-height: 134px;
     margin: 0;
-    padding: 0 0 10px;
+    padding: 0 0 16px;
     overflow: hidden;
     border: 2px solid var(--table-card-accent);
     border-radius: 8px;
@@ -14141,17 +14142,14 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     white-space: nowrap;
 }
 
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-effect {
-    display: none;
-}
-
-/* A face-on collection uses the spare name/bottom band for economic meaning.
-   Card and illustration dimensions stay fixed; the event strip keeps its row. */
+/* Preserve the existing face-on name band; overview retains its 24px name. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card .cardboard-name {
     flex-basis: 20px;
     min-height: 20px;
 }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect {
+/* Use the spare bottom band for the printed base effect in overview too.
+   Card/illustration dimensions stay fixed; status strips take priority. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-effect {
     display: flex;
     align-items: center;
     position: absolute;
@@ -14169,12 +14167,15 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     white-space: nowrap;
     text-align: left;
 }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect::before {
-    content: attr(data-effect-short);
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-effect::before {
+    content: attr(data-effect-overview);
     display: block;
     font-size: 10px;
     font-weight: 700;
     line-height: 14px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect::before {
+    content: attr(data-effect-short);
 }
 /* Keep the rest-state badge separate from the economic strip in a face-on
    card, without shrinking the facility artwork or hiding its effect. */
@@ -14189,10 +14190,11 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 }
 
 /* The actual resolved amount takes priority over a base-effect definition. */
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card-activated .cardboard-effect {
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card-activated .cardboard-effect,
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player:not(.cardboard-player-reading) .cardboard-card:has(.cardboard-dormant) .cardboard-effect {
     display: none;
 }
-html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect {
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-effect {
     color: #fff;
     background: #000;
 }
@@ -15828,8 +15830,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     align-self: start;
 }
 
-/* Auxiliary whole-result experiment: automatic results do not imply a
-   per-facility sequence. Explicit review alone uses the existing chain. */
+/* Automatic results share a short overview; explicit review alone uses
+   the ordered facility sequence. */
 html[data-design="cardboard"] #cardboardEventDetails:not(.cardboard-preview-playing) .cardboard-event-preview-card { display: none; }
 html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-result-overview { display: none; }
 html[data-design="cardboard"] #cardboardEventDetails [data-cardboard-replay-result] { min-height: 44px; }
