@@ -575,3 +575,74 @@ runTest('所属札は他の札が塞ぐ前に隣接する収支領域を確保�
     assert.strictEqual(field.ownerReceiptSpace(leftOwner, bounds, [bounds]), null);
     assert.strictEqual(JSON.stringify({ bounds, leftOwner, leftCard, topCards }), input);
 });
+
+runTest('134pxカードの実320入力は隣席の唯一の収支空間を塞がない名札候補で全員配置する', () => {
+    const transfers = require('../js/cardBoardTransfers');
+    // Native 320px/4-player die-3 failure: unchanged labels leave owner 3
+    // no legal nearest-owner region, even with all obstacle-edge crossings.
+    const bounds = {"left":4,"right":316,"top":116,"bottom":457};
+    const owners = [{"owner":0,"width":36,"net":-1,"anchor":{"left":240.765625,"top":387.109375,"right":284.765625,"bottom":409.109375}},{"owner":3,"width":36,"net":2,"anchor":{"left":260.609375,"top":183.71875,"right":304.609375,"bottom":205.71875}},{"owner":2,"width":36,"net":2,"anchor":{"left":240.765625,"top":144.40625,"right":284.765625,"bottom":166.40625}},{"owner":1,"width":36,"net":2,"anchor":{"left":17.90625,"top":183.71875,"right":61.90625,"bottom":205.71875}}];
+    const obstacles = [
+        {"left":272,"top":52,"right":316,"bottom":96},
+        {"left":4,"top":4,"right":316,"bottom":48},
+        {"left":92.18364715576172,"top":207.24949645996094,"right":227.81636810302734,"bottom":365.7505187988281},
+        {"left":83.22606658935547,"top":387.1109924316406,"right":132.7576446533203,"bottom":428.59368896484375},
+        {"left":135.23422241210938,"top":387.1109924316406,"right":184.76577758789062,"bottom":428.59368896484375},
+        {"left":187.2423553466797,"top":387.1109924316406,"right":236.77392578125,"bottom":428.59368896484375},
+        {"left":17.906312942504883,"top":209.72607421875,"right":59.38900184631348,"bottom":259.25762939453125},
+        {"left":17.906312942504883,"top":261.7342224121094,"right":59.38900184631348,"bottom":311.2657775878906},
+        {"left":17.906312942504883,"top":313.74237060546875,"right":59.38900184631348,"bottom":363.27392578125},
+        {"left":187.2423553466797,"top":144.40631103515625,"right":236.77392578125,"bottom":185.88900756835938},
+        {"left":135.23422241210938,"top":144.40631103515625,"right":184.76577758789062,"bottom":185.88900756835938},
+        {"left":83.22606658935547,"top":144.40631103515625,"right":132.7576446533203,"bottom":185.88900756835938},
+        {"left":260.6109924316406,"top":313.74237060546875,"right":302.09368896484375,"bottom":363.27392578125},
+        {"left":260.6109924316406,"top":261.7342224121094,"right":302.09368896484375,"bottom":311.2657775878906},
+        {"left":260.6109924316406,"top":209.72607421875,"right":302.09368896484375,"bottom":259.25762939453125},
+        {"left":240.765625,"top":387.109375,"right":284.765625,"bottom":409.109375},
+        {"left":17.90625,"top":183.71875,"right":61.90625,"bottom":205.71875},
+        {"left":240.765625,"top":144.40625,"right":284.765625,"bottom":166.40625},
+        {"left":260.609375,"top":183.71875,"right":304.609375,"bottom":205.71875},
+        {"left":4,"top":52,"right":268,"bottom":96},
+        {"left":8,"top":98,"right":312,"bottom":114}
+    ];
+    const before = JSON.stringify({ bounds, owners, obstacles });
+    assert.strictEqual(transfers.placeNetBadges(owners, bounds, obstacles), null);
+    const original = owners.find(owner => owner.owner === 2).anchor;
+    const future = owners.find(owner => owner.owner === 3).anchor;
+    const same = (a, b) => a.left === b.left && a.top === b.top && a.right === b.right && a.bottom === b.bottom;
+    const nameObstacles = obstacles.filter(rect => !same(rect, original) && !same(rect, future));
+    const prior = owners.filter(owner => owner.owner === 0 || owner.owner === 1).map(owner => owner.anchor);
+    const allCards = obstacles.slice(3, 15);
+    const ownCards = allCards.slice(6, 9);
+    const competing = allCards.filter(card => !ownCards.includes(card));
+    const inner = { left: bounds.left + 4, top: bounds.top + 4, right: bounds.right - 4, bottom: bounds.bottom - 4 };
+    // The new side candidate shifts by one receipt-height, then clamps to the
+    // same viewport padding. It keeps the full name width/height unchanged.
+    const moved = { ...original, top: Math.max(inner.top, original.top - 26) };
+    moved.bottom = moved.top + original.bottom - original.top;
+    assert.strictEqual(CardBoardField.ownerReceiptScore(original, inner, [...nameObstacles, original], competing, prior), 13.31982421875);
+    assert.strictEqual(CardBoardField.ownerReceiptScore(moved, inner, [...nameObstacles, moved], competing, prior), 26);
+    const overlap = (a, b, gap) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
+    assert.ok(moved.left >= inner.left && moved.right <= inner.right && moved.top >= inner.top && moved.bottom <= inner.bottom);
+    assert.ok(nameObstacles.every(rect => !overlap(moved, rect, 3)), '名前の従来3px障害物余白を保つ');
+    const distance = (a, b) => Math.hypot(Math.max(b.left - a.right, a.left - b.right, 0), Math.max(b.top - a.bottom, a.top - b.bottom, 0));
+    const ownDistance = Math.min(...ownCards.map(card => distance(moved, card)));
+    assert.ok(ownDistance <= Math.min(...competing.map(card => distance(moved, card))) + 0.5);
+    assert.ok(ownDistance >= 3 && ownDistance <= 64, '既存所属リンクの実距離範囲も保つ');
+    const nextOwners = owners.map(owner => owner.owner === 2 ? { ...owner, anchor: moved } : owner);
+    const nextObstacles = obstacles.map(rect => same(rect, original) ? moved : rect);
+    const plan = transfers.placeNetBadges(nextOwners, bounds, nextObstacles);
+    assert.strictEqual(plan.length, 4);
+    assert.deepStrictEqual(plan.map(item => [item.owner, item.net]), owners.map(item => [item.owner, item.net]));
+    for (const [index, placed] of plan.entries()) {
+        assert.strictEqual(placed.width, 36);
+        assert.strictEqual(placed.height, 26);
+        assert.ok(placed.left >= bounds.left && placed.right <= bounds.right && placed.top >= bounds.top && placed.bottom <= bounds.bottom);
+        assert.ok([...nextObstacles, ...plan.slice(index + 1)].every(rect => !overlap(placed, rect, 2)));
+        const centerDistance = anchor => Math.hypot((placed.left + placed.right - anchor.left - anchor.right) / 2,
+            (placed.top + placed.bottom - anchor.top - anchor.bottom) / 2);
+        assert.ok(nextOwners.every(owner => centerDistance(placed.anchor) <= centerDistance(owner.anchor)));
+    }
+    assert.strictEqual(CardBoardField.ownerReceiptScore(moved, inner, [bounds], competing, prior), -1);
+    assert.strictEqual(JSON.stringify({ bounds, owners, obstacles }), before);
+});
