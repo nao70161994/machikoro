@@ -4,23 +4,6 @@ const { test, expect } = require('@playwright/test');
 // Explicit banner cases below and the PWA suite retain update coverage.
 test.use({ serviceWorkers: 'block' });
 
-test.beforeEach(async ({ page }, info) => {
-    if (info.title !== '共通カード卓の人数適応 2') return;
-    await page.addInitScript(() => {
-        window.__twoSeatRailMeasurements = [];
-        window.__twoSeatRailDiagnostic = value => {
-            window.__twoSeatRailMeasurements.push(value);
-            if (window.__twoSeatRailMeasurements.length > 20) window.__twoSeatRailMeasurements.shift();
-        };
-    });
-});
-test.afterEach(async ({ page }, info) => {
-    if (info.title !== '共通カード卓の人数適応 2') return;
-    const file = info.outputPath('two-seat-rail-measurements.json');
-    await require('node:fs/promises').writeFile(file, JSON.stringify(await page.evaluate(() => window.__twoSeatRailMeasurements), null, 2));
-    await info.attach('two-seat-rail-measurements', { path: file, contentType: 'application/json' });
-});
-
 async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => { if (!localStorage.getItem('machikoroDesignTheme')) localStorage.setItem('machikoroDesignTheme', 'cardboard'); });
@@ -460,35 +443,74 @@ for (const count of [2,3,5,10]) {
                 render();
             });
             const railOwners = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
-            await expect(railOwners).toHaveCount(2);
-            await expectWholeTable(page, 2);
-            await expectOwnedCards(page);
-            await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(10);
-            expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
-                Math.min(...cards.map(card => card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(40);
             const footprint = () => page.locator('#cardboardSeats').evaluate(world => ({
                 width: world.offsetWidth, height: world.offsetHeight,
             }));
-            const railFootprint = await footprint();
             const table = page.locator('#cardboardTableViewport');
-            const railScale = await table.getAttribute('data-table-scale');
-            const railState = await snapshot(page);
-            await page.screenshot({path:testInfo.outputPath('card-table-2-landmarks-beside.png')});
-            await page.locator('[data-cardboard-camera="self"]').click();
-            await expect(railOwners).toHaveCount(0);
-            await page.locator('[data-cardboard-camera="back"]').click();
-            await expect(railOwners).toHaveCount(2);
-            await expect(table).toHaveAttribute('data-table-scale', railScale);
-            expect(await footprint()).toEqual(railFootprint);
-            await page.locator('[data-cardboard-camera="market"]').click();
-            await page.locator('#cardboardMarket .compact-market-filter-disclosure > summary').click();
-            await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
-            await expect(railOwners).toHaveCount(2);
-            expect(await footprint()).toEqual(railFootprint);
-            await page.locator('#cardboardMarketClose').click();
-            await page.locator('[data-cardboard-camera="overview"]').click();
-            await expectWholeTable(page, 2);
-            expect(await snapshot(page)).toEqual(railState);
+            async function verifyLandmarkLayout(expectedRailCount, minimumCardWidth, imageName) {
+                await expect(railOwners).toHaveCount(expectedRailCount);
+                await expectWholeTable(page, 2);
+                await expectOwnedCards(page);
+                await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(10);
+                await expect.poll(() => page.locator('#cardboardSeats').evaluate(world => {
+                    const clip = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+                    const contains = (outer, rect) => rect.width > 0 && rect.height > 0 &&
+                        rect.left >= outer.left - 1 && rect.right <= outer.right + 1 &&
+                        rect.top >= outer.top - 1 && rect.bottom <= outer.bottom + 1;
+                    const cards = [...world.querySelectorAll('.cardboard-card')].map(card => card.getBoundingClientRect());
+                    const market = document.getElementById('cardboardCenter').getBoundingClientRect();
+                    const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+                    return [...world.querySelectorAll('.cardboard-player')].every(owner => {
+                        const built = [...owner.querySelectorAll('.cardboard-landmark-built')];
+                        const bounds = owner.getBoundingClientRect();
+                        return built.length === 5 && built.every(landmark => {
+                            const rect = landmark.getBoundingClientRect();
+                            return contains(bounds, rect) && contains(clip, rect) &&
+                                !cards.some(card => overlaps(rect, card)) && !overlaps(rect, market);
+                        });
+                    });
+                })).toBe(true);
+                expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+                    Math.min(...cards.map(card => card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(minimumCardWidth);
+                const originalFootprint = await footprint();
+                const originalScale = await table.getAttribute('data-table-scale');
+                const originalState = await snapshot(page);
+                await page.screenshot({ path: testInfo.outputPath(imageName) });
+                await page.locator('[data-cardboard-camera="self"]').click();
+                await expect(railOwners).toHaveCount(0);
+                await page.locator('[data-cardboard-camera="back"]').click();
+                await expect(railOwners).toHaveCount(expectedRailCount);
+                await expect(table).toHaveAttribute('data-table-scale', originalScale);
+                expect(await footprint()).toEqual(originalFootprint);
+                expect(await snapshot(page)).toEqual(originalState);
+                await page.locator('[data-cardboard-camera="market"]').click();
+                await page.locator('#cardboardMarket .compact-market-filter-disclosure > summary').click();
+                await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+                await expect(railOwners).toHaveCount(expectedRailCount);
+                expect(await footprint()).toEqual(originalFootprint);
+                await page.locator('#cardboardMarketClose').click();
+                await page.locator('[data-cardboard-camera="overview"]').click();
+                await expectWholeTable(page, 2);
+                await expect(railOwners).toHaveCount(expectedRailCount);
+                await expect(table).toHaveAttribute('data-table-scale', originalScale);
+                expect(await footprint()).toEqual(originalFootprint);
+                expect(await snapshot(page)).toEqual(originalState);
+            }
+            // Eighteen facility types plus five landmarks fit better without
+            // rails (native measurements show forcing rails shrinks cards).
+            // Preserve this dense state and strengthen its original 40px check.
+            await expect(page.locator('#cardboardSeats .cardboard-card')).toHaveCount(36);
+            await verifyLandmarkLayout(0, 44, 'card-table-2-dense-landmarks.png');
+            // Rails are useful for a smaller collection. Keep every original
+            // rail/40px/footprint/scale/state/inspection/market assertion here.
+            await page.evaluate(() => {
+                GameRuntimeState.runtime.snapshot().game.players.forEach(player => {
+                    player.cards = CARDS.slice(0, 5).map(card => createCardByName(card.name));
+                });
+                render();
+            });
+            await expect(page.locator('#cardboardSeats .cardboard-card')).toHaveCount(10);
+            await verifyLandmarkLayout(2, 40, 'card-table-2-landmarks-beside.png');
 
             await page.evaluate(() => {
                 GameSetupState.runtime.setCpuSpeed(3000);

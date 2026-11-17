@@ -124,7 +124,8 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                             from: element.dataset.from, to: element.dataset.to,
                             amount: Number(element.dataset.amount), mode: element.dataset.mode, routeLabelDisplay: getComputedStyle(element, '::after').display,
                             subjects: JSON.parse(element.dataset.subjects || '[]'), text: element.textContent };
-                        record('transfer-created', { ...data, delay: timing?.delay, duration: timing?.duration });
+                        record('transfer-created', { ...data, delay: timing?.delay, duration: timing?.duration,
+                            startTime: animation?.startTime, documentTime: document.timeline.currentTime });
                         if (animation) {
                             animation.finished.then(() => record('transfer-finished', data))
                                 .catch(() => record('transfer-cancelled', { ...data, currentTime: animation.currentTime }));
@@ -162,7 +163,7 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                 let geometryRecorded = false;
                 const actors = sampledTransfers.filter(({ element }) => element.isConnected).map(({ element, animation }) => {
                     return { from: element.dataset.from, to: element.dataset.to,
-                        time: Number(animation?.currentTime), state: animation?.playState,
+                        time: Number(animation?.currentTime), startTime: animation?.startTime, state: animation?.playState,
                         opacity: Number(getComputedStyle(element).opacity),
                         rect: readRect(element) };
                 }).filter(actor => actor.state === 'running' && actor.time >= 60 && actor.time < 540);
@@ -282,6 +283,8 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         // Coins can physically share their source. Readable owner amounts,
         // rather than the tiny coin glyphs, must remain separate and unobscured.
         for (const sample of evidence.geometry) {
+            expect(sample.actors.every(actor => Number.isFinite(actor.startTime)), '描画時点で開始時計が解決している').toBe(true);
+            expect(new Set(sample.actors.map(actor => actor.startTime)).size, '並列経路は同じ描画更新で開始する').toBe(1);
             expect(sample.labelOverlaps, '移動coinが所有者名を覆わない').toEqual([]);
             expect(sample.badgeStatus, JSON.stringify(sample)).toBe('complete');
             expect(sample.badges.map(({ owner, net }) => ({ owner, net })).sort((a, b) => a.owner - b.owner))

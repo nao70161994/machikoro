@@ -545,13 +545,14 @@ runTest('独立overlayは盤面の固定境界へ追従し取消後にbodyへ残
     assert.ok(animated.every(({ animation }) => animation.playState === 'idle'));
 });
 
-runTest('新しい並列経路だけを共有document時計へ揃え再配置で時計を変えない', () => {
+runTest('新しい並列経路は古いdocument時刻へ遡らせずブラウザの開始と再配置後の時計を保つ', () => {
     for (const timelineTime of [0, 1234]) {
         const { container, animated, setEndpointShift } = fixture({ initialStartTime: null, timelineTime });
         const controller = CardBoardTransfers.create();
         controller.play({ container, events, simultaneous: true });
         assert.ok(animated.length > 0);
-        assert.ok(animated.every(record => record.animation.startTime === timelineTime));
+        assert.ok(animated.every(record => record.animation.startTime === null),
+            '前フレームのdocument時計を新しいpending animationへ割り当てない');
         const clocks = animated.map(record => [record.animation.startTime, record.animation.currentTime]);
         setEndpointShift(20);
         controller.retarget();

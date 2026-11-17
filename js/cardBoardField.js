@@ -250,6 +250,13 @@ const CardBoardField = (() => {
         return candidates;
     }
 
+    // WebKit stores positioned offsets on a 1/64 CSS-pixel layout grid.
+    // Admit and rank the same local offsets which the name will actually use.
+    function snapOwnerPosition(position, origin) {
+        return [origin.left + Math.round((position[0] - origin.left) * 64) / 64,
+            origin.top + Math.round((position[1] - origin.top) * 64) / 64];
+    }
+
     // Equivalent transformed edge distances may differ by floating-point noise.
     // Normalize only that noise, then break ties geometrically; collision and
     // ownership admission always retain the original unrounded rectangles.
@@ -469,6 +476,11 @@ const CardBoardField = (() => {
                 const receiptCandidates = new Set(protectLayoutReceipts ? ownerReceiptSideCandidates(ownCards, width, height,
                     { left: innerLeft, top: innerTop, right: innerRight, bottom: innerBottom }, gap) : []);
                 candidates.push(...receiptCandidates);
+                for (const position of candidates) {
+                    const snapped = snapOwnerPosition(position, { left: innerLeft, top: innerTop });
+                    position[0] = snapped[0];
+                    position[1] = snapped[1];
+                }
                 const distance = (left, top, rect) => Math.hypot(
                     Math.max(rect.left - left - width, left - rect.right, 0),
                     Math.max(rect.top - top - height, top - rect.bottom, 0));
@@ -486,10 +498,10 @@ const CardBoardField = (() => {
                     // Preserve existing placements. Only a missing label tries
                     // the viewport's spare edge, with identical collision guards.
                     /** @type {[number, number][]} */
-                    const insetCandidates = candidates.map(([left, top]) => [
+                    const insetCandidates = candidates.map(([left, top]) => snapOwnerPosition([
                         Math.max(innerLeft + gap, Math.min(left, innerRight - gap - width)),
                         Math.max(innerTop + gap, Math.min(top, innerBottom - gap - height)),
-                    ]);
+                    ], { left: innerLeft, top: innerTop }));
                     available.push(...insetCandidates.filter(canPlace));
                 }
                 const score = ([left, top]) => nearest(left, top, ownCards) +
@@ -2325,7 +2337,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores, snapOwnerPosition });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

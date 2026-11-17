@@ -291,22 +291,6 @@ const CardTableLayout = (() => {
                     const height = padding * 2 + marketBox.height + gap * 2 + boxes.reduce((sum, box) => sum + box.nativeHeight, 0);
                     return Math.min(viewportWidth / width, viewportHeight / height);
                 };
-                if (typeof window.__twoSeatRailDiagnostic === 'function') {
-                    const candidates = [];
-                    for (const marketColumns of [4, 6, 8, 12, 18]) {
-                        const measuredMarket = marketSize(marketColumns, rowsFor(marketColumns));
-                        for (const columns of [4, 6, 8, 12, 18]) for (const rail of [false, true]) {
-                            const boxes = panels.map(panel => ownerSize(panel, Math.min(columns, Math.max(1, countFor(panel))), rail));
-                            const width = padding * 2 + Math.max(measuredMarket.width, ...boxes.map(box => box.nativeWidth));
-                            const height = padding * 2 + measuredMarket.height + gap * 2 + boxes.reduce((sum, box) => sum + box.nativeHeight, 0);
-                            candidates.push({ marketColumns, columns, rail, width, height, boxes, measuredMarket,
-                                scale: Math.min(viewportWidth / width, viewportHeight / height) });
-                        }
-                    }
-                    window.__twoSeatRailDiagnostic({ viewportWidth, viewportHeight, chosen: { ...chosen },
-                        count: panels.map(countFor), landmarks: panels.map(panel => panel.querySelectorAll('.cardboard-landmark-built').length),
-                        baseline: scoreFor(chosen.end, false), candidates });
-                }
                 const baseline = scoreFor(chosen.end, false);
                 let bestScore = baseline;
                 let bestColumns = chosen.end;
