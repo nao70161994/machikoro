@@ -11100,8 +11100,10 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.c
     background: #000;
     color: #fff;
 }
+/* The common table already has a result strip; a second corner badge would
+   cover its ownership count. Keep this legacy badge on the older layout only. */
 @media (min-width: 761px) {
-    html[data-design="cardboard"] .cardboard-card-activated[data-cardboard-activation-order]::after {
+    html[data-design="cardboard"] #cardboardBoard:not(.cardboard-card-table) .cardboard-card-activated[data-cardboard-activation-order]::after {
         content: "発動 " attr(data-cardboard-activation-order);
         position: absolute;
         top: 5px;
@@ -11118,7 +11120,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.c
         line-height: 1.2;
         pointer-events: none;
     }
-    html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-card-activated[data-cardboard-activation-order]::after {
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard:not(.cardboard-card-table) .cardboard-card-activated[data-cardboard-activation-order]::after {
         border: 2px solid #fff;
         background: #000;
         color: #ffe66d;
