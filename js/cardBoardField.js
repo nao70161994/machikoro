@@ -252,6 +252,7 @@ const CardBoardField = (() => {
 
     // WebKit stores positioned offsets on a 1/64 CSS-pixel layout grid.
     // Admit and rank the same local offsets which the name will actually use.
+    /** @returns {[number, number]} */
     function snapOwnerPosition(position, origin) {
         return [origin.left + Math.round((position[0] - origin.left) * 64) / 64,
             origin.top + Math.round((position[1] - origin.top) * 64) / 64];
