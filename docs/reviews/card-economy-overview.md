@@ -121,3 +121,5 @@ CPU1500ms、全3条件completed=true・pageErrorsなし。相手正面閲覧→�
 [320終盤](assets/card-economy/v370-normal-games/late-320.png) / [390終盤](assets/card-economy/v370-normal-games/late-390.png) / [844終盤](assets/card-economy/v370-normal-games/late-844.png)。各summaryも同フォルダへ保存した。390の4状態は独立レビューで重大な新しい切れ・所有者対応崩れ・主要操作被覆なし。勝利時+2残留は既知のv371修復対象。終盤俯瞰の細字、建設通知による一時被覆の体感評価は残る。
 
 320/844の計8枚も別の独立レビューで、既知の勝利収益札以外に重大な被覆・切れ・所有者混同・操作遮蔽なし。320勝利+4/844勝利+65は修正前の原本であり、この画像自体を修復済みとは扱わない。844序盤の左右余白と俯瞰の細字は残り、初見人間の理解速度・演出テンポの商用同等性は未証明。
+
+[勝利時収益残留の修正前PC原本](assets/card-economy/v370-normal-games/winner-before-cleanup-1440.png)と[同対局summary](assets/card-economy/v370-normal-games/summary-1440.json)も保存。修正後画像はv371主Releaseの勝利4条件のartifactから取得し、対局の乱数・所有構成が異なる画像を画素一致比較とは説明しない。
