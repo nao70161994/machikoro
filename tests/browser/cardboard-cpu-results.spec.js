@@ -144,18 +144,31 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
         observer.observe(document.body, { childList: true, subtree: true, characterData: true });
         window.stopCpuEventObservation = () => observer.disconnect();
         trace.geometry = [];
+        trace.sampleTimings = [];
         {
+            let previousSampleStart = null;
             const sample = () => {
                 if (stopAtTurnChange()) return;
+                const sampleStart = performance.now();
+                const intervalMs = previousSampleStart === null ? null : sampleStart - previousSampleStart;
+                previousSampleStart = sampleStart;
+                // Cache only within this frame: animations and layout may move
+                // every element before the next requestAnimationFrame.
+                const rects = new Map();
+                const readRect = element => {
+                    if (!rects.has(element)) rects.set(element, element.getBoundingClientRect().toJSON());
+                    return rects.get(element);
+                };
+                let geometryRecorded = false;
                 const actors = sampledTransfers.filter(({ element }) => element.isConnected).map(({ element, animation }) => {
                     return { from: element.dataset.from, to: element.dataset.to,
                         time: Number(animation?.currentTime), state: animation?.playState,
                         opacity: Number(getComputedStyle(element).opacity),
-                        rect: element.getBoundingClientRect().toJSON() };
+                        rect: readRect(element) };
                 }).filter(actor => actor.state === 'running' && actor.time >= 60 && actor.time < 540);
                 if (actors.length && trace.geometry.length < 120) {
                     const labels = [...document.querySelectorAll('.cardboard-owner-label')].map(label => ({
-                        owner: label.dataset.playerIndex, rect: label.getBoundingClientRect().toJSON() }));
+                        owner: label.dataset.playerIndex, rect: readRect(label) }));
                     const labelOverlaps = actors.flatMap(actor => labels.flatMap(label => {
                         const a = actor.rect, b = label.rect;
                         return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
@@ -163,16 +176,19 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                     }));
                     const badgeElements = [...document.querySelectorAll('.cardboard-owner-net')];
                     const protectedElements = [...document.querySelectorAll('.cardboard-owner-label, .cardboard-card, .cardboard-landmark, #cardboardCenter, #cardboardControls, #cardboardCameraTools, #cardboardRoster, #cardboardViewHint')];
+                    const protectedRects = protectedElements.map(element => ({
+                        obstacle: element.id || element.className, rect: readRect(element) }));
+                    const layer = document.querySelector('.cardboard-transfers');
                     const badges = badgeElements.map(badge => {
-                        const rect = badge.getBoundingClientRect();
+                        const rect = readRect(badge);
                         const range = document.createRange();
                         range.selectNodeContents(badge);
                         const textRect = range.getBoundingClientRect();
                         const style = getComputedStyle(badge);
-                        const clip = badge.closest('.cardboard-transfers').getBoundingClientRect();
+                        const clip = readRect(badge.closest('.cardboard-transfers'));
                         return { owner: Number(badge.dataset.playerIndex), net: Number(badge.dataset.net),
                             text: badge.textContent, scrollWidth: badge.scrollWidth, clientWidth: badge.clientWidth,
-                            rect: rect.toJSON(), aria: badge.getAttribute('aria-label'),
+                            rect, aria: badge.getAttribute('aria-label'),
                             visible: Number(style.opacity) > 0.5 && style.visibility === 'visible' && rect.width > 0 && rect.height > 0,
                             textContained: textRect.left >= rect.left && textRect.right <= rect.right &&
                                 textRect.top >= rect.top && textRect.bottom <= rect.bottom,
@@ -182,8 +198,8 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
                     const badgeOverlaps = badges.flatMap((badge, index) => [
                         ...badges.slice(index + 1).filter(other => collides(badge.rect, other.rect)).map(other => ({ owner: badge.owner, otherOwner: other.owner })),
-                        ...protectedElements.filter(element => collides(badge.rect, element.getBoundingClientRect()))
-                            .map(element => ({ owner: badge.owner, obstacle: element.id || element.className })),
+                        ...protectedRects.filter(element => collides(badge.rect, element.rect))
+                            .map(element => ({ owner: badge.owner, obstacle: element.obstacle })),
                     ]);
                     const labelRects = labels.map(label => ({ ...label, owner: Number(label.owner) }));
                     const badgeOwners = badges.every(badge => {
@@ -192,7 +208,6 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                         const own = labelRects.find(label => label.owner === badge.owner);
                         return own && labelRects.every(label => distance(own) <= distance(label));
                     });
-                    const layer = document.querySelector('.cardboard-transfers');
                     // Preserve the exact pure-planner input once per geometry
                     // change so an unplaced result can be reproduced off-browser.
                     const plannerInput = layer?.dataset.netBadgeInput;
@@ -203,6 +218,14 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                     }
                     trace.geometry.push({ at: performance.now() - trace.startedAt, actors, labelOverlaps, badges, badgeOverlaps, badgeOwners,
                         badgeStatus: layer?.dataset.netBadges });
+                    geometryRecorded = true;
+                }
+                const sampleEnd = performance.now();
+                {
+                    if (trace.sampleTimings.length === 200) trace.sampleTimings.shift();
+                    trace.sampleTimings.push({ startedMs: sampleStart - trace.startedAt,
+                        endedMs: sampleEnd - trace.startedAt, intervalMs,
+                        durationMs: sampleEnd - sampleStart, actorCount: actors.length, geometryRecorded });
                 }
                 requestAnimationFrame(sample);
             };
