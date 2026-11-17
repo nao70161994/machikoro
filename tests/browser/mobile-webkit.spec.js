@@ -98,11 +98,11 @@ async function startGenerationServer(port, buildHash) {
     child.stderr.on('data', chunk => { output += chunk; diagnostics.stderrBytes += chunk.length; });
     const attachDiagnostics = async outcome => {
         const safeHash = String(buildHash).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
-        await test.info().attach(`generation-server-${safeHash}-${port}-${outcome}`, {
-            body: Buffer.from(JSON.stringify({ ...diagnostics, outcome, elapsedMs: elapsed(),
-                exitCode: child.exitCode, signalCode: child.signalCode }, null, 2)),
-            contentType: 'application/json',
-        });
+        const name = `generation-server-${safeHash}-${port}-${outcome}`;
+        const file = test.info().outputPath(`${name}.json`);
+        await require('node:fs/promises').writeFile(file, JSON.stringify({ ...diagnostics, outcome, elapsedMs: elapsed(),
+            exitCode: child.exitCode, signalCode: child.signalCode }, null, 2));
+        await test.info().attach(name, { path: file, contentType: 'application/json' });
     };
     try {
         for (let attempt = 0; attempt < 80; attempt++) {

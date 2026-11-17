@@ -93,6 +93,8 @@ const CardTableLayout = (() => {
             const viewportWidth = viewport.clientWidth;
             const viewportHeight = viewport.clientHeight;
             if (!viewportWidth || !viewportHeight) return;
+            const diagnostic = typeof view.__cardTableLayoutDiagnostic === 'function'
+                ? { viewport: { width: viewportWidth, height: viewportHeight }, candidates: [], rails: [], measurements: [] } : null;
             const panels = [...world.children].filter(element => element.matches('.cardboard-player[data-player-index]'));
             if (!panels.length) return;
             const live = new Set([world, viewport, market, ...panels]);
@@ -161,7 +163,9 @@ const CardTableLayout = (() => {
                     applyOwnerShape(panel, columns, rail);
                     sizes.set(shapeKey, { nativeWidth: panel.offsetWidth, nativeHeight: panel.offsetHeight });
                 }
-                return sizes.get(shapeKey);
+                const measured = sizes.get(shapeKey);
+                if (diagnostic) diagnostic.measurements.push({ owner: panel.dataset.playerIndex, columns, rail, ...measured });
+                return measured;
             }
             function marketSize(columns, rows = rowsFor(columns)) {
                 const key = [viewportWidth, viewportHeight,
@@ -248,6 +252,7 @@ const CardTableLayout = (() => {
                             (strips.top.depth ? strips.top.depth + gap : 0) + (strips.bottom.depth ? strips.bottom.depth + gap : 0);
                         const score = Math.min(viewportWidth / width, viewportHeight / height);
                         const plan = { market: marketColumns, rows: rowsFor(marketColumns), side: sideColumns, end: endColumns };
+                        if (diagnostic) diagnostic.candidates.push({ ...plan, width, height, score, strips, marketBox });
                         const previousPlan = marketPlans.get(marketColumns);
                         if (!previousPlan || score > previousPlan.score + 0.0001) marketPlans.set(marketColumns, { score, plan });
                         if (score > bestScore + 0.0001) {
@@ -385,6 +390,7 @@ const CardTableLayout = (() => {
                 let railColumns = chosen.end;
                 for (const columns of railColumnCandidates(chosen.end, [...sides.top, ...sides.bottom].map(countFor))) {
                     const score = scoreFor(columns, true, 'cross');
+                    if (diagnostic) diagnostic.rails.push({ columns, score, baseline, chosen: { ...chosen } });
                     if (score > railScore + 0.0001) { railScore = score; railColumns = columns; }
                 }
                 if (railScore >= baseline * 1.15) {
@@ -501,6 +507,9 @@ const CardTableLayout = (() => {
             if (world.dataset.tablePacking !== packing) world.dataset.tablePacking = packing;
             const geometryKey = JSON.stringify([packing, chosen.market, chosen.rows, marketX, marketY, marketWidth, marketHeight, marketScale, ownerGeometry]);
             if (world.dataset.tableLayoutKey !== geometryKey) world.dataset.tableLayoutKey = geometryKey;
+            if (diagnostic) view.__cardTableLayoutDiagnostic({ ...diagnostic, chosen: { ...chosen }, landmarkRail,
+                final: { width: pinGeometry?.width ?? width, height: pinGeometry?.height ?? height,
+                    marketWidth, marketHeight, ownerGeometry }, readingSeat: readingSeat?.playerIndex ?? null });
             onLayout();
         }
         function setReadingSeat(playerIndex, minScale = 0.9) {

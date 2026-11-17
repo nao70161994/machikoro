@@ -674,9 +674,9 @@ test('夕暮れのガイド設定は共通SVGアイコンでスマホとデス�
             diagnostics?.cleanup();
             return entries;
         }).catch(error => ({ unavailable: error.name }));
-        await testInfo.attach('guide-click-diagnostics', {
-            body: Buffer.from(JSON.stringify(diagnostics, null, 2)), contentType: 'application/json',
-        });
+        const diagnosticFile = testInfo.outputPath('guide-click-diagnostics.json');
+        await require('node:fs/promises').writeFile(diagnosticFile, JSON.stringify(diagnostics, null, 2));
+        await testInfo.attach('guide-click-diagnostics', { path: diagnosticFile, contentType: 'application/json' });
     }
 });
 

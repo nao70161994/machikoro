@@ -221,7 +221,8 @@ test(`標準CPUの一括結果は7収支routeを手番内に完走する ${viewp
                     geometryRecorded = true;
                 }
                 const sampleEnd = performance.now();
-                if (trace.sampleTimings.length < 200) {
+                {
+                    if (trace.sampleTimings.length === 200) trace.sampleTimings.shift();
                     trace.sampleTimings.push({ startedMs: sampleStart - trace.startedAt,
                         endedMs: sampleEnd - trace.startedAt, intervalMs,
                         durationMs: sampleEnd - sampleStart, actorCount: actors.length, geometryRecorded });
