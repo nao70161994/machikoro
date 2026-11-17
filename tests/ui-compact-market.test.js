@@ -105,15 +105,17 @@ runTest('小型市場は状態を変更せず既存filter・Undo・補充状態�
     assert.ok(html.includes('山札3枚'));
     assert.ok(html.includes('compact-market-refilled'));
     assert.ok(html.includes('残り3枚 · 補充'));
-    assert.ok(html.includes('data-short-stock="残3"'));
+    assert.ok(html.includes('data-short-stock="残3 · 補充"'));
     assert.ok(!html.includes('class="card-btn'));
-    assert.ok(html.includes('<details class="compact-market-filter-disclosure"><summary>絞込：全て</summary>'));
+    assert.ok(/<details class="compact-market-filter-disclosure"><summary[^>]*>絞込：全3種<\/summary>/.test(html));
     assert.ok(html.includes('<details class="compact-market-goal-disclosure"><summary>目標</summary>'));
 });
 
 runTest('市場の絞込disclosureは現在の正本filterを短いラベルで示す', () => {
-    for (const [cardFilter, label] of [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫'], ['affordable', '建設可']]) {
-        assert.ok(UiCompactMarket.buildHtml(fixture({ cardFilter })).includes(`<summary>絞込：${label}</summary>`));
+    for (const [cardFilter, label] of [['', '全3種'], ['blue', '青 1/3種'], ['green', '緑 1/3種'], ['red', '赤 0/3種'], ['purple', '紫 1/3種'], ['affordable', '建設可 2/3種']]) {
+        const html = UiCompactMarket.buildHtml(fixture({ cardFilter }));
+        assert.ok(html.includes(`>絞込：${label}</summary>`));
+        assert.ok(html.includes(`aria-label="絞込：${label}。在庫のある施設3種のうち`));
     }
     assert.ok(!UiCompactMarket.buildHtml(fixture()).includes('compact-market-goal-disclosure" open'));
 });
@@ -140,15 +142,32 @@ runTest('建設できない間も建設可フィルタで市場一覧と無効�
 
 runTest('市場の金額は収益ではなく建設価格と視覚的にも明示する', () => {
     const html = UiCompactMarket.buildFacilitiesHtml(fixture());
-    assert.ok(html.includes('class="compact-market-price-full">建設2コイン'));
+    assert.ok(html.includes('class="compact-market-price-cost">建設2コイン</span>'));
     assert.ok(html.includes('建設7コイン'));
     assert.ok(!html.includes('class="compact-market-price-full">2コイン'));
     assert.ok(html.includes('<span>不足4コ</span><span>建設7コ</span>'));
     const owned = UiCompactMarket.buildFacilitiesHtml(fixture({ current: {
         coins: 30, countCardIncludingDormant: () => 1 } }));
-    assert.ok(owned.includes('所有済み・建設7コイン'));
+    assert.ok(owned.replace(/<[^>]*>/g, '').includes('所有済み・建設7コイン'));
     const landmarks = UiCompactMarket.buildLandmarksHtml(fixture());
     assert.ok(landmarks.includes('不足1コイン・建設4コイン'));
     assert.ok(landmarks.includes('class="compact-market-price-full">建設済'));
     assert.ok(UiCompactMarket.buildLandmarksHtml(fixture({ currentCoins: 4 })).includes('class="compact-market-price-full">建設4コイン'));
+});
+
+runTest('市場の種類数は有効セット内の在庫ありだけを数え山札と目標を含めない', () => {
+    const options = fixture({ enabledCards: new Set(['<麦畑>', 'カフェ']), cardFilter: 'green',
+        marketStatusHtml: '<section>10種類市場・山札20枚</section>' });
+    const before = JSON.stringify({ stock: options.shopStock, cards: options.cards });
+    const html = UiCompactMarket.buildHtml(options);
+    assert.ok(html.includes('>絞込：緑 0/1種</summary>'));
+    assert.ok(html.includes('在庫のある施設1種のうち0種を一覧に表示。売切れ・対象外の施設とランドマークは含みません'));
+    assert.ok(html.includes('10種類市場・山札20枚'));
+    assert.ok(html.includes('data-landmark-name="駅"'));
+    assert.strictEqual(JSON.stringify({ stock: options.shopStock, cards: options.cards }), before);
+    const empty = UiCompactMarket.buildHtml(fixture({ shopStock: {} }));
+    assert.ok(empty.includes('>絞込：全0種</summary>'));
+    const browse = UiCompactMarket.buildHtml(fixture({ cardFilter: 'affordable', canBuildCardAction: false }));
+    assert.ok(browse.includes('>絞込：全3種</summary>'));
+    assert.ok(browse.includes('今は全施設を表示 · 建設時に購入可能な施設へ絞ります'));
 });

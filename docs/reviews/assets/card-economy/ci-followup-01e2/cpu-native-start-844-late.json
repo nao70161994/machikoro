@@ -1,0 +1,3052 @@
+{
+  "startedAt": 1999,
+  "initialTurn": 0,
+  "initialActor": 0,
+  "cpuSpeed": 1500,
+  "cpuDifficulties": [
+    "weak",
+    "weak",
+    "weak",
+    "weak"
+  ],
+  "events": [
+    {
+      "kind": "resolved-roll",
+      "at": 4785,
+      "phase": "build",
+      "dice": 3
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4858,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4859,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4859,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4859,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 3,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4859,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4859,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-created",
+      "at": 4859,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●",
+      "delay": 0,
+      "duration": 600,
+      "startTime": null,
+      "documentTime": 6784
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "3",
+      "name": "カフェ",
+      "step": "0",
+      "route": "街1 → 街4",
+      "from": "0",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "2",
+      "name": "カフェ",
+      "step": "1",
+      "route": "街1 → 街3",
+      "from": "0",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "1",
+      "name": "カフェ",
+      "step": "2",
+      "route": "街1 → 街2",
+      "from": "0",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "カフェ"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "0",
+      "name": "コーン畑・パン屋",
+      "step": "3",
+      "route": "銀行 → 街1",
+      "from": "null",
+      "to": "0",
+      "amount": 3,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑",
+        "パン屋"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "1",
+      "name": "コーン畑",
+      "step": "4",
+      "route": "銀行 → 街2",
+      "from": "null",
+      "to": "1",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "2",
+      "name": "コーン畑",
+      "step": "5",
+      "route": "銀行 → 街3",
+      "from": "null",
+      "to": "2",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-finished",
+      "at": 5508,
+      "owner": "3",
+      "name": "コーン畑",
+      "step": "6",
+      "route": "銀行 → 街4",
+      "from": "null",
+      "to": "3",
+      "amount": 1,
+      "mode": "parallel",
+      "routeLabelDisplay": "none",
+      "subjects": [
+        "コーン畑"
+      ],
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "カフェ",
+      "owner": "3",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "カフェ",
+      "owner": "2",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "カフェ",
+      "owner": "1",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "コーン畑・パン屋",
+      "owner": "0",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "コーン畑",
+      "owner": "1",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "コーン畑",
+      "owner": "2",
+      "text": "●"
+    },
+    {
+      "kind": "transfer-removed",
+      "at": 6643,
+      "name": "コーン畑",
+      "owner": "3",
+      "text": "●"
+    },
+    {
+      "kind": "turn-change",
+      "at": 10185,
+      "turn": 1,
+      "actor": 1
+    }
+  ],
+  "geometry": [
+    {
+      "at": 5080,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 510.92083740234375,
+            "y": 201.75970458984375,
+            "width": 16,
+            "height": 16,
+            "top": 201.75970458984375,
+            "right": 526.9208374023438,
+            "bottom": 217.75970458984375,
+            "left": 510.92083740234375
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 411.7709655761719,
+            "y": 199.89999389648438,
+            "width": 16,
+            "height": 16,
+            "top": 199.89999389648438,
+            "right": 427.7709655761719,
+            "bottom": 215.89999389648438,
+            "left": 411.7709655761719
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 292.1782531738281,
+            "y": 275.0777893066406,
+            "width": 16,
+            "height": 16,
+            "top": 275.0777893066406,
+            "right": 308.1782531738281,
+            "bottom": 291.0777893066406,
+            "left": 292.1782531738281
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 403.7785949707031,
+            "y": 230.0187530517578,
+            "width": 16,
+            "height": 16,
+            "top": 230.0187530517578,
+            "right": 419.7785949707031,
+            "bottom": 246.0187530517578,
+            "left": 403.7785949707031
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 304.62872314453125,
+            "y": 228.15902709960938,
+            "width": 16,
+            "height": 16,
+            "top": 228.15902709960938,
+            "right": 320.62872314453125,
+            "bottom": 244.15902709960938,
+            "left": 304.62872314453125
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 424.2214050292969,
+            "y": 152.9812469482422,
+            "width": 16,
+            "height": 16,
+            "top": 152.9812469482422,
+            "right": 440.2214050292969,
+            "bottom": 168.9812469482422,
+            "left": 424.2214050292969
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 288,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 523.3712768554688,
+            "y": 154.84097290039062,
+            "width": 16,
+            "height": 16,
+            "top": 154.84097290039062,
+            "right": 539.3712768554688,
+            "bottom": 170.84097290039062,
+            "left": 523.3712768554688
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": 0,
+          "text": "0",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 397.71875,
+            "y": 294.9375,
+            "width": 36,
+            "height": 26,
+            "top": 294.9375,
+            "right": 433.71875,
+            "bottom": 320.9375,
+            "left": 397.71875
+          },
+          "aria": "街1の直近に解決した収支、0コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 722.59375,
+            "y": 82.1875,
+            "width": 36,
+            "height": 26,
+            "top": 82.1875,
+            "right": 758.59375,
+            "bottom": 108.1875,
+            "left": 722.59375
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 412,
+            "y": 68,
+            "width": 36,
+            "height": 26,
+            "top": 68,
+            "right": 448,
+            "bottom": 94,
+            "left": 412
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 172,
+            "y": 296,
+            "width": 36,
+            "height": 26,
+            "top": 296,
+            "right": 208,
+            "bottom": 322,
+            "left": 172
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    },
+    {
+      "at": 5300,
+      "actors": [
+        {
+          "from": "0",
+          "to": "3",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 656.59375,
+            "y": 110.1875,
+            "width": 16,
+            "height": 16,
+            "top": 110.1875,
+            "right": 672.59375,
+            "bottom": 126.1875,
+            "left": 656.59375
+          }
+        },
+        {
+          "from": "0",
+          "to": "2",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 436.671875,
+            "y": 106.0625,
+            "width": 16,
+            "height": 16,
+            "top": 106.0625,
+            "right": 452.671875,
+            "bottom": 122.0625,
+            "left": 436.671875
+          }
+        },
+        {
+          "from": "0",
+          "to": "1",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 171.40625,
+            "y": 272.8125,
+            "width": 16,
+            "height": 16,
+            "top": 272.8125,
+            "right": 187.40625,
+            "bottom": 288.8125,
+            "left": 171.40625
+          }
+        },
+        {
+          "from": "null",
+          "to": "0",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 391.328125,
+            "y": 276.9375,
+            "width": 16,
+            "height": 16,
+            "top": 276.9375,
+            "right": 407.328125,
+            "bottom": 292.9375,
+            "left": 391.328125
+          }
+        },
+        {
+          "from": "null",
+          "to": "1",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 171.40625,
+            "y": 272.8125,
+            "width": 16,
+            "height": 16,
+            "top": 272.8125,
+            "right": 187.40625,
+            "bottom": 288.8125,
+            "left": 171.40625
+          }
+        },
+        {
+          "from": "null",
+          "to": "2",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 436.671875,
+            "y": 106.0625,
+            "width": 16,
+            "height": 16,
+            "top": 106.0625,
+            "right": 452.671875,
+            "bottom": 122.0625,
+            "left": 436.671875
+          }
+        },
+        {
+          "from": "null",
+          "to": "3",
+          "time": 510,
+          "startTime": 6784,
+          "state": "running",
+          "opacity": 1,
+          "rect": {
+            "x": 656.59375,
+            "y": 110.1875,
+            "width": 16,
+            "height": 16,
+            "top": 110.1875,
+            "right": 672.59375,
+            "bottom": 126.1875,
+            "left": 656.59375
+          }
+        }
+      ],
+      "labelOverlaps": [],
+      "badges": [
+        {
+          "owner": 0,
+          "net": 0,
+          "text": "0",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 397.71875,
+            "y": 294.9375,
+            "width": 36,
+            "height": 26,
+            "top": 294.9375,
+            "right": 433.71875,
+            "bottom": 320.9375,
+            "left": 397.71875
+          },
+          "aria": "街1の直近に解決した収支、0コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 722.59375,
+            "y": 82.1875,
+            "width": 36,
+            "height": 26,
+            "top": 82.1875,
+            "right": 758.59375,
+            "bottom": 108.1875,
+            "left": 722.59375
+          },
+          "aria": "街4の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 412,
+            "y": 68,
+            "width": 36,
+            "height": 26,
+            "top": 68,
+            "right": 448,
+            "bottom": 94,
+            "left": 412
+          },
+          "aria": "街3の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "scrollWidth": 34,
+          "clientWidth": 34,
+          "rect": {
+            "x": 172,
+            "y": 296,
+            "width": 36,
+            "height": 26,
+            "top": 296,
+            "right": 208,
+            "bottom": 322,
+            "left": 172
+          },
+          "aria": "街2の直近に解決した収支、プラス2コイン",
+          "visible": true,
+          "textContained": true,
+          "insideClip": true
+        }
+      ],
+      "badgeOverlaps": [],
+      "badgeOwners": true,
+      "badgeStatus": "complete"
+    }
+  ],
+  "sampleTimings": [
+    {
+      "startedMs": 25,
+      "endedMs": 25,
+      "intervalMs": null,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 294,
+      "endedMs": 294,
+      "intervalMs": 269,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 1751,
+      "endedMs": 1751,
+      "intervalMs": 1457,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 1959,
+      "endedMs": 1959,
+      "intervalMs": 208,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 2631,
+      "endedMs": 2631,
+      "intervalMs": 672,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 2838,
+      "endedMs": 2838,
+      "intervalMs": 207,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 3035,
+      "endedMs": 3035,
+      "intervalMs": 197,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 3229,
+      "endedMs": 3229,
+      "intervalMs": 194,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 3430,
+      "endedMs": 3430,
+      "intervalMs": 201,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 3625,
+      "endedMs": 3625,
+      "intervalMs": 195,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 3816,
+      "endedMs": 3816,
+      "intervalMs": 191,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 4014,
+      "endedMs": 4014,
+      "intervalMs": 198,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 4209,
+      "endedMs": 4209,
+      "intervalMs": 195,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 4402,
+      "endedMs": 4402,
+      "intervalMs": 193,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 4785,
+      "endedMs": 4785,
+      "intervalMs": 383,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 5073,
+      "endedMs": 5080,
+      "intervalMs": 288,
+      "durationMs": 7,
+      "actorCount": 7,
+      "geometryRecorded": true
+    },
+    {
+      "startedMs": 5295,
+      "endedMs": 5300,
+      "intervalMs": 222,
+      "durationMs": 5,
+      "actorCount": 7,
+      "geometryRecorded": true
+    },
+    {
+      "startedMs": 5508,
+      "endedMs": 5510,
+      "intervalMs": 213,
+      "durationMs": 2,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 5710,
+      "endedMs": 5710,
+      "intervalMs": 202,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 5914,
+      "endedMs": 5915,
+      "intervalMs": 204,
+      "durationMs": 1,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 6115,
+      "endedMs": 6116,
+      "intervalMs": 201,
+      "durationMs": 1,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 6643,
+      "endedMs": 6643,
+      "intervalMs": 528,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 6972,
+      "endedMs": 6972,
+      "intervalMs": 329,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 7232,
+      "endedMs": 7232,
+      "intervalMs": 260,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 7506,
+      "endedMs": 7506,
+      "intervalMs": 274,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 7769,
+      "endedMs": 7769,
+      "intervalMs": 263,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 8031,
+      "endedMs": 8031,
+      "intervalMs": 262,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 8376,
+      "endedMs": 8376,
+      "intervalMs": 345,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 8737,
+      "endedMs": 8737,
+      "intervalMs": 361,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 8990,
+      "endedMs": 8990,
+      "intervalMs": 253,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 9248,
+      "endedMs": 9248,
+      "intervalMs": 258,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 9503,
+      "endedMs": 9503,
+      "intervalMs": 255,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    },
+    {
+      "startedMs": 9755,
+      "endedMs": 9755,
+      "intervalMs": 252,
+      "durationMs": 0,
+      "actorCount": 0,
+      "geometryRecorded": false
+    }
+  ],
+  "resolvedGroups": [
+    "街1/コーン畑",
+    "街1/パン屋",
+    "街2/カフェ",
+    "街2/コーン畑",
+    "街3/カフェ",
+    "街3/コーン畑",
+    "街4/カフェ",
+    "街4/コーン畑"
+  ],
+  "netBadgeInputs": [
+    [
+      {
+        "left": 4,
+        "right": 840,
+        "top": 68,
+        "bottom": 330
+      },
+      [
+        {
+          "owner": 0,
+          "net": 0,
+          "text": "0",
+          "anchor": {
+            "x": 345.328125,
+            "y": 294.9375,
+            "width": 44,
+            "height": 18,
+            "top": 294.9375,
+            "right": 389.328125,
+            "bottom": 312.9375,
+            "left": 345.328125
+          },
+          "width": 36
+        },
+        {
+          "owner": 3,
+          "net": 2,
+          "text": "+2",
+          "anchor": {
+            "x": 674.59375,
+            "y": 90.1875,
+            "width": 44,
+            "height": 18,
+            "top": 90.1875,
+            "right": 718.59375,
+            "bottom": 108.1875,
+            "left": 674.59375
+          },
+          "width": 36
+        },
+        {
+          "owner": 2,
+          "net": 2,
+          "text": "+2",
+          "anchor": {
+            "x": 454.671875,
+            "y": 86.0625,
+            "width": 44,
+            "height": 18,
+            "top": 86.0625,
+            "right": 498.671875,
+            "bottom": 104.0625,
+            "left": 454.671875
+          },
+          "width": 36
+        },
+        {
+          "owner": 1,
+          "net": 2,
+          "text": "+2",
+          "anchor": {
+            "x": 125.40625,
+            "y": 290.8125,
+            "width": 44,
+            "height": 18,
+            "top": 290.8125,
+            "right": 169.40625,
+            "bottom": 308.8125,
+            "left": 125.40625
+          },
+          "width": 36
+        }
+      ],
+      [
+        {
+          "x": 777.21875,
+          "y": 4,
+          "width": 62.78125,
+          "height": 44,
+          "top": 4,
+          "right": 840,
+          "bottom": 48,
+          "left": 777.21875
+        },
+        {
+          "x": 4,
+          "y": 4,
+          "width": 533.21875,
+          "height": 44,
+          "top": 4,
+          "right": 537.21875,
+          "bottom": 48,
+          "left": 4
+        },
+        {
+          "x": 330.895263671875,
+          "y": 168.29483032226562,
+          "width": 182.20947265625,
+          "height": 62.41033935546875,
+          "top": 168.29483032226562,
+          "right": 513.104736328125,
+          "bottom": 230.70516967773438,
+          "left": 330.895263671875
+        },
+        {
+          "x": 285.0738830566406,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 313.7682800292969,
+          "bottom": 267.4698791503906,
+          "left": 285.0738830566406
+        },
+        {
+          "x": 315.2030029296875,
+          "y": 243.4383087158203,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 343.8974304199219,
+          "bottom": 267.4698791503906,
+          "left": 315.2030029296875
+        },
+        {
+          "x": 345.3321228027344,
+          "y": 243.4383087158203,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 374.02655029296875,
+          "bottom": 267.4698791503906,
+          "left": 345.3321228027344
+        },
+        {
+          "x": 375.4612731933594,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 404.1556701660156,
+          "bottom": 267.4698791503906,
+          "left": 375.4612731933594
+        },
+        {
+          "x": 405.59039306640625,
+          "y": 242.91041564941406,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 242.91041564941406,
+          "right": 434.2847900390625,
+          "bottom": 266.9419860839844,
+          "left": 405.59039306640625
+        },
+        {
+          "x": 435.7195129394531,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 464.4139099121094,
+          "bottom": 267.4698791503906,
+          "left": 435.7195129394531
+        },
+        {
+          "x": 465.8486328125,
+          "y": 242.91041564941406,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 242.91041564941406,
+          "right": 494.54302978515625,
+          "bottom": 266.9419860839844,
+          "left": 465.8486328125
+        },
+        {
+          "x": 495.9777526855469,
+          "y": 243.4383087158203,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 524.6721801757812,
+          "bottom": 267.4698791503906,
+          "left": 495.9777526855469
+        },
+        {
+          "x": 526.1068725585938,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 554.80126953125,
+          "bottom": 267.4698791503906,
+          "left": 526.1068725585938
+        },
+        {
+          "x": 556.2360229492188,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 584.930419921875,
+          "bottom": 267.4698791503906,
+          "left": 556.2360229492188
+        },
+        {
+          "x": 586.3651123046875,
+          "y": 243.4383087158203,
+          "width": 28.6944580078125,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 615.0595703125,
+          "bottom": 267.4698791503906,
+          "left": 586.3651123046875
+        },
+        {
+          "x": 616.4942626953125,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 645.1886596679688,
+          "bottom": 267.4698791503906,
+          "left": 616.4942626953125
+        },
+        {
+          "x": 646.6234130859375,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 675.3178100585938,
+          "bottom": 267.4698791503906,
+          "left": 646.6234130859375
+        },
+        {
+          "x": 676.7525024414062,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 705.4468994140625,
+          "bottom": 267.4698791503906,
+          "left": 676.7525024414062
+        },
+        {
+          "x": 706.8816528320312,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 735.5760498046875,
+          "bottom": 267.4698791503906,
+          "left": 706.8816528320312
+        },
+        {
+          "x": 737.0107421875,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 765.7051391601562,
+          "bottom": 267.4698791503906,
+          "left": 737.0107421875
+        },
+        {
+          "x": 767.139892578125,
+          "y": 243.4383087158203,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 795.8342895507812,
+          "bottom": 267.4698791503906,
+          "left": 767.139892578125
+        },
+        {
+          "x": 797.2689819335938,
+          "y": 243.4383087158203,
+          "width": 28.6944580078125,
+          "height": 24.031570434570312,
+          "top": 243.4383087158203,
+          "right": 825.9634399414062,
+          "bottom": 267.4698791503906,
+          "left": 797.2689819335938
+        },
+        {
+          "x": 285.0738830566406,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 313.7682800292969,
+          "bottom": 292.9361572265625,
+          "left": 285.0738830566406
+        },
+        {
+          "x": 315.2030029296875,
+          "y": 268.90460205078125,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 343.8974304199219,
+          "bottom": 292.9361572265625,
+          "left": 315.2030029296875
+        },
+        {
+          "x": 345.3321228027344,
+          "y": 268.90460205078125,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 374.02655029296875,
+          "bottom": 292.9361572265625,
+          "left": 345.3321228027344
+        },
+        {
+          "x": 375.4612731933594,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 404.1556701660156,
+          "bottom": 292.9361572265625,
+          "left": 375.4612731933594
+        },
+        {
+          "x": 405.59039306640625,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 434.2847900390625,
+          "bottom": 292.9361572265625,
+          "left": 405.59039306640625
+        },
+        {
+          "x": 435.7195129394531,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 464.4139099121094,
+          "bottom": 292.9361572265625,
+          "left": 435.7195129394531
+        },
+        {
+          "x": 465.8486328125,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 494.54302978515625,
+          "bottom": 292.9361572265625,
+          "left": 465.8486328125
+        },
+        {
+          "x": 495.9777526855469,
+          "y": 268.90460205078125,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 524.6721801757812,
+          "bottom": 292.9361572265625,
+          "left": 495.9777526855469
+        },
+        {
+          "x": 526.1068725585938,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 554.80126953125,
+          "bottom": 292.9361572265625,
+          "left": 526.1068725585938
+        },
+        {
+          "x": 556.2360229492188,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 584.930419921875,
+          "bottom": 292.9361572265625,
+          "left": 556.2360229492188
+        },
+        {
+          "x": 586.3651123046875,
+          "y": 268.90460205078125,
+          "width": 28.6944580078125,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 615.0595703125,
+          "bottom": 292.9361572265625,
+          "left": 586.3651123046875
+        },
+        {
+          "x": 616.4942626953125,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 645.1886596679688,
+          "bottom": 292.9361572265625,
+          "left": 616.4942626953125
+        },
+        {
+          "x": 646.6234130859375,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 675.3178100585938,
+          "bottom": 292.9361572265625,
+          "left": 646.6234130859375
+        },
+        {
+          "x": 676.7525024414062,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 705.4468994140625,
+          "bottom": 292.9361572265625,
+          "left": 676.7525024414062
+        },
+        {
+          "x": 706.8816528320312,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 735.5760498046875,
+          "bottom": 292.9361572265625,
+          "left": 706.8816528320312
+        },
+        {
+          "x": 737.0107421875,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 765.7051391601562,
+          "bottom": 292.9361572265625,
+          "left": 737.0107421875
+        },
+        {
+          "x": 767.139892578125,
+          "y": 268.90460205078125,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 795.8342895507812,
+          "bottom": 292.9361572265625,
+          "left": 767.139892578125
+        },
+        {
+          "x": 797.2689819335938,
+          "y": 268.90460205078125,
+          "width": 28.6944580078125,
+          "height": 24.03155517578125,
+          "top": 268.90460205078125,
+          "right": 825.9634399414062,
+          "bottom": 292.9361572265625,
+          "left": 797.2689819335938
+        },
+        {
+          "x": 285.0738830566406,
+          "y": 294.3708801269531,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 294.3708801269531,
+          "right": 313.7682800292969,
+          "bottom": 318.4024353027344,
+          "left": 285.0738830566406
+        },
+        {
+          "x": 315.2030029296875,
+          "y": 294.3708801269531,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 294.3708801269531,
+          "right": 343.8974304199219,
+          "bottom": 318.4024353027344,
+          "left": 315.2030029296875
+        },
+        {
+          "x": 247.23313903808594,
+          "y": 169.72955322265625,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 271.26470947265625,
+          "bottom": 198.42396545410156,
+          "left": 247.23313903808594
+        },
+        {
+          "x": 247.23313903808594,
+          "y": 199.85867309570312,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 271.26470947265625,
+          "bottom": 228.55308532714844,
+          "left": 247.23313903808594
+        },
+        {
+          "x": 247.23313903808594,
+          "y": 229.98780822753906,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 271.26470947265625,
+          "bottom": 258.6822204589844,
+          "left": 247.23313903808594
+        },
+        {
+          "x": 247.23313903808594,
+          "y": 260.116943359375,
+          "width": 24.031570434570312,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 271.26470947265625,
+          "bottom": 288.81134033203125,
+          "left": 247.23313903808594
+        },
+        {
+          "x": 221.76686096191406,
+          "y": 169.72955322265625,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 245.7984161376953,
+          "bottom": 198.42396545410156,
+          "left": 221.76686096191406
+        },
+        {
+          "x": 222.2947540283203,
+          "y": 199.85867309570312,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 246.32630920410156,
+          "bottom": 228.55308532714844,
+          "left": 222.2947540283203
+        },
+        {
+          "x": 222.2947540283203,
+          "y": 229.98780822753906,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 246.32630920410156,
+          "bottom": 258.6822204589844,
+          "left": 222.2947540283203
+        },
+        {
+          "x": 221.76686096191406,
+          "y": 260.116943359375,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 245.7984161376953,
+          "bottom": 288.81134033203125,
+          "left": 221.76686096191406
+        },
+        {
+          "x": 196.30056762695312,
+          "y": 169.72955322265625,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 220.33213806152344,
+          "bottom": 198.42396545410156,
+          "left": 196.30056762695312
+        },
+        {
+          "x": 196.30056762695312,
+          "y": 199.85867309570312,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 220.33213806152344,
+          "bottom": 228.55308532714844,
+          "left": 196.30056762695312
+        },
+        {
+          "x": 196.30056762695312,
+          "y": 229.98780822753906,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 220.33213806152344,
+          "bottom": 258.6822204589844,
+          "left": 196.30056762695312
+        },
+        {
+          "x": 196.30056762695312,
+          "y": 260.116943359375,
+          "width": 24.031570434570312,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 220.33213806152344,
+          "bottom": 288.81134033203125,
+          "left": 196.30056762695312
+        },
+        {
+          "x": 170.83428955078125,
+          "y": 169.72955322265625,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 194.86585998535156,
+          "bottom": 198.42396545410156,
+          "left": 170.83428955078125
+        },
+        {
+          "x": 170.83428955078125,
+          "y": 199.85867309570312,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 194.86585998535156,
+          "bottom": 228.55308532714844,
+          "left": 170.83428955078125
+        },
+        {
+          "x": 170.83428955078125,
+          "y": 229.98780822753906,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 194.86585998535156,
+          "bottom": 258.6822204589844,
+          "left": 170.83428955078125
+        },
+        {
+          "x": 170.83428955078125,
+          "y": 260.116943359375,
+          "width": 24.031570434570312,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 194.86585998535156,
+          "bottom": 288.81134033203125,
+          "left": 170.83428955078125
+        },
+        {
+          "x": 145.36801147460938,
+          "y": 169.72955322265625,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 169.39956665039062,
+          "bottom": 198.42396545410156,
+          "left": 145.36801147460938
+        },
+        {
+          "x": 145.36801147460938,
+          "y": 199.85867309570312,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 169.39956665039062,
+          "bottom": 228.55308532714844,
+          "left": 145.36801147460938
+        },
+        {
+          "x": 145.36801147460938,
+          "y": 229.98780822753906,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 169.39956665039062,
+          "bottom": 258.6822204589844,
+          "left": 145.36801147460938
+        },
+        {
+          "x": 145.36801147460938,
+          "y": 260.116943359375,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 169.39956665039062,
+          "bottom": 288.81134033203125,
+          "left": 145.36801147460938
+        },
+        {
+          "x": 119.90171813964844,
+          "y": 169.72955322265625,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 143.93328857421875,
+          "bottom": 198.42396545410156,
+          "left": 119.90171813964844
+        },
+        {
+          "x": 119.90171813964844,
+          "y": 199.85867309570312,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 143.93328857421875,
+          "bottom": 228.55308532714844,
+          "left": 119.90171813964844
+        },
+        {
+          "x": 119.90171813964844,
+          "y": 229.98780822753906,
+          "width": 24.031570434570312,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 143.93328857421875,
+          "bottom": 258.6822204589844,
+          "left": 119.90171813964844
+        },
+        {
+          "x": 119.90171813964844,
+          "y": 260.116943359375,
+          "width": 24.031570434570312,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 143.93328857421875,
+          "bottom": 288.81134033203125,
+          "left": 119.90171813964844
+        },
+        {
+          "x": 94.43544006347656,
+          "y": 169.72955322265625,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 118.46700286865234,
+          "bottom": 198.42396545410156,
+          "left": 94.43544006347656
+        },
+        {
+          "x": 94.43544006347656,
+          "y": 199.85867309570312,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 118.46700286865234,
+          "bottom": 228.55308532714844,
+          "left": 94.43544006347656
+        },
+        {
+          "x": 94.43544006347656,
+          "y": 229.98780822753906,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 118.46700286865234,
+          "bottom": 258.6822204589844,
+          "left": 94.43544006347656
+        },
+        {
+          "x": 94.43544006347656,
+          "y": 260.116943359375,
+          "width": 24.03156280517578,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 118.46700286865234,
+          "bottom": 288.81134033203125,
+          "left": 94.43544006347656
+        },
+        {
+          "x": 68.96915435791016,
+          "y": 169.72955322265625,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 93.00071716308594,
+          "bottom": 198.42396545410156,
+          "left": 68.96915435791016
+        },
+        {
+          "x": 68.96915435791016,
+          "y": 199.85867309570312,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 93.00071716308594,
+          "bottom": 228.55308532714844,
+          "left": 68.96915435791016
+        },
+        {
+          "x": 68.96915435791016,
+          "y": 229.98780822753906,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 93.00071716308594,
+          "bottom": 258.6822204589844,
+          "left": 68.96915435791016
+        },
+        {
+          "x": 68.96915435791016,
+          "y": 260.116943359375,
+          "width": 24.03156280517578,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 93.00071716308594,
+          "bottom": 288.81134033203125,
+          "left": 68.96915435791016
+        },
+        {
+          "x": 43.50286865234375,
+          "y": 169.72955322265625,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 67.53443145751953,
+          "bottom": 198.42396545410156,
+          "left": 43.50286865234375
+        },
+        {
+          "x": 43.50286865234375,
+          "y": 199.85867309570312,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 67.53443145751953,
+          "bottom": 228.55308532714844,
+          "left": 43.50286865234375
+        },
+        {
+          "x": 43.50286865234375,
+          "y": 229.98780822753906,
+          "width": 24.03156280517578,
+          "height": 28.694412231445312,
+          "top": 229.98780822753906,
+          "right": 67.53443145751953,
+          "bottom": 258.6822204589844,
+          "left": 43.50286865234375
+        },
+        {
+          "x": 43.50286865234375,
+          "y": 260.116943359375,
+          "width": 24.03156280517578,
+          "height": 28.69439697265625,
+          "top": 260.116943359375,
+          "right": 67.53443145751953,
+          "bottom": 288.81134033203125,
+          "left": 43.50286865234375
+        },
+        {
+          "x": 18.036584854125977,
+          "y": 169.72955322265625,
+          "width": 24.031564712524414,
+          "height": 28.694412231445312,
+          "top": 169.72955322265625,
+          "right": 42.06814956665039,
+          "bottom": 198.42396545410156,
+          "left": 18.036584854125977
+        },
+        {
+          "x": 18.036584854125977,
+          "y": 199.85867309570312,
+          "width": 24.031564712524414,
+          "height": 28.694412231445312,
+          "top": 199.85867309570312,
+          "right": 42.06814956665039,
+          "bottom": 228.55308532714844,
+          "left": 18.036584854125977
+        },
+        {
+          "x": 530.231689453125,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 558.9260864257812,
+          "bottom": 155.5616912841797,
+          "left": 530.231689453125
+        },
+        {
+          "x": 500.1025695800781,
+          "y": 131.53013610839844,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 528.7969970703125,
+          "bottom": 155.5616912841797,
+          "left": 500.1025695800781
+        },
+        {
+          "x": 469.97344970703125,
+          "y": 131.53013610839844,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 498.6678771972656,
+          "bottom": 155.5616912841797,
+          "left": 469.97344970703125
+        },
+        {
+          "x": 439.8443298339844,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 468.5387268066406,
+          "bottom": 155.5616912841797,
+          "left": 439.8443298339844
+        },
+        {
+          "x": 409.7152099609375,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 438.40960693359375,
+          "bottom": 155.5616912841797,
+          "left": 409.7152099609375
+        },
+        {
+          "x": 379.5860900878906,
+          "y": 132.05801391601562,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 132.05801391601562,
+          "right": 408.2804870605469,
+          "bottom": 156.08958435058594,
+          "left": 379.5860900878906
+        },
+        {
+          "x": 349.45697021484375,
+          "y": 132.05801391601562,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 132.05801391601562,
+          "right": 378.1513671875,
+          "bottom": 156.08958435058594,
+          "left": 349.45697021484375
+        },
+        {
+          "x": 319.32781982421875,
+          "y": 131.53013610839844,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 348.0222473144531,
+          "bottom": 155.5616912841797,
+          "left": 319.32781982421875
+        },
+        {
+          "x": 289.1986999511719,
+          "y": 131.53013610839844,
+          "width": 28.694427490234375,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 317.89312744140625,
+          "bottom": 155.5616912841797,
+          "left": 289.1986999511719
+        },
+        {
+          "x": 259.069580078125,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 287.76397705078125,
+          "bottom": 155.5616912841797,
+          "left": 259.069580078125
+        },
+        {
+          "x": 228.94046020507812,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 257.6348571777344,
+          "bottom": 155.5616912841797,
+          "left": 228.94046020507812
+        },
+        {
+          "x": 198.81134033203125,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 227.5057373046875,
+          "bottom": 155.5616912841797,
+          "left": 198.81134033203125
+        },
+        {
+          "x": 168.6822052001953,
+          "y": 131.53013610839844,
+          "width": 28.694412231445312,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 197.37661743164062,
+          "bottom": 155.5616912841797,
+          "left": 168.6822052001953
+        },
+        {
+          "x": 138.55308532714844,
+          "y": 131.53013610839844,
+          "width": 28.69439697265625,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 167.2474822998047,
+          "bottom": 155.5616912841797,
+          "left": 138.55308532714844
+        },
+        {
+          "x": 108.42395782470703,
+          "y": 131.53013610839844,
+          "width": 28.69440460205078,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 137.1183624267578,
+          "bottom": 155.5616912841797,
+          "left": 108.42395782470703
+        },
+        {
+          "x": 78.29483795166016,
+          "y": 131.53013610839844,
+          "width": 28.69440460205078,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 106.98924255371094,
+          "bottom": 155.5616912841797,
+          "left": 78.29483795166016
+        },
+        {
+          "x": 48.16571044921875,
+          "y": 131.53013610839844,
+          "width": 28.69440460205078,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 76.86011505126953,
+          "bottom": 155.5616912841797,
+          "left": 48.16571044921875
+        },
+        {
+          "x": 18.036584854125977,
+          "y": 131.53013610839844,
+          "width": 28.694406509399414,
+          "height": 24.03155517578125,
+          "top": 131.53013610839844,
+          "right": 46.73099136352539,
+          "bottom": 155.5616912841797,
+          "left": 18.036584854125977
+        },
+        {
+          "x": 530.231689453125,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 558.9260864257812,
+          "bottom": 130.0954132080078,
+          "left": 530.231689453125
+        },
+        {
+          "x": 500.1025695800781,
+          "y": 106.0638427734375,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 528.7969970703125,
+          "bottom": 130.0954132080078,
+          "left": 500.1025695800781
+        },
+        {
+          "x": 469.97344970703125,
+          "y": 106.0638427734375,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 498.6678771972656,
+          "bottom": 130.0954132080078,
+          "left": 469.97344970703125
+        },
+        {
+          "x": 439.8443298339844,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 468.5387268066406,
+          "bottom": 130.0954132080078,
+          "left": 439.8443298339844
+        },
+        {
+          "x": 409.7152099609375,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 438.40960693359375,
+          "bottom": 130.0954132080078,
+          "left": 409.7152099609375
+        },
+        {
+          "x": 379.5860900878906,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 408.2804870605469,
+          "bottom": 130.0954132080078,
+          "left": 379.5860900878906
+        },
+        {
+          "x": 349.45697021484375,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 378.1513671875,
+          "bottom": 130.0954132080078,
+          "left": 349.45697021484375
+        },
+        {
+          "x": 319.32781982421875,
+          "y": 106.0638427734375,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 348.0222473144531,
+          "bottom": 130.0954132080078,
+          "left": 319.32781982421875
+        },
+        {
+          "x": 289.1986999511719,
+          "y": 106.0638427734375,
+          "width": 28.694427490234375,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 317.89312744140625,
+          "bottom": 130.0954132080078,
+          "left": 289.1986999511719
+        },
+        {
+          "x": 259.069580078125,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 287.76397705078125,
+          "bottom": 130.0954132080078,
+          "left": 259.069580078125
+        },
+        {
+          "x": 228.94046020507812,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 257.6348571777344,
+          "bottom": 130.0954132080078,
+          "left": 228.94046020507812
+        },
+        {
+          "x": 198.81134033203125,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 227.5057373046875,
+          "bottom": 130.0954132080078,
+          "left": 198.81134033203125
+        },
+        {
+          "x": 168.6822052001953,
+          "y": 106.0638427734375,
+          "width": 28.694412231445312,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 197.37661743164062,
+          "bottom": 130.0954132080078,
+          "left": 168.6822052001953
+        },
+        {
+          "x": 138.55308532714844,
+          "y": 106.0638427734375,
+          "width": 28.69439697265625,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 167.2474822998047,
+          "bottom": 130.0954132080078,
+          "left": 138.55308532714844
+        },
+        {
+          "x": 108.42395782470703,
+          "y": 106.0638427734375,
+          "width": 28.69440460205078,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 137.1183624267578,
+          "bottom": 130.0954132080078,
+          "left": 108.42395782470703
+        },
+        {
+          "x": 78.29483795166016,
+          "y": 106.0638427734375,
+          "width": 28.69440460205078,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 106.98924255371094,
+          "bottom": 130.0954132080078,
+          "left": 78.29483795166016
+        },
+        {
+          "x": 48.16571044921875,
+          "y": 106.0638427734375,
+          "width": 28.69440460205078,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 76.86011505126953,
+          "bottom": 130.0954132080078,
+          "left": 48.16571044921875
+        },
+        {
+          "x": 18.036584854125977,
+          "y": 106.0638427734375,
+          "width": 28.694406509399414,
+          "height": 24.031570434570312,
+          "top": 106.0638427734375,
+          "right": 46.73099136352539,
+          "bottom": 130.0954132080078,
+          "left": 18.036584854125977
+        },
+        {
+          "x": 530.231689453125,
+          "y": 80.59756469726562,
+          "width": 28.69439697265625,
+          "height": 24.03156280517578,
+          "top": 80.59756469726562,
+          "right": 558.9260864257812,
+          "bottom": 104.6291275024414,
+          "left": 530.231689453125
+        },
+        {
+          "x": 500.1025695800781,
+          "y": 80.59756469726562,
+          "width": 28.694427490234375,
+          "height": 24.03156280517578,
+          "top": 80.59756469726562,
+          "right": 528.7969970703125,
+          "bottom": 104.6291275024414,
+          "left": 500.1025695800781
+        },
+        {
+          "x": 572.7352905273438,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 596.766845703125,
+          "bottom": 229.27044677734375,
+          "left": 572.7352905273438
+        },
+        {
+          "x": 572.7352905273438,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 596.766845703125,
+          "bottom": 199.14132690429688,
+          "left": 572.7352905273438
+        },
+        {
+          "x": 572.7352905273438,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 596.766845703125,
+          "bottom": 169.01219177246094,
+          "left": 572.7352905273438
+        },
+        {
+          "x": 572.7352905273438,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 596.766845703125,
+          "bottom": 138.88307189941406,
+          "left": 572.7352905273438
+        },
+        {
+          "x": 598.2015991210938,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 622.233154296875,
+          "bottom": 229.27044677734375,
+          "left": 598.2015991210938
+        },
+        {
+          "x": 597.6737060546875,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 621.7052612304688,
+          "bottom": 199.14132690429688,
+          "left": 597.6737060546875
+        },
+        {
+          "x": 597.6737060546875,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 621.7052612304688,
+          "bottom": 169.01219177246094,
+          "left": 597.6737060546875
+        },
+        {
+          "x": 598.2015991210938,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 622.233154296875,
+          "bottom": 138.88307189941406,
+          "left": 598.2015991210938
+        },
+        {
+          "x": 623.6678466796875,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 647.6994018554688,
+          "bottom": 229.27044677734375,
+          "left": 623.6678466796875
+        },
+        {
+          "x": 623.6678466796875,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 647.6994018554688,
+          "bottom": 199.14132690429688,
+          "left": 623.6678466796875
+        },
+        {
+          "x": 623.6678466796875,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 647.6994018554688,
+          "bottom": 169.01219177246094,
+          "left": 623.6678466796875
+        },
+        {
+          "x": 623.6678466796875,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 647.6994018554688,
+          "bottom": 138.88307189941406,
+          "left": 623.6678466796875
+        },
+        {
+          "x": 649.1341552734375,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 673.1657104492188,
+          "bottom": 229.27044677734375,
+          "left": 649.1341552734375
+        },
+        {
+          "x": 649.1341552734375,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 673.1657104492188,
+          "bottom": 199.14132690429688,
+          "left": 649.1341552734375
+        },
+        {
+          "x": 649.1341552734375,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 673.1657104492188,
+          "bottom": 169.01219177246094,
+          "left": 649.1341552734375
+        },
+        {
+          "x": 649.1341552734375,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 673.1657104492188,
+          "bottom": 138.88307189941406,
+          "left": 649.1341552734375
+        },
+        {
+          "x": 674.6004028320312,
+          "y": 200.57603454589844,
+          "width": 24.0316162109375,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 698.6320190429688,
+          "bottom": 229.27044677734375,
+          "left": 674.6004028320312
+        },
+        {
+          "x": 674.6004028320312,
+          "y": 170.44691467285156,
+          "width": 24.0316162109375,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 698.6320190429688,
+          "bottom": 199.14132690429688,
+          "left": 674.6004028320312
+        },
+        {
+          "x": 674.6004028320312,
+          "y": 140.3177947998047,
+          "width": 24.0316162109375,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 698.6320190429688,
+          "bottom": 169.01219177246094,
+          "left": 674.6004028320312
+        },
+        {
+          "x": 674.6004028320312,
+          "y": 110.18866729736328,
+          "width": 24.0316162109375,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 698.6320190429688,
+          "bottom": 138.88307189941406,
+          "left": 674.6004028320312
+        },
+        {
+          "x": 700.0667114257812,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 724.0982666015625,
+          "bottom": 229.27044677734375,
+          "left": 700.0667114257812
+        },
+        {
+          "x": 700.0667114257812,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 724.0982666015625,
+          "bottom": 199.14132690429688,
+          "left": 700.0667114257812
+        },
+        {
+          "x": 700.0667114257812,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 724.0982666015625,
+          "bottom": 169.01219177246094,
+          "left": 700.0667114257812
+        },
+        {
+          "x": 700.0667114257812,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 724.0982666015625,
+          "bottom": 138.88307189941406,
+          "left": 700.0667114257812
+        },
+        {
+          "x": 725.5330200195312,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 749.5645751953125,
+          "bottom": 229.27044677734375,
+          "left": 725.5330200195312
+        },
+        {
+          "x": 725.5330200195312,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 749.5645751953125,
+          "bottom": 199.14132690429688,
+          "left": 725.5330200195312
+        },
+        {
+          "x": 725.5330200195312,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 749.5645751953125,
+          "bottom": 169.01219177246094,
+          "left": 725.5330200195312
+        },
+        {
+          "x": 725.5330200195312,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 749.5645751953125,
+          "bottom": 138.88307189941406,
+          "left": 725.5330200195312
+        },
+        {
+          "x": 750.999267578125,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 775.0308227539062,
+          "bottom": 229.27044677734375,
+          "left": 750.999267578125
+        },
+        {
+          "x": 750.999267578125,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 775.0308227539062,
+          "bottom": 199.14132690429688,
+          "left": 750.999267578125
+        },
+        {
+          "x": 750.999267578125,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 775.0308227539062,
+          "bottom": 169.01219177246094,
+          "left": 750.999267578125
+        },
+        {
+          "x": 750.999267578125,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 775.0308227539062,
+          "bottom": 138.88307189941406,
+          "left": 750.999267578125
+        },
+        {
+          "x": 776.465576171875,
+          "y": 200.57603454589844,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 800.4971313476562,
+          "bottom": 229.27044677734375,
+          "left": 776.465576171875
+        },
+        {
+          "x": 776.465576171875,
+          "y": 170.44691467285156,
+          "width": 24.03155517578125,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 800.4971313476562,
+          "bottom": 199.14132690429688,
+          "left": 776.465576171875
+        },
+        {
+          "x": 776.465576171875,
+          "y": 140.3177947998047,
+          "width": 24.03155517578125,
+          "height": 28.69439697265625,
+          "top": 140.3177947998047,
+          "right": 800.4971313476562,
+          "bottom": 169.01219177246094,
+          "left": 776.465576171875
+        },
+        {
+          "x": 776.465576171875,
+          "y": 110.18866729736328,
+          "width": 24.03155517578125,
+          "height": 28.69440460205078,
+          "top": 110.18866729736328,
+          "right": 800.4971313476562,
+          "bottom": 138.88307189941406,
+          "left": 776.465576171875
+        },
+        {
+          "x": 801.9318237304688,
+          "y": 200.57603454589844,
+          "width": 24.0316162109375,
+          "height": 28.694412231445312,
+          "top": 200.57603454589844,
+          "right": 825.9634399414062,
+          "bottom": 229.27044677734375,
+          "left": 801.9318237304688
+        },
+        {
+          "x": 801.9318237304688,
+          "y": 170.44691467285156,
+          "width": 24.0316162109375,
+          "height": 28.694412231445312,
+          "top": 170.44691467285156,
+          "right": 825.9634399414062,
+          "bottom": 199.14132690429688,
+          "left": 801.9318237304688
+        },
+        {
+          "x": 345.328125,
+          "y": 294.9375,
+          "width": 44,
+          "height": 18,
+          "top": 294.9375,
+          "right": 389.328125,
+          "bottom": 312.9375,
+          "left": 345.328125
+        },
+        {
+          "x": 125.40625,
+          "y": 290.8125,
+          "width": 44,
+          "height": 18,
+          "top": 290.8125,
+          "right": 169.40625,
+          "bottom": 308.8125,
+          "left": 125.40625
+        },
+        {
+          "x": 454.671875,
+          "y": 86.0625,
+          "width": 44,
+          "height": 18,
+          "top": 86.0625,
+          "right": 498.671875,
+          "bottom": 104.0625,
+          "left": 454.671875
+        },
+        {
+          "x": 674.59375,
+          "y": 90.1875,
+          "width": 44,
+          "height": 18,
+          "top": 90.1875,
+          "right": 718.59375,
+          "bottom": 108.1875,
+          "left": 674.59375
+        },
+        {
+          "x": 541.21875,
+          "y": 4,
+          "width": 232,
+          "height": 44,
+          "top": 4,
+          "right": 773.21875,
+          "bottom": 48,
+          "left": 541.21875
+        },
+        {
+          "x": 8,
+          "y": 50,
+          "width": 828,
+          "height": 16,
+          "top": 50,
+          "right": 836,
+          "bottom": 66,
+          "left": 8
+        }
+      ]
+    ]
+  ],
+  "lastNetBadgeInput": "[{\"left\":4,\"right\":840,\"top\":68,\"bottom\":330},[{\"owner\":0,\"net\":0,\"text\":\"0\",\"anchor\":{\"x\":345.328125,\"y\":294.9375,\"width\":44,\"height\":18,\"top\":294.9375,\"right\":389.328125,\"bottom\":312.9375,\"left\":345.328125},\"width\":36},{\"owner\":3,\"net\":2,\"text\":\"+2\",\"anchor\":{\"x\":674.59375,\"y\":90.1875,\"width\":44,\"height\":18,\"top\":90.1875,\"right\":718.59375,\"bottom\":108.1875,\"left\":674.59375},\"width\":36},{\"owner\":2,\"net\":2,\"text\":\"+2\",\"anchor\":{\"x\":454.671875,\"y\":86.0625,\"width\":44,\"height\":18,\"top\":86.0625,\"right\":498.671875,\"bottom\":104.0625,\"left\":454.671875},\"width\":36},{\"owner\":1,\"net\":2,\"text\":\"+2\",\"anchor\":{\"x\":125.40625,\"y\":290.8125,\"width\":44,\"height\":18,\"top\":290.8125,\"right\":169.40625,\"bottom\":308.8125,\"left\":125.40625},\"width\":36}],[{\"x\":777.21875,\"y\":4,\"width\":62.78125,\"height\":44,\"top\":4,\"right\":840,\"bottom\":48,\"left\":777.21875},{\"x\":4,\"y\":4,\"width\":533.21875,\"height\":44,\"top\":4,\"right\":537.21875,\"bottom\":48,\"left\":4},{\"x\":330.895263671875,\"y\":168.29483032226562,\"width\":182.20947265625,\"height\":62.41033935546875,\"top\":168.29483032226562,\"right\":513.104736328125,\"bottom\":230.70516967773438,\"left\":330.895263671875},{\"x\":285.0738830566406,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":313.7682800292969,\"bottom\":267.4698791503906,\"left\":285.0738830566406},{\"x\":315.2030029296875,\"y\":243.4383087158203,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":343.8974304199219,\"bottom\":267.4698791503906,\"left\":315.2030029296875},{\"x\":345.3321228027344,\"y\":243.4383087158203,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":374.02655029296875,\"bottom\":267.4698791503906,\"left\":345.3321228027344},{\"x\":375.4612731933594,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":404.1556701660156,\"bottom\":267.4698791503906,\"left\":375.4612731933594},{\"x\":405.59039306640625,\"y\":242.91041564941406,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":242.91041564941406,\"right\":434.2847900390625,\"bottom\":266.9419860839844,\"left\":405.59039306640625},{\"x\":435.7195129394531,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":464.4139099121094,\"bottom\":267.4698791503906,\"left\":435.7195129394531},{\"x\":465.8486328125,\"y\":242.91041564941406,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":242.91041564941406,\"right\":494.54302978515625,\"bottom\":266.9419860839844,\"left\":465.8486328125},{\"x\":495.9777526855469,\"y\":243.4383087158203,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":524.6721801757812,\"bottom\":267.4698791503906,\"left\":495.9777526855469},{\"x\":526.1068725585938,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":554.80126953125,\"bottom\":267.4698791503906,\"left\":526.1068725585938},{\"x\":556.2360229492188,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":584.930419921875,\"bottom\":267.4698791503906,\"left\":556.2360229492188},{\"x\":586.3651123046875,\"y\":243.4383087158203,\"width\":28.6944580078125,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":615.0595703125,\"bottom\":267.4698791503906,\"left\":586.3651123046875},{\"x\":616.4942626953125,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":645.1886596679688,\"bottom\":267.4698791503906,\"left\":616.4942626953125},{\"x\":646.6234130859375,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":675.3178100585938,\"bottom\":267.4698791503906,\"left\":646.6234130859375},{\"x\":676.7525024414062,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":705.4468994140625,\"bottom\":267.4698791503906,\"left\":676.7525024414062},{\"x\":706.8816528320312,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":735.5760498046875,\"bottom\":267.4698791503906,\"left\":706.8816528320312},{\"x\":737.0107421875,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":765.7051391601562,\"bottom\":267.4698791503906,\"left\":737.0107421875},{\"x\":767.139892578125,\"y\":243.4383087158203,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":795.8342895507812,\"bottom\":267.4698791503906,\"left\":767.139892578125},{\"x\":797.2689819335938,\"y\":243.4383087158203,\"width\":28.6944580078125,\"height\":24.031570434570312,\"top\":243.4383087158203,\"right\":825.9634399414062,\"bottom\":267.4698791503906,\"left\":797.2689819335938},{\"x\":285.0738830566406,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":313.7682800292969,\"bottom\":292.9361572265625,\"left\":285.0738830566406},{\"x\":315.2030029296875,\"y\":268.90460205078125,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":343.8974304199219,\"bottom\":292.9361572265625,\"left\":315.2030029296875},{\"x\":345.3321228027344,\"y\":268.90460205078125,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":374.02655029296875,\"bottom\":292.9361572265625,\"left\":345.3321228027344},{\"x\":375.4612731933594,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":404.1556701660156,\"bottom\":292.9361572265625,\"left\":375.4612731933594},{\"x\":405.59039306640625,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":434.2847900390625,\"bottom\":292.9361572265625,\"left\":405.59039306640625},{\"x\":435.7195129394531,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":464.4139099121094,\"bottom\":292.9361572265625,\"left\":435.7195129394531},{\"x\":465.8486328125,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":494.54302978515625,\"bottom\":292.9361572265625,\"left\":465.8486328125},{\"x\":495.9777526855469,\"y\":268.90460205078125,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":524.6721801757812,\"bottom\":292.9361572265625,\"left\":495.9777526855469},{\"x\":526.1068725585938,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":554.80126953125,\"bottom\":292.9361572265625,\"left\":526.1068725585938},{\"x\":556.2360229492188,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":584.930419921875,\"bottom\":292.9361572265625,\"left\":556.2360229492188},{\"x\":586.3651123046875,\"y\":268.90460205078125,\"width\":28.6944580078125,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":615.0595703125,\"bottom\":292.9361572265625,\"left\":586.3651123046875},{\"x\":616.4942626953125,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":645.1886596679688,\"bottom\":292.9361572265625,\"left\":616.4942626953125},{\"x\":646.6234130859375,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":675.3178100585938,\"bottom\":292.9361572265625,\"left\":646.6234130859375},{\"x\":676.7525024414062,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":705.4468994140625,\"bottom\":292.9361572265625,\"left\":676.7525024414062},{\"x\":706.8816528320312,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":735.5760498046875,\"bottom\":292.9361572265625,\"left\":706.8816528320312},{\"x\":737.0107421875,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":765.7051391601562,\"bottom\":292.9361572265625,\"left\":737.0107421875},{\"x\":767.139892578125,\"y\":268.90460205078125,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":795.8342895507812,\"bottom\":292.9361572265625,\"left\":767.139892578125},{\"x\":797.2689819335938,\"y\":268.90460205078125,\"width\":28.6944580078125,\"height\":24.03155517578125,\"top\":268.90460205078125,\"right\":825.9634399414062,\"bottom\":292.9361572265625,\"left\":797.2689819335938},{\"x\":285.0738830566406,\"y\":294.3708801269531,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":294.3708801269531,\"right\":313.7682800292969,\"bottom\":318.4024353027344,\"left\":285.0738830566406},{\"x\":315.2030029296875,\"y\":294.3708801269531,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":294.3708801269531,\"right\":343.8974304199219,\"bottom\":318.4024353027344,\"left\":315.2030029296875},{\"x\":247.23313903808594,\"y\":169.72955322265625,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":271.26470947265625,\"bottom\":198.42396545410156,\"left\":247.23313903808594},{\"x\":247.23313903808594,\"y\":199.85867309570312,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":271.26470947265625,\"bottom\":228.55308532714844,\"left\":247.23313903808594},{\"x\":247.23313903808594,\"y\":229.98780822753906,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":271.26470947265625,\"bottom\":258.6822204589844,\"left\":247.23313903808594},{\"x\":247.23313903808594,\"y\":260.116943359375,\"width\":24.031570434570312,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":271.26470947265625,\"bottom\":288.81134033203125,\"left\":247.23313903808594},{\"x\":221.76686096191406,\"y\":169.72955322265625,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":245.7984161376953,\"bottom\":198.42396545410156,\"left\":221.76686096191406},{\"x\":222.2947540283203,\"y\":199.85867309570312,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":246.32630920410156,\"bottom\":228.55308532714844,\"left\":222.2947540283203},{\"x\":222.2947540283203,\"y\":229.98780822753906,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":246.32630920410156,\"bottom\":258.6822204589844,\"left\":222.2947540283203},{\"x\":221.76686096191406,\"y\":260.116943359375,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":245.7984161376953,\"bottom\":288.81134033203125,\"left\":221.76686096191406},{\"x\":196.30056762695312,\"y\":169.72955322265625,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":220.33213806152344,\"bottom\":198.42396545410156,\"left\":196.30056762695312},{\"x\":196.30056762695312,\"y\":199.85867309570312,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":220.33213806152344,\"bottom\":228.55308532714844,\"left\":196.30056762695312},{\"x\":196.30056762695312,\"y\":229.98780822753906,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":220.33213806152344,\"bottom\":258.6822204589844,\"left\":196.30056762695312},{\"x\":196.30056762695312,\"y\":260.116943359375,\"width\":24.031570434570312,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":220.33213806152344,\"bottom\":288.81134033203125,\"left\":196.30056762695312},{\"x\":170.83428955078125,\"y\":169.72955322265625,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":194.86585998535156,\"bottom\":198.42396545410156,\"left\":170.83428955078125},{\"x\":170.83428955078125,\"y\":199.85867309570312,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":194.86585998535156,\"bottom\":228.55308532714844,\"left\":170.83428955078125},{\"x\":170.83428955078125,\"y\":229.98780822753906,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":194.86585998535156,\"bottom\":258.6822204589844,\"left\":170.83428955078125},{\"x\":170.83428955078125,\"y\":260.116943359375,\"width\":24.031570434570312,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":194.86585998535156,\"bottom\":288.81134033203125,\"left\":170.83428955078125},{\"x\":145.36801147460938,\"y\":169.72955322265625,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":169.39956665039062,\"bottom\":198.42396545410156,\"left\":145.36801147460938},{\"x\":145.36801147460938,\"y\":199.85867309570312,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":169.39956665039062,\"bottom\":228.55308532714844,\"left\":145.36801147460938},{\"x\":145.36801147460938,\"y\":229.98780822753906,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":169.39956665039062,\"bottom\":258.6822204589844,\"left\":145.36801147460938},{\"x\":145.36801147460938,\"y\":260.116943359375,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":169.39956665039062,\"bottom\":288.81134033203125,\"left\":145.36801147460938},{\"x\":119.90171813964844,\"y\":169.72955322265625,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":143.93328857421875,\"bottom\":198.42396545410156,\"left\":119.90171813964844},{\"x\":119.90171813964844,\"y\":199.85867309570312,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":143.93328857421875,\"bottom\":228.55308532714844,\"left\":119.90171813964844},{\"x\":119.90171813964844,\"y\":229.98780822753906,\"width\":24.031570434570312,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":143.93328857421875,\"bottom\":258.6822204589844,\"left\":119.90171813964844},{\"x\":119.90171813964844,\"y\":260.116943359375,\"width\":24.031570434570312,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":143.93328857421875,\"bottom\":288.81134033203125,\"left\":119.90171813964844},{\"x\":94.43544006347656,\"y\":169.72955322265625,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":118.46700286865234,\"bottom\":198.42396545410156,\"left\":94.43544006347656},{\"x\":94.43544006347656,\"y\":199.85867309570312,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":118.46700286865234,\"bottom\":228.55308532714844,\"left\":94.43544006347656},{\"x\":94.43544006347656,\"y\":229.98780822753906,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":118.46700286865234,\"bottom\":258.6822204589844,\"left\":94.43544006347656},{\"x\":94.43544006347656,\"y\":260.116943359375,\"width\":24.03156280517578,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":118.46700286865234,\"bottom\":288.81134033203125,\"left\":94.43544006347656},{\"x\":68.96915435791016,\"y\":169.72955322265625,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":93.00071716308594,\"bottom\":198.42396545410156,\"left\":68.96915435791016},{\"x\":68.96915435791016,\"y\":199.85867309570312,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":93.00071716308594,\"bottom\":228.55308532714844,\"left\":68.96915435791016},{\"x\":68.96915435791016,\"y\":229.98780822753906,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":93.00071716308594,\"bottom\":258.6822204589844,\"left\":68.96915435791016},{\"x\":68.96915435791016,\"y\":260.116943359375,\"width\":24.03156280517578,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":93.00071716308594,\"bottom\":288.81134033203125,\"left\":68.96915435791016},{\"x\":43.50286865234375,\"y\":169.72955322265625,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":67.53443145751953,\"bottom\":198.42396545410156,\"left\":43.50286865234375},{\"x\":43.50286865234375,\"y\":199.85867309570312,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":67.53443145751953,\"bottom\":228.55308532714844,\"left\":43.50286865234375},{\"x\":43.50286865234375,\"y\":229.98780822753906,\"width\":24.03156280517578,\"height\":28.694412231445312,\"top\":229.98780822753906,\"right\":67.53443145751953,\"bottom\":258.6822204589844,\"left\":43.50286865234375},{\"x\":43.50286865234375,\"y\":260.116943359375,\"width\":24.03156280517578,\"height\":28.69439697265625,\"top\":260.116943359375,\"right\":67.53443145751953,\"bottom\":288.81134033203125,\"left\":43.50286865234375},{\"x\":18.036584854125977,\"y\":169.72955322265625,\"width\":24.031564712524414,\"height\":28.694412231445312,\"top\":169.72955322265625,\"right\":42.06814956665039,\"bottom\":198.42396545410156,\"left\":18.036584854125977},{\"x\":18.036584854125977,\"y\":199.85867309570312,\"width\":24.031564712524414,\"height\":28.694412231445312,\"top\":199.85867309570312,\"right\":42.06814956665039,\"bottom\":228.55308532714844,\"left\":18.036584854125977},{\"x\":530.231689453125,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":558.9260864257812,\"bottom\":155.5616912841797,\"left\":530.231689453125},{\"x\":500.1025695800781,\"y\":131.53013610839844,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":528.7969970703125,\"bottom\":155.5616912841797,\"left\":500.1025695800781},{\"x\":469.97344970703125,\"y\":131.53013610839844,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":498.6678771972656,\"bottom\":155.5616912841797,\"left\":469.97344970703125},{\"x\":439.8443298339844,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":468.5387268066406,\"bottom\":155.5616912841797,\"left\":439.8443298339844},{\"x\":409.7152099609375,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":438.40960693359375,\"bottom\":155.5616912841797,\"left\":409.7152099609375},{\"x\":379.5860900878906,\"y\":132.05801391601562,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":132.05801391601562,\"right\":408.2804870605469,\"bottom\":156.08958435058594,\"left\":379.5860900878906},{\"x\":349.45697021484375,\"y\":132.05801391601562,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":132.05801391601562,\"right\":378.1513671875,\"bottom\":156.08958435058594,\"left\":349.45697021484375},{\"x\":319.32781982421875,\"y\":131.53013610839844,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":348.0222473144531,\"bottom\":155.5616912841797,\"left\":319.32781982421875},{\"x\":289.1986999511719,\"y\":131.53013610839844,\"width\":28.694427490234375,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":317.89312744140625,\"bottom\":155.5616912841797,\"left\":289.1986999511719},{\"x\":259.069580078125,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":287.76397705078125,\"bottom\":155.5616912841797,\"left\":259.069580078125},{\"x\":228.94046020507812,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":257.6348571777344,\"bottom\":155.5616912841797,\"left\":228.94046020507812},{\"x\":198.81134033203125,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":227.5057373046875,\"bottom\":155.5616912841797,\"left\":198.81134033203125},{\"x\":168.6822052001953,\"y\":131.53013610839844,\"width\":28.694412231445312,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":197.37661743164062,\"bottom\":155.5616912841797,\"left\":168.6822052001953},{\"x\":138.55308532714844,\"y\":131.53013610839844,\"width\":28.69439697265625,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":167.2474822998047,\"bottom\":155.5616912841797,\"left\":138.55308532714844},{\"x\":108.42395782470703,\"y\":131.53013610839844,\"width\":28.69440460205078,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":137.1183624267578,\"bottom\":155.5616912841797,\"left\":108.42395782470703},{\"x\":78.29483795166016,\"y\":131.53013610839844,\"width\":28.69440460205078,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":106.98924255371094,\"bottom\":155.5616912841797,\"left\":78.29483795166016},{\"x\":48.16571044921875,\"y\":131.53013610839844,\"width\":28.69440460205078,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":76.86011505126953,\"bottom\":155.5616912841797,\"left\":48.16571044921875},{\"x\":18.036584854125977,\"y\":131.53013610839844,\"width\":28.694406509399414,\"height\":24.03155517578125,\"top\":131.53013610839844,\"right\":46.73099136352539,\"bottom\":155.5616912841797,\"left\":18.036584854125977},{\"x\":530.231689453125,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":558.9260864257812,\"bottom\":130.0954132080078,\"left\":530.231689453125},{\"x\":500.1025695800781,\"y\":106.0638427734375,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":528.7969970703125,\"bottom\":130.0954132080078,\"left\":500.1025695800781},{\"x\":469.97344970703125,\"y\":106.0638427734375,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":498.6678771972656,\"bottom\":130.0954132080078,\"left\":469.97344970703125},{\"x\":439.8443298339844,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":468.5387268066406,\"bottom\":130.0954132080078,\"left\":439.8443298339844},{\"x\":409.7152099609375,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":438.40960693359375,\"bottom\":130.0954132080078,\"left\":409.7152099609375},{\"x\":379.5860900878906,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":408.2804870605469,\"bottom\":130.0954132080078,\"left\":379.5860900878906},{\"x\":349.45697021484375,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":378.1513671875,\"bottom\":130.0954132080078,\"left\":349.45697021484375},{\"x\":319.32781982421875,\"y\":106.0638427734375,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":348.0222473144531,\"bottom\":130.0954132080078,\"left\":319.32781982421875},{\"x\":289.1986999511719,\"y\":106.0638427734375,\"width\":28.694427490234375,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":317.89312744140625,\"bottom\":130.0954132080078,\"left\":289.1986999511719},{\"x\":259.069580078125,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":287.76397705078125,\"bottom\":130.0954132080078,\"left\":259.069580078125},{\"x\":228.94046020507812,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":257.6348571777344,\"bottom\":130.0954132080078,\"left\":228.94046020507812},{\"x\":198.81134033203125,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":227.5057373046875,\"bottom\":130.0954132080078,\"left\":198.81134033203125},{\"x\":168.6822052001953,\"y\":106.0638427734375,\"width\":28.694412231445312,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":197.37661743164062,\"bottom\":130.0954132080078,\"left\":168.6822052001953},{\"x\":138.55308532714844,\"y\":106.0638427734375,\"width\":28.69439697265625,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":167.2474822998047,\"bottom\":130.0954132080078,\"left\":138.55308532714844},{\"x\":108.42395782470703,\"y\":106.0638427734375,\"width\":28.69440460205078,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":137.1183624267578,\"bottom\":130.0954132080078,\"left\":108.42395782470703},{\"x\":78.29483795166016,\"y\":106.0638427734375,\"width\":28.69440460205078,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":106.98924255371094,\"bottom\":130.0954132080078,\"left\":78.29483795166016},{\"x\":48.16571044921875,\"y\":106.0638427734375,\"width\":28.69440460205078,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":76.86011505126953,\"bottom\":130.0954132080078,\"left\":48.16571044921875},{\"x\":18.036584854125977,\"y\":106.0638427734375,\"width\":28.694406509399414,\"height\":24.031570434570312,\"top\":106.0638427734375,\"right\":46.73099136352539,\"bottom\":130.0954132080078,\"left\":18.036584854125977},{\"x\":530.231689453125,\"y\":80.59756469726562,\"width\":28.69439697265625,\"height\":24.03156280517578,\"top\":80.59756469726562,\"right\":558.9260864257812,\"bottom\":104.6291275024414,\"left\":530.231689453125},{\"x\":500.1025695800781,\"y\":80.59756469726562,\"width\":28.694427490234375,\"height\":24.03156280517578,\"top\":80.59756469726562,\"right\":528.7969970703125,\"bottom\":104.6291275024414,\"left\":500.1025695800781},{\"x\":572.7352905273438,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":596.766845703125,\"bottom\":229.27044677734375,\"left\":572.7352905273438},{\"x\":572.7352905273438,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":596.766845703125,\"bottom\":199.14132690429688,\"left\":572.7352905273438},{\"x\":572.7352905273438,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":596.766845703125,\"bottom\":169.01219177246094,\"left\":572.7352905273438},{\"x\":572.7352905273438,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":596.766845703125,\"bottom\":138.88307189941406,\"left\":572.7352905273438},{\"x\":598.2015991210938,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":622.233154296875,\"bottom\":229.27044677734375,\"left\":598.2015991210938},{\"x\":597.6737060546875,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":621.7052612304688,\"bottom\":199.14132690429688,\"left\":597.6737060546875},{\"x\":597.6737060546875,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":621.7052612304688,\"bottom\":169.01219177246094,\"left\":597.6737060546875},{\"x\":598.2015991210938,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":622.233154296875,\"bottom\":138.88307189941406,\"left\":598.2015991210938},{\"x\":623.6678466796875,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":647.6994018554688,\"bottom\":229.27044677734375,\"left\":623.6678466796875},{\"x\":623.6678466796875,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":647.6994018554688,\"bottom\":199.14132690429688,\"left\":623.6678466796875},{\"x\":623.6678466796875,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":647.6994018554688,\"bottom\":169.01219177246094,\"left\":623.6678466796875},{\"x\":623.6678466796875,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":647.6994018554688,\"bottom\":138.88307189941406,\"left\":623.6678466796875},{\"x\":649.1341552734375,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":673.1657104492188,\"bottom\":229.27044677734375,\"left\":649.1341552734375},{\"x\":649.1341552734375,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":673.1657104492188,\"bottom\":199.14132690429688,\"left\":649.1341552734375},{\"x\":649.1341552734375,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":673.1657104492188,\"bottom\":169.01219177246094,\"left\":649.1341552734375},{\"x\":649.1341552734375,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":673.1657104492188,\"bottom\":138.88307189941406,\"left\":649.1341552734375},{\"x\":674.6004028320312,\"y\":200.57603454589844,\"width\":24.0316162109375,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":698.6320190429688,\"bottom\":229.27044677734375,\"left\":674.6004028320312},{\"x\":674.6004028320312,\"y\":170.44691467285156,\"width\":24.0316162109375,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":698.6320190429688,\"bottom\":199.14132690429688,\"left\":674.6004028320312},{\"x\":674.6004028320312,\"y\":140.3177947998047,\"width\":24.0316162109375,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":698.6320190429688,\"bottom\":169.01219177246094,\"left\":674.6004028320312},{\"x\":674.6004028320312,\"y\":110.18866729736328,\"width\":24.0316162109375,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":698.6320190429688,\"bottom\":138.88307189941406,\"left\":674.6004028320312},{\"x\":700.0667114257812,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":724.0982666015625,\"bottom\":229.27044677734375,\"left\":700.0667114257812},{\"x\":700.0667114257812,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":724.0982666015625,\"bottom\":199.14132690429688,\"left\":700.0667114257812},{\"x\":700.0667114257812,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":724.0982666015625,\"bottom\":169.01219177246094,\"left\":700.0667114257812},{\"x\":700.0667114257812,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":724.0982666015625,\"bottom\":138.88307189941406,\"left\":700.0667114257812},{\"x\":725.5330200195312,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":749.5645751953125,\"bottom\":229.27044677734375,\"left\":725.5330200195312},{\"x\":725.5330200195312,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":749.5645751953125,\"bottom\":199.14132690429688,\"left\":725.5330200195312},{\"x\":725.5330200195312,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":749.5645751953125,\"bottom\":169.01219177246094,\"left\":725.5330200195312},{\"x\":725.5330200195312,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":749.5645751953125,\"bottom\":138.88307189941406,\"left\":725.5330200195312},{\"x\":750.999267578125,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":775.0308227539062,\"bottom\":229.27044677734375,\"left\":750.999267578125},{\"x\":750.999267578125,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":775.0308227539062,\"bottom\":199.14132690429688,\"left\":750.999267578125},{\"x\":750.999267578125,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":775.0308227539062,\"bottom\":169.01219177246094,\"left\":750.999267578125},{\"x\":750.999267578125,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":775.0308227539062,\"bottom\":138.88307189941406,\"left\":750.999267578125},{\"x\":776.465576171875,\"y\":200.57603454589844,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":800.4971313476562,\"bottom\":229.27044677734375,\"left\":776.465576171875},{\"x\":776.465576171875,\"y\":170.44691467285156,\"width\":24.03155517578125,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":800.4971313476562,\"bottom\":199.14132690429688,\"left\":776.465576171875},{\"x\":776.465576171875,\"y\":140.3177947998047,\"width\":24.03155517578125,\"height\":28.69439697265625,\"top\":140.3177947998047,\"right\":800.4971313476562,\"bottom\":169.01219177246094,\"left\":776.465576171875},{\"x\":776.465576171875,\"y\":110.18866729736328,\"width\":24.03155517578125,\"height\":28.69440460205078,\"top\":110.18866729736328,\"right\":800.4971313476562,\"bottom\":138.88307189941406,\"left\":776.465576171875},{\"x\":801.9318237304688,\"y\":200.57603454589844,\"width\":24.0316162109375,\"height\":28.694412231445312,\"top\":200.57603454589844,\"right\":825.9634399414062,\"bottom\":229.27044677734375,\"left\":801.9318237304688},{\"x\":801.9318237304688,\"y\":170.44691467285156,\"width\":24.0316162109375,\"height\":28.694412231445312,\"top\":170.44691467285156,\"right\":825.9634399414062,\"bottom\":199.14132690429688,\"left\":801.9318237304688},{\"x\":345.328125,\"y\":294.9375,\"width\":44,\"height\":18,\"top\":294.9375,\"right\":389.328125,\"bottom\":312.9375,\"left\":345.328125},{\"x\":125.40625,\"y\":290.8125,\"width\":44,\"height\":18,\"top\":290.8125,\"right\":169.40625,\"bottom\":308.8125,\"left\":125.40625},{\"x\":454.671875,\"y\":86.0625,\"width\":44,\"height\":18,\"top\":86.0625,\"right\":498.671875,\"bottom\":104.0625,\"left\":454.671875},{\"x\":674.59375,\"y\":90.1875,\"width\":44,\"height\":18,\"top\":90.1875,\"right\":718.59375,\"bottom\":108.1875,\"left\":674.59375},{\"x\":541.21875,\"y\":4,\"width\":232,\"height\":44,\"top\":4,\"right\":773.21875,\"bottom\":48,\"left\":541.21875},{\"x\":8,\"y\":50,\"width\":828,\"height\":16,\"top\":50,\"right\":836,\"bottom\":66,\"left\":8}]]",
+  "final": {
+    "turn": 1,
+    "actor": 1,
+    "phase": "roll",
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 街2のターン"
+      }
+    ]
+  },
+  "snapshot": {
+    "playerCoins": [
+      14,
+      32,
+      32,
+      32
+    ],
+    "playerCardNames": [
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園",
+        "コーン畑"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園"
+      ],
+      [
+        "コーン畑",
+        "パン屋",
+        "カフェ",
+        "麦畑",
+        "牧場",
+        "森林",
+        "鉱山",
+        "リンゴ園",
+        "コンビニ",
+        "チーズ工場",
+        "家具工場",
+        "青果市場",
+        "ファミレス",
+        "スタジアム",
+        "テレビ局",
+        "ビジネスセンター",
+        "花畑",
+        "サンマ漁船",
+        "マグロ漁船",
+        "フラワーショップ",
+        "食品倉庫",
+        "寿司屋",
+        "ピザ屋",
+        "バーガーショップ",
+        "出版社",
+        "税務署",
+        "ブドウ園",
+        "雑貨屋",
+        "改装屋",
+        "貸金業",
+        "ワイナリー",
+        "引越し屋",
+        "ドリンク工場",
+        "高級フレンチ",
+        "会員制BAR",
+        "清掃業",
+        "ITベンチャー",
+        "公園"
+      ]
+    ],
+    "playerDormantIndices": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "playerLandmarks": [
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": true,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      },
+      {
+        "駅": false,
+        "ショッピングモール": false,
+        "遊園地": false,
+        "電波塔": false,
+        "港": false,
+        "空港": false
+      }
+    ],
+    "playerItVenture": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "playerHasYakusho": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "hadAmusementParkAtRoll": false,
+    "shopStock": {
+      "麦畑": 2,
+      "牧場": 2,
+      "森林": 2,
+      "鉱山": 2,
+      "リンゴ園": 2,
+      "パン屋": 6,
+      "コンビニ": 2,
+      "チーズ工場": 2,
+      "家具工場": 2,
+      "青果市場": 2,
+      "カフェ": 2,
+      "ファミレス": 2,
+      "スタジアム": 0,
+      "テレビ局": 0,
+      "ビジネスセンター": 0,
+      "花畑": 2,
+      "サンマ漁船": 2,
+      "マグロ漁船": 2,
+      "フラワーショップ": 2,
+      "食品倉庫": 2,
+      "寿司屋": 2,
+      "ピザ屋": 2,
+      "バーガーショップ": 2,
+      "出版社": 0,
+      "税務署": 0,
+      "コーン畑": 1,
+      "ブドウ園": 2,
+      "雑貨屋": 2,
+      "改装屋": 2,
+      "貸金業": 2,
+      "ワイナリー": 2,
+      "引越し屋": 2,
+      "ドリンク工場": 2,
+      "高級フレンチ": 2,
+      "会員制BAR": 2,
+      "清掃業": 0,
+      "ITベンチャー": 0,
+      "公園": 0
+    },
+    "builtThisTurn": false,
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 街2のターン"
+      }
+    ],
+    "reviewSummary": {
+      "complete": true,
+      "totalsComplete": true,
+      "counts": {
+        "dice": 1,
+        "gain": 6,
+        "lose": 3,
+        "build": 1,
+        "special": 2,
+        "system": 3,
+        "error": 0
+      },
+      "totals": {
+        "gain": 9,
+        "lose": 19
+      }
+    }
+  },
+  "diceRngCalls": 3
+}

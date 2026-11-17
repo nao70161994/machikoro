@@ -1,0 +1,56 @@
+{
+  "port": 3322,
+  "buildHash": "webkit-offline-v1",
+  "pid": 661,
+  "lifecycle": [
+    {
+      "event": "spawn",
+      "elapsedMs": 11
+    }
+  ],
+  "polls": [
+    {
+      "attempt": 0,
+      "startedMs": 4,
+      "elapsedMs": 10,
+      "status": null,
+      "hash": null,
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "error": {
+        "name": "TypeError",
+        "code": null,
+        "causeCode": "ECONNREFUSED"
+      }
+    },
+    {
+      "attempt": 1,
+      "startedMs": 115,
+      "elapsedMs": 1,
+      "status": null,
+      "hash": null,
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "error": {
+        "name": "TypeError",
+        "code": null,
+        "causeCode": "ECONNREFUSED"
+      }
+    },
+    {
+      "attempt": 2,
+      "startedMs": 216,
+      "elapsedMs": 14,
+      "status": 200,
+      "hash": "webkit-offline-v1",
+      "stdoutBytes": 72,
+      "stderrBytes": 0
+    }
+  ],
+  "stdoutBytes": 72,
+  "stderrBytes": 0,
+  "outcome": "ready",
+  "elapsedMs": 230,
+  "exitCode": null,
+  "signalCode": null
+}

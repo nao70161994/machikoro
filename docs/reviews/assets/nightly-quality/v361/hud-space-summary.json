@@ -1,0 +1,122 @@
+[
+  {
+    "players": 2,
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  },
+  {
+    "players": 5,
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "rosterBefore": 96,
+    "rosterAfter": 44,
+    "tableHeightGain": 52
+  },
+  {
+    "players": 10,
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "rosterBefore": 96,
+    "rosterAfter": 44,
+    "tableHeightGain": 52
+  },
+  {
+    "players": 2,
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0.0
+  },
+  {
+    "players": 5,
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rosterBefore": 96,
+    "rosterAfter": 44,
+    "tableHeightGain": 52.0
+  },
+  {
+    "players": 10,
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rosterBefore": 96,
+    "rosterAfter": 44,
+    "tableHeightGain": 52.0
+  },
+  {
+    "players": 2,
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  },
+  {
+    "players": 5,
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  },
+  {
+    "players": 10,
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  },
+  {
+    "players": 2,
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  },
+  {
+    "players": 5,
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  },
+  {
+    "players": 10,
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "rosterBefore": 44,
+    "rosterAfter": 44,
+    "tableHeightGain": 0
+  }
+]

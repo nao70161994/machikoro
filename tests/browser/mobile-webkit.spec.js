@@ -69,6 +69,14 @@ async function startLocalGame(page) {
 
 async function startGenerationServer(port, buildHash) {
     const repoRoot = path.join(__dirname, '..', '..');
+    const startedAt = Date.now();
+    const elapsed = () => Date.now() - startedAt;
+    const diagnostics = { port, buildHash, pid: null, lifecycle: [], polls: [], stdoutBytes: 0, stderrBytes: 0 };
+    const errorCodes = error => ({
+        name: typeof error?.name === 'string' ? error.name.slice(0, 80) : null,
+        code: typeof error?.code === 'string' ? error.code.slice(0, 80) : null,
+        causeCode: typeof error?.cause?.code === 'string' ? error.cause.code.slice(0, 80) : null,
+    });
     const child = spawn(process.execPath, ['server.js'], {
         cwd: repoRoot,
         env: {
@@ -80,20 +88,56 @@ async function startGenerationServer(port, buildHash) {
         },
         stdio: ['ignore', 'pipe', 'pipe'],
     });
+    diagnostics.pid = child.pid ?? null;
+    child.on('spawn', () => diagnostics.lifecycle.push({ event: 'spawn', elapsedMs: elapsed() }));
+    child.on('error', error => diagnostics.lifecycle.push({ event: 'error', elapsedMs: elapsed(), ...errorCodes(error) }));
+    child.on('exit', (code, signal) => diagnostics.lifecycle.push({ event: 'exit', elapsedMs: elapsed(), code, signal }));
+    child.on('close', (code, signal) => diagnostics.lifecycle.push({ event: 'close', elapsedMs: elapsed(), code, signal }));
     let output = '';
-    child.stdout.on('data', chunk => { output += chunk; });
-    child.stderr.on('data', chunk => { output += chunk; });
-    for (let attempt = 0; attempt < 80; attempt++) {
-        if (child.exitCode !== null) throw new Error(`generation server exited: ${output}`);
-        try {
-            const response = await fetch(`http://127.0.0.1:${port}/api/version`, { cache: 'no-store' });
-            const payload = response.ok ? await response.json() : null;
-            if (payload && payload.hash === buildHash) return child;
-        } catch (_) {}
-        await new Promise(resolve => setTimeout(resolve, 100));
+    child.stdout.on('data', chunk => { output += chunk; diagnostics.stdoutBytes += chunk.length; });
+    child.stderr.on('data', chunk => { output += chunk; diagnostics.stderrBytes += chunk.length; });
+    const attachDiagnostics = async outcome => {
+        const safeHash = String(buildHash).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+        const name = `generation-server-${safeHash}-${port}-${outcome}`;
+        const file = test.info().outputPath(`${name}.json`);
+        await require('node:fs/promises').writeFile(file, JSON.stringify({ ...diagnostics, outcome, elapsedMs: elapsed(),
+            exitCode: child.exitCode, signalCode: child.signalCode }, null, 2));
+        await test.info().attach(name, { path: file, contentType: 'application/json' });
+    };
+    try {
+        for (let attempt = 0; attempt < 80; attempt++) {
+            if (child.exitCode !== null) throw new Error(`generation server exited: ${output}`);
+            const poll = { attempt, startedMs: elapsed(), elapsedMs: 0, status: null, hash: null,
+                stdoutBytes: diagnostics.stdoutBytes, stderrBytes: diagnostics.stderrBytes };
+            let ready = false;
+            try {
+                const response = await fetch(`http://127.0.0.1:${port}/api/version`, { cache: 'no-store' });
+                poll.status = response.status;
+                const payload = response.ok ? await response.json() : null;
+                poll.hash = typeof payload?.hash === 'string' ? payload.hash.slice(0, 160) : null;
+                ready = !!payload && payload.hash === buildHash;
+            } catch (error) {
+                poll.error = errorCodes(error);
+            }
+            poll.elapsedMs = elapsed() - poll.startedMs;
+            poll.stdoutBytes = diagnostics.stdoutBytes;
+            poll.stderrBytes = diagnostics.stderrBytes;
+            diagnostics.polls.push(poll);
+            if (ready) {
+                await attachDiagnostics('ready');
+                return child;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        await stopGenerationServer(child);
+        throw new Error(`generation server did not start: ${output}`);
+    } catch (error) {
+        // A failed attachment must not strand a live child before it can be
+        // returned to the caller, or replace the original startup failure.
+        await stopGenerationServer(child);
+        await attachDiagnostics('failed').catch(() => {});
+        throw error;
     }
-    await stopGenerationServer(child);
-    throw new Error(`generation server did not start: ${output}`);
 }
 
 async function stopGenerationServer(child) {
@@ -312,8 +356,11 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ br
         expect(networkFallbackRequested).toBe(false);
         expect(errors).toEqual([]);
     } finally {
-        if (context) await context.close();
-        await stopGenerationServer(server);
+        try {
+            if (context) await context.close();
+        } finally {
+            await stopGenerationServer(server);
+        }
     }
 });
 
@@ -357,17 +404,24 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
 
         await page.locator('#btnRestart').click();
         await expect(page.locator('#confirmModal')).toBeVisible();
-        await page.locator('#confirmOkBtn').click();
         // Returning to the title runs the production refresh path, which asks the
         // already-waiting worker to activate without test-only DOM mutation.
-        await page.waitForLoadState('load');
+        // Register for the actual reload before confirming. Waiting only for
+        // load can resolve against v1 and race the expected context destruction.
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'load' }),
+            page.locator('#confirmOkBtn').click(),
+        ]);
         await expect.poll(() => page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v2');
         await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['machikoro-webkit-e2e-v2']);
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
         expect(errors).toEqual([]);
     } finally {
-        if (context) await context.close();
-        await stopGenerationServer(server);
+        try {
+            if (context) await context.close();
+        } finally {
+            await stopGenerationServer(server);
+        }
     }
 });
 
@@ -894,9 +948,17 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     expect(cpuActivity).toMatch(/CPU/);
     await page.evaluate(() => {
         cancelCpuSchedule('mobile-review-freeze');
+        window.scheduleCPU = () => false;
         const state = GameRuntimeState.runtime.snapshot();
         state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        // The real CPU may already have rolled while its status was observed.
+        // Freeze a complete human roll state, not a human index in a CPU phase.
+        state.game.phase = GAME_PHASES.ROLL;
+        state.game.builtThisTurn = false;
+        state.game.log = [];
+        state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
         render();
+        acceptHotseatHandoff();
     });
     await expect(page.locator('#btnRoll')).toBeEnabled();
     await expect(page.locator('#playerNavigation .player-navigation-link.destination svg'))

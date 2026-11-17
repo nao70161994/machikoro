@@ -1,0 +1,57 @@
+{
+  "fixture": "Controlled asymmetric late two-human-seat layout, 320x568, guide enabled. Before: 8514588a CSS/CardBoardField; after: working tree. Same fixture, sequential Termux Chromium contexts, not naturally played match or physical-device verification.",
+  "records": {
+    "before": {
+      "viewportHeight": 384,
+      "receiptBounds": {
+        "x": 176,
+        "y": 52,
+        "width": 44,
+        "height": 44,
+        "top": 52,
+        "right": 220,
+        "bottom": 96,
+        "left": 176
+      },
+      "navBounds": {
+        "x": 4,
+        "y": 52,
+        "width": 198,
+        "height": 44,
+        "top": 52,
+        "right": 202,
+        "bottom": 96,
+        "left": 4
+      },
+      "receiptVisible": false,
+      "guideVisible": true,
+      "canonicalUnchanged": true
+    },
+    "after": {
+      "viewportHeight": 384,
+      "receiptBounds": {
+        "x": 158,
+        "y": 52,
+        "width": 44,
+        "height": 44,
+        "top": 52,
+        "right": 202,
+        "bottom": 96,
+        "left": 158
+      },
+      "navBounds": {
+        "x": 4,
+        "y": 52,
+        "width": 198,
+        "height": 44,
+        "top": 52,
+        "right": 202,
+        "bottom": 96,
+        "left": 4
+      },
+      "receiptVisible": true,
+      "guideVisible": true,
+      "canonicalUnchanged": true
+    }
+  }
+}

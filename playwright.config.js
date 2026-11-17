@@ -17,7 +17,9 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'mobile-webkit',
-            testIgnore: /seeded-browser-match\.spec\.js/,
+            // Playwright's SW/offline emulation contract is supported in Chromium.
+            // Keep all existing WebKit coverage; the new offline case runs below.
+            testIgnore: /(?:seeded-browser-match|facility-image-offline)\.spec\.js/,
             use: {
                 ...devices['iPhone 13'],
                 serviceWorkers: 'allow',
@@ -25,7 +27,7 @@ module.exports = defineConfig({
         },
         {
             name: 'chromium-desktop',
-            testMatch: /(?:seeded-browser-match|plaza-online)\.spec\.js/,
+            testMatch: /(?:seeded-browser-match|plaza-online|facility-image-offline)\.spec\.js/,
             use: {
                 ...devices['Desktop Chrome'],
                 browserName: 'chromium',

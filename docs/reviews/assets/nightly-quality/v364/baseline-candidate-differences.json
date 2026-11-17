@@ -1,0 +1,62 @@
+[
+  {
+    "name": "cardboard-desktop-1440-mobile-webkit-linux.png",
+    "width": 1440,
+    "height": 936,
+    "count": 27431,
+    "bounds": [
+      41,
+      52,
+      1399,
+      703
+    ]
+  },
+  {
+    "name": "cardboard-landscape-844-mobile-webkit-linux.png",
+    "width": 844,
+    "height": 390,
+    "count": 8720,
+    "bounds": [
+      149,
+      52,
+      694,
+      271
+    ]
+  },
+  {
+    "name": "cardboard-phone-320-mobile-webkit-linux.png",
+    "width": 320,
+    "height": 844,
+    "count": 3516,
+    "bounds": [
+      117,
+      100,
+      288,
+      765
+    ]
+  },
+  {
+    "name": "cardboard-phone-390-mobile-webkit-linux.png",
+    "width": 390,
+    "height": 844,
+    "count": 3553,
+    "bounds": [
+      120,
+      100,
+      316,
+      699
+    ]
+  },
+  {
+    "name": "plaza-landscape-844-mobile-webkit-linux.png",
+    "width": 844,
+    "height": 390,
+    "count": 693,
+    "bounds": [
+      639,
+      357,
+      806,
+      371
+    ]
+  }
+]

@@ -1,14 +1,17 @@
 const { test, expect } = require('@playwright/test');
 
+// Ordinary gestures use a stable board; update controls have explicit coverage.
+test.use({ serviceWorkers: 'block' });
+
 for (const width of [390, 1440]) {
     test(`広場${width}pxは市場の横ドラッグと縦スクロールを分け、ログを開閉できる`, async ({ page }) => {
         await page.setViewportSize({ width, height: 844 });
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/');
-        await page.locator('.setup-quick-play').click();
-        await expect(page.locator('#gameScreen')).toBeVisible();
         await page.evaluate(() => {
+            startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
+            GameRuntimeState.runtime.setCpuPlayers([null, null]);
             cancelCpuSchedule('plaza-input');
             window.scheduleCPU = () => false;
             const state = GameRuntimeState.runtime.snapshot();
@@ -16,11 +19,14 @@ for (const width of [390, 1440]) {
             state.game.phase = GAME_PHASES.BUILD;
             state.game.currentPlayer().coins = 30;
             render();
-            PlazaField.focusTarget('market');
+            acceptHotseatHandoff();
         });
+        await expect(page.locator('#gameScreen')).toBeVisible();
         const market = page.locator('#buildMenu');
         const world = page.locator('#plazaWorld');
+        await page.locator('[data-field-target="market"]').click();
         await expect(market).toBeVisible();
+        await expect(world).not.toHaveClass(/plaza-camera-moving/);
         const transform = () => world.evaluate(element => element.style.transform);
         const camera = () => world.evaluate(element => {
             const matrix = new DOMMatrix(element.style.transform);
@@ -52,7 +58,8 @@ for (const width of [390, 1440]) {
         expect(await transform()).not.toBe(before);
         expect(Math.abs((await camera()).x - beforePan.x - 70)).toBeLessThan(1);
         expect(await scroll()).toBe(160);
-        await page.evaluate(() => PlazaField.focusTarget('market'));
+        await page.locator('[data-field-target="market"]').click();
+        await expect(world).not.toHaveClass(/plaza-camera-moving/);
         await market.evaluate(element => { element.scrollTop = 160; });
         const beforeScroll = await transform();
         const scrollCamera = await camera();

@@ -1,0 +1,116 @@
+{
+  "run": 41859331398,
+  "source": "1265f47d",
+  "sameProductAndAssertions": true,
+  "results": [
+    {
+      "video": "off",
+      "repeat": "-repeat1",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 122,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frameAfterCloseMs": [
+        286,
+        1202,
+        1323
+      ],
+      "maxFrameGapMs": 916
+    },
+    {
+      "video": "off",
+      "repeat": "-repeat2",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 119,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frameAfterCloseMs": [
+        283,
+        1199,
+        1317
+      ],
+      "maxFrameGapMs": 916
+    },
+    {
+      "video": "off",
+      "repeat": "",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 118,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frameAfterCloseMs": [
+        353,
+        1286,
+        1404
+      ],
+      "maxFrameGapMs": 933
+    },
+    {
+      "video": "on",
+      "repeat": "-repeat1",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 118,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frameAfterCloseMs": [
+        295,
+        1271,
+        1390
+      ],
+      "maxFrameGapMs": 976
+    },
+    {
+      "video": "on",
+      "repeat": "-repeat2",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 117,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frameAfterCloseMs": [
+        273,
+        1205,
+        1323
+      ],
+      "maxFrameGapMs": 932
+    },
+    {
+      "video": "on",
+      "repeat": "",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 116,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frameAfterCloseMs": [
+        263,
+        1431,
+        1548
+      ],
+      "maxFrameGapMs": 1168
+    }
+  ],
+  "conclusion": "Both modes passed all 3; recording off still has >900ms frame gaps. No recording change adopted; root cause unresolved."
+}

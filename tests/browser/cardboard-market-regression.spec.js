@@ -20,6 +20,8 @@ async function prepare(page, viewport = { width: 390, height: 844 }, count = 4) 
             player.coins = 30;
             player.cards = ['麦畑', 'パン屋', 'カフェ'].map(createCardByName);
         });
+        game.log = [];
+        game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
         setTutorialEnabled(false);
         render();
         acceptHotseatHandoff();
@@ -34,10 +36,13 @@ const state = page => page.evaluate(() => {
 });
 
 for (const count of [5, 10]) {
-    test(`横卓の${count}人戦でも自分・比較相手・主要操作を一画面に保つ`, async ({ page }, testInfo) => {
+    test(`横卓の${count}人戦でも全員の所有カード・中央市場・主要操作を同時に保つ`, async ({ page }, testInfo) => {
         await prepare(page, { width: 844, height: 390 }, count);
         await expect(page.locator('#cardboardRoster button')).toHaveCount(count);
-        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(3);
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(count);
+        expect(await page.evaluate(() => [...document.querySelectorAll('#cardboardSeats > .cardboard-player')].map(panel => ({
+            index: Number(panel.dataset.playerIndex), cards: [...panel.querySelectorAll('.cardboard-card')].map(card => card.dataset.cardName).sort(),
+        })).sort((a, b) => a.index - b.index))).toEqual(Array.from({ length: count }, (_, index) => ({ index, cards: ['カフェ', 'パン屋', '麦畑'] })));
         await expect.poll(() => page.evaluate(() => {
             const targets = [...document.querySelectorAll('#cardboardSeats > .cardboard-player .cardboard-header'),
                 document.querySelector('#cardboardMarket .compact-market-buy'), document.getElementById('btnSkip')];
@@ -62,14 +67,16 @@ for (const width of [320, 390, 1440]) {
         test(`適応盤面で所有施設と市場詳細へ到達できる ${width}px ${count}人`, async ({ page }, testInfo) => {
             await prepare(page, { width, height: width === 1440 ? 936 : 844 }, count);
             const before = await state(page);
-            await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(count <= 4 ? count : 3);
+            await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(count);
             expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+            await page.locator('#cardboardRoster [data-cardboard-player-index="0"]').click();
             const owned = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card').first();
             expect(await owned.evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(70);
             await owned.click();
             await expect(page.locator('#cardDetailModal')).toBeVisible();
             await page.keyboard.press('Escape');
             await expect(page.locator('#cardDetailModal')).toBeHidden();
+            await page.locator('[data-cardboard-camera="market"]').click();
             const detail = page.locator('#cardboardMarket .compact-market-detail').first();
             await detail.click();
             await expect(page.locator('#cardDetailModal')).toBeVisible();
@@ -108,6 +115,7 @@ test('専用市場と旧市場は各1つで4ビュー往復とログ開閉が正
     await page.evaluate(() => { setTutorialEnabled(true); render(); acceptHotseatHandoff(); });
     const before = await state(page);
     const logButton = page.locator('#cardboardLogToggle');
+    await page.locator('#cardboardMoreMenu > summary').click();
     await logButton.click();
     await expect(logButton).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#gameLogContainer')).toBeVisible();
@@ -117,7 +125,7 @@ test('専用市場と旧市場は各1つで4ビュー往復とログ開閉が正
         const a = guide.getBoundingClientRect(), b = log.getBoundingClientRect();
         return a.bottom <= b.top || b.bottom <= a.top || a.right <= b.left || b.right <= a.left;
     })).toBe(true);
-    await logButton.click();
+    await page.locator('#gameLogContainer .log-header').click();
     await expect(page.locator('#gameLogContainer')).toBeHidden();
     await expect(logButton).toHaveAttribute('aria-expanded', 'false');
     for (const theme of ['classic', 'sunset', 'plaza', 'cardboard']) {
@@ -146,16 +154,17 @@ test('市場の絞込・目標・ガイド・ログは補助パネルを重ね�
     await goals.locator('summary').click();
     await expect(goals).toHaveAttribute('open', '');
     await expect(filter).not.toHaveAttribute('open', '');
+    await page.locator('#cardboardMarketClose').click();
     await guide.locator('summary').click();
     await expect(guide).toHaveAttribute('open', '');
     await expect(goals).not.toHaveAttribute('open', '');
+    await page.locator('#cardboardMoreMenu > summary').click();
     await page.locator('#cardboardLogToggle').click();
     await expect(page.locator('#gameLogContainer')).toBeVisible();
     await expect(guide).not.toHaveAttribute('open', '');
-    // The open log intentionally covers the market. Keyboard activation
-    // verifies the reverse exclusion without clicking through that overlay.
-    await filter.locator('summary').focus();
-    await page.keyboard.press('Enter');
+    // Open the market through its live control while the log is still open.
+    await page.locator('#btnBuildShortcut').click();
+    await filter.locator('summary').click();
     await expect(filter).toHaveAttribute('open', '');
     await expect(page.locator('#gameLogContainer')).toBeHidden();
 });
@@ -181,14 +190,23 @@ test('横卓の発動収支と休業枚数は上席でもカード内に収ま�
     await expect(top.locator('.cardboard-dormant')).toContainText('休業 1枚');
     expect(await top.evaluate(card => {
         const box = card.getBoundingClientRect();
-        return [...card.querySelectorAll('.cardboard-dice, .cardboard-name, .cardboard-count, .cardboard-dormant, .cardboard-activation')].flatMap(element => {
+        const bands = [...card.querySelectorAll('.cardboard-dice, .cardboard-name, .cardboard-dormant, .cardboard-activation')];
+        const overlap = bands.flatMap((first, index) => bands.slice(index + 1).flatMap(second => {
+            const a = first.getBoundingClientRect(), b = second.getBoundingClientRect();
+            return Math.min(a.right, b.right) > Math.max(a.left, b.left) + 0.25 &&
+                Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) + 0.25
+                ? [{ overlap: `${first.className}/${second.className}` }] : [];
+        }));
+        return overlap.concat([...card.querySelectorAll('.cardboard-dice, .cardboard-name, .cardboard-count, .cardboard-dormant, .cardboard-activation')].flatMap(element => {
             const rect = element.getBoundingClientRect();
             return rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1 &&
                 element.scrollHeight <= element.clientHeight + 1 && element.scrollWidth <= element.clientWidth + 1 ? [] :
                 [{ className: element.className, card: box.toJSON(), rect: rect.toJSON(),
+                    css: ['display', 'font-size', 'line-height', 'padding', 'align-items', 'flex-shrink', 'height'].map(name => [name, getComputedStyle(element).getPropertyValue(name)]),
+                    after: ['display', 'content', 'font-size', 'line-height', 'position', 'bottom'].map(name => [name, getComputedStyle(element, '::after').getPropertyValue(name)]),
                     scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
                     scrollWidth: element.scrollWidth, clientWidth: element.clientWidth }];
-        });
+        }));
     })).toEqual([]);
     const screenshot = testInfo.outputPath('card-table-income-dormant-landscape.png');
     await page.screenshot({ path: screenshot });
@@ -237,4 +255,64 @@ test('横持ちの実出目と振り直し操作・市場・各席HUDが祖先�
     await page.screenshot({ path: screenshot });
     await testInfo.attach('振り直し選択中の卓', { path: screenshot, contentType: 'image/png' });
     await expect(page.locator('#crashScreen')).toBeHidden();
+});
+
+// One controlled market covers every printed facility and both unavailable
+// reasons. Refill captions exercise the longest stock label without changing
+// the rule used to decide whether a facility can be built.
+test('市場の全38施設は4画面で価格と在庫と建設不可理由をカード内に分けて表示する', async ({ page }, testInfo) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayer().coins = 3;
+        game.currentPlayer().cards.push(createCardByName('公園'));
+        SHOP_STOCK['公園']--;
+        setCardFilter('');
+        game.marketSupply.pendingHighlightNames = CARDS.map(card => card.name);
+        render();
+    });
+    const before = await state(page);
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+        await page.setViewportSize(viewport);
+        const facilities = page.locator('#cardboardMarket .compact-market-item:not(.compact-market-landmark)');
+        await expect(facilities).toHaveCount(38);
+        await expect.poll(() => facilities.evaluateAll(items => {
+            const errors = [];
+            const contains = (outer, inner) => inner.width > 0 && inner.height > 0 &&
+                inner.left >= outer.left && inner.right <= outer.right && inner.top >= outer.top && inner.bottom <= outer.bottom;
+            for (const item of items) {
+                const name = item.querySelector('.compact-market-buy').dataset.cardName;
+                const bounds = item.getBoundingClientRect();
+                const cost = item.querySelector('.compact-market-price-cost');
+                const reason = item.querySelector('.compact-market-price-reason');
+                const stock = item.querySelector('.compact-market-stock');
+                const textRect = element => {
+                    const range = document.createRange();
+                    range.selectNodeContents(element);
+                    return range.getBoundingClientRect();
+                };
+                if (!cost || !stock) { errors.push(`${name}: missing footer`); continue; }
+                const costRect = textRect(cost);
+                const nameRect = textRect(item.querySelector('.compact-market-name'));
+                const stockRect = stock.getBoundingClientRect();
+                if (item.offsetWidth !== 160 || item.offsetHeight !== 132) errors.push(`${name}: outer dimensions`);
+                if (getComputedStyle(cost).fontSize !== '14px' || getComputedStyle(stock, '::before').fontSize !== '10px') errors.push(`${name}: footer font`);
+                if (item.querySelector('.compact-market-art').offsetWidth !== item.querySelector('.compact-market-buy').clientWidth) errors.push(`${name}: art lost full card width`);
+                if (item.querySelector('.compact-market-art').offsetHeight !== 50 || getComputedStyle(item.querySelector('.compact-market-name')).fontSize !== '13px') errors.push(`${name}: art/name changed`);
+                if (!contains(bounds, nameRect) || nameRect.bottom > costRect.top) errors.push(`${name}: name clipped or overlaps cost ${JSON.stringify({ name: nameRect.toJSON(), cost: costRect.toJSON(), card: bounds.toJSON() })}`);
+                if (!contains(bounds, costRect) || !contains(bounds, stockRect)) errors.push(`${name}: cost/stock clipped`);
+                if (costRect.right > stockRect.left && costRect.left < stockRect.right && costRect.bottom > stockRect.top && costRect.top < stockRect.bottom) errors.push(`${name}: price overlaps stock`);
+                if (reason && (getComputedStyle(reason).fontSize !== '10px' || !contains(bounds, textRect(reason)) || textRect(reason).top < costRect.bottom)) errors.push(`${name}: reason clipped or overlaps cost ${JSON.stringify({ font: getComputedStyle(reason).fontSize, lineHeight: getComputedStyle(reason).lineHeight, cost: costRect.toJSON(), reason: textRect(reason).toJSON(), card: bounds.toJSON() })}`);
+                if (!stock.dataset.shortStock.includes('補充')) errors.push(`${name}: refill label missing`);
+            }
+            return errors;
+        }), `${viewport.width}pxの全施設footer`).toEqual([]);
+        const names = await facilities.locator('.compact-market-buy').evaluateAll(buttons => buttons.map(button => button.dataset.cardName).sort());
+        expect(names).toEqual(await page.evaluate(() => CARDS.map(card => card.name).sort()));
+        await expect(facilities.locator('.compact-market-price-reason').filter({ hasText: '所有済み' })).toHaveCount(1);
+        expect(await facilities.locator('.compact-market-price-reason').filter({ hasText: '不足' }).count()).toBeGreaterThan(0);
+        await page.screenshot({ path: testInfo.outputPath(`market-footer-${viewport.width}.png`) });
+    }
+    expect(await state(page)).toEqual(before);
 });

@@ -459,10 +459,10 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
         game.builtThisTurn = false;
         game.currentPlayer().coins = 10;
         render();
-        return { humanIndex, coins: game.currentPlayer().coins, turnCount: game.turnCount };
+        return { humanIndex, name: game.currentPlayer().name, coins: game.currentPlayer().coins, turnCount: game.turnCount };
     });
     expect(starting.humanIndex).toBeGreaterThanOrEqual(0);
-    await expect(page.locator('#status')).toHaveText('あなたのターン');
+    await expect(page.locator('#status')).toHaveText(`${starting.name}のターン · ${starting.coins}コイン`);
 
     const town = page.locator(`#playerBox${starting.humanIndex} .sunset-town`);
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'quiet');
@@ -601,27 +601,82 @@ test('夕暮れのガイド設定は共通SVGアイコンでスマホとデス�
     await expect(page.locator('#gameScreen')).toBeVisible();
     await page.locator('.game-guide-settings').evaluate(element => { element.open = true; });
 
-    for (const width of [390, 1440]) {
-        await page.setViewportSize({ width, height: 844 });
-        const settings = page.locator('.game-guide-settings');
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-icon use'))
-            .toHaveAttribute('href', 'icons/interface-ui.svg#book');
-        await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-icon use'))
-            .toHaveAttribute('href', 'icons/interface-ui.svg#target');
-        await expect(settings.locator('.tutorial-toggle-emoji')).toHaveCount(2);
-        await expect(settings.locator('.tutorial-toggle-emoji').first()).toBeHidden();
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
-        await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-label')).toHaveText('初心者');
-        await settings.locator('#btnTutorialToggle').click();
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド OFF');
-        await settings.locator('#btnTutorialToggle').click();
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
-        const screenshot = testInfo.outputPath(`sunset-guide-controls-${width}.png`);
-        await settings.screenshot({ path: screenshot, animations: 'disabled' });
-        await testInfo.attach(`sunset-guide-controls-${width}.png`, {
-            path: screenshot,
-            contentType: 'image/png',
+    await page.evaluate(() => {
+        const entries = [];
+        const describe = element => element ? {
+            tag: element.tagName, id: element.id || '',
+            action: element.closest?.('[data-ui-action]')?.getAttribute('data-ui-action') || null,
+        } : null;
+        const state = () => ({
+            runtime: typeof UiTutorialSettings !== 'undefined' ? UiTutorialSettings.runtime.snapshot() : null,
+            label: document.querySelector('#btnTutorialToggle .tutorial-toggle-label')?.textContent,
+            pressed: document.getElementById('btnTutorialToggle')?.getAttribute('aria-pressed'),
+            open: document.querySelector('.game-guide-settings')?.open,
         });
+        const record = entry => { if (entries.length < 100) entries.push({ at: performance.now(), ...entry }); };
+        const capture = event => {
+            if (!event.target?.closest?.('.game-guide-settings')) return;
+            record({ kind: event.type, target: describe(event.target), detail: event.detail,
+                defaultPrevented: event.defaultPrevented, state: state() });
+        };
+        for (const name of ['pointerdown', 'pointerup', 'click']) document.addEventListener(name, capture, true);
+        const original = window.toggleTutorial;
+        window.toggleTutorial = function (...args) {
+            record({ kind: 'toggle-before', state: state() });
+            try { return original.apply(this, args); }
+            finally { record({ kind: 'toggle-after', state: state() }); }
+        };
+        window.__guideClickDiagnostics = { entries, sample(label) {
+            const button = document.getElementById('btnTutorialToggle');
+            const rect = button?.getBoundingClientRect();
+            record({ kind: 'sample', label, state: state(), rect: rect ? {
+                x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+            } : null, hit: rect ? describe(document.elementFromPoint(rect.x + rect.width / 2,
+                rect.y + rect.height / 2)) : null });
+        }, cleanup() {
+            for (const name of ['pointerdown', 'pointerup', 'click']) document.removeEventListener(name, capture, true);
+            window.toggleTutorial = original;
+        } };
+    });
+    const sample = label => page.evaluate(value => window.__guideClickDiagnostics.sample(value), label);
+    try {
+        for (const width of [390, 1440]) {
+            await page.setViewportSize({ width, height: 844 });
+            const settings = page.locator('.game-guide-settings');
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-icon use'))
+                .toHaveAttribute('href', 'icons/interface-ui.svg#book');
+            await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-icon use'))
+                .toHaveAttribute('href', 'icons/interface-ui.svg#target');
+            await expect(settings.locator('.tutorial-toggle-emoji')).toHaveCount(2);
+            await expect(settings.locator('.tutorial-toggle-emoji').first()).toBeHidden();
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
+            await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-label')).toHaveText('初心者');
+            await sample(`${width}-before-off`);
+            await settings.locator('#btnTutorialToggle').click();
+            await sample(`${width}-after-off-click`);
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド OFF');
+            await sample(`${width}-before-on`);
+            await settings.locator('#btnTutorialToggle').click();
+            await sample(`${width}-after-on-click`);
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
+            const screenshot = testInfo.outputPath(`sunset-guide-controls-${width}.png`);
+            await settings.screenshot({ path: screenshot, animations: 'disabled' });
+            await testInfo.attach(`sunset-guide-controls-${width}.png`, {
+                path: screenshot,
+                contentType: 'image/png',
+            });
+        }
+    } finally {
+        const diagnostics = await page.evaluate(() => {
+            const diagnostics = window.__guideClickDiagnostics;
+            diagnostics?.sample('finally');
+            const entries = diagnostics?.entries || [];
+            diagnostics?.cleanup();
+            return entries;
+        }).catch(error => ({ unavailable: error.name }));
+        const diagnosticFile = testInfo.outputPath('guide-click-diagnostics.json');
+        await require('node:fs/promises').writeFile(diagnosticFile, JSON.stringify(diagnostics, null, 2));
+        await testInfo.attach('guide-click-diagnostics', { path: diagnosticFile, contentType: 'application/json' });
     }
 });
 
@@ -717,13 +772,15 @@ test('CPUの手番でも自分の街を先頭に見せ、極小画面でも街�
             const bounds = element.getBoundingClientRect();
             const street = element.closest('.town-street').getBoundingClientRect();
             return { width: bounds.width, height: bounds.height, streetWidth: street.width,
+                facilities: element.closest('.town-street').querySelectorAll('[data-town-slot-facility]').length,
                 inside: bounds.left >= street.left && bounds.right <= street.right &&
                     bounds.top >= street.top && bounds.bottom <= street.bottom };
         });
-        // District scenes keep four facility lots across the street rather
-        // than stretching the old collection grid's fixed-size tiles.
+        // Two founding facilities use the district renderer's two-lot row;
+        // the 23% size belongs to a full four-lot row.
+        expect(dimensions.facilities).toBe(2);
         expect(dimensions.width).toBeGreaterThanOrEqual(50);
-        expect(Math.abs(dimensions.width - dimensions.streetWidth * 0.23)).toBeLessThan(1);
+        expect(Math.abs(dimensions.width - dimensions.streetWidth * 0.38)).toBeLessThan(1);
         expect(Math.abs(dimensions.height * 2 - dimensions.width)).toBeLessThan(1);
         expect(dimensions.inside).toBe(true);
         const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -854,7 +911,13 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
 
 test('夕暮れ市場は出目・名称を主役にし価格を明確なチップで示す', async ({ page }, testInfo) => {
     await prepareSunset(page);
-    await page.locator('.setup-quick-play').click();
+    // This is a layout fixture. A live quick-play CPU can replace the market
+    // between locator collection and evaluation, leaving detached card nodes.
+    // Real CPU progression is covered by the unseeded UI playthroughs.
+    await page.evaluate(() => {
+        startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
+        acceptHotseatHandoff();
+    });
     await expect(page.locator('#gameScreen')).toBeVisible();
     await expect(page.locator('#logSummary')).not.toContainText('👤');
     await expect(page.locator('#log')).not.toContainText('👤');
@@ -882,6 +945,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
             const detail = wrapper.querySelector('.card-detail-btn');
             const detailBounds = detail.getBoundingClientRect();
             return {
+                connected: card.isConnected,
                 cardFits: card.scrollWidth <= card.clientWidth && cardBounds.left >= 0 && cardBounds.right <= document.documentElement.clientWidth,
                 diceSize: parseFloat(styles('.card-dice-num').fontSize),
                 nameSize: parseFloat(styles('.card-name').fontSize),
@@ -898,6 +962,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
         }));
 
         expect(cards.length).toBeGreaterThan(0);
+        expect(cards.every(card => card.connected), '描画中の市場カードを検証する').toBe(true);
         expect(cards.every(card => card.cardFits && card.costFits && card.costHasBadge &&
             card.stockFitsOnCardArt && card.detailTargetSize && card.detailHasAccessibleName)).toBe(true);
         expect(cards.every(card => card.diceSize > card.categorySize && card.nameSize > card.effectSize && card.effectSize > card.categorySize)).toBe(true);
@@ -913,13 +978,16 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
 
     await page.setViewportSize({ width: 1440, height: 900 });
     const desktopMarket = page.locator('#buildMenu .build-card-section .card-grid');
-    const desktopMarketStyle = await desktopMarket.evaluate(element => ({
+    // Responsive rendering can replace this grid after resize. Re-resolve the
+    // locator until the actual desktop style is applied, rather than retaining
+    // a computed-style snapshot from a detached mobile grid.
+    await expect.poll(() => desktopMarket.evaluate(element => ({
         backgroundImage: getComputedStyle(element).backgroundImage,
         borderRadius: getComputedStyle(element).borderRadius,
-        padding: getComputedStyle(element).padding,
-    }));
-    expect(desktopMarketStyle.backgroundImage).toContain('radial-gradient');
-    expect(desktopMarketStyle.borderRadius).toBe('16px');
+    }))).toEqual({
+        backgroundImage: expect.stringContaining('radial-gradient'),
+        borderRadius: '16px',
+    });
     const desktopMarketPath = testInfo.outputPath('sunset-central-market-1440.png');
     // WebKit can replace responsive game markup for a frame after the viewport
     // change above. Let that resize render settle before asking Playwright to scroll.
@@ -1339,8 +1407,18 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
 
-    const town = page.locator('.player-box.active .sunset-town');
-    const firstBuilding = town.locator('.town-street > .town-building').first();
+    const selfIndex = await page.evaluate(() => {
+        cancelCpuSchedule('desktop-town-art-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        const index = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.currentPlayerIndex = index;
+        render();
+        return index;
+    });
+    expect(selfIndex).toBeGreaterThanOrEqual(0);
+    const town = page.locator(`#playerBox${selfIndex} .sunset-town`);
+    const firstBuilding = town.locator('.town-street > [data-town-slot-facility]').first();
     await expect(firstBuilding).toBeVisible();
     const selfTownScene = await page.locator('#players .player-box-self .sunset-town').evaluate(element => {
         const street = element.querySelector('.town-street');
@@ -1360,11 +1438,13 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         const art = element.querySelector('.sunset-facility-art').getBoundingClientRect();
         const street = element.closest('.town-street').getBoundingClientRect();
         return { width: card.width, artWidth: art.width, artHeight: art.height, streetWidth: street.width,
+            facilities: element.closest('.town-street').querySelectorAll('[data-town-slot-facility]').length,
             inside: art.left >= street.left && art.right <= street.right &&
                 art.top >= street.top && art.bottom <= street.bottom };
     });
+    expect(bounds.facilities).toBe(2);
     expect(bounds.width).toBeGreaterThanOrEqual(60);
-    expect(Math.abs(bounds.width - bounds.streetWidth * 0.23)).toBeLessThan(1);
+    expect(Math.abs(bounds.width - bounds.streetWidth * 0.38)).toBeLessThan(1);
     expect(Math.abs(bounds.artWidth - bounds.width)).toBeLessThan(1);
     expect(Math.abs(bounds.artHeight * 2 - bounds.width)).toBeLessThan(1);
     expect(bounds.inside).toBe(true);
@@ -2499,7 +2579,7 @@ test('広場をタイトルで選び直しても正の倍率で開始し他テ�
 });
 
 
-test('広場は場外でマウスを離した後にパンを続けず、フォーカスしたカードを表示する', async ({ page }) => {
+test('広場は場外でマウスを離した後にパンを続けず、フォーカスしたカードを表示する', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 844 });
     await prepareSunset(page);
     await selectDesignTheme(page, 'plaza');
@@ -2513,7 +2593,7 @@ test('広場は場外でマウスを離した後にパンを続けず、フォ�
         state.game.phase = GAME_PHASES.BUILD;
         state.game.currentPlayer().coins = 30;
         render();
-        PlazaField.focusTarget('self');
+        PlazaField.focusTarget('all');
     });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const field = await page.locator('#plazaViewport').boundingBox();
@@ -2526,15 +2606,179 @@ test('広場は場外でマウスを離した後にパンを続けず、フォ�
     await page.mouse.move(x - 20, field.y + 82);
     expect(await page.locator('#plazaWorld').evaluate(element => element.style.transform)).toBe(before);
     const card = page.locator('#buildMenu .card-btn').first();
-    await card.focus();
+    await expect(card).toBeVisible();
     const focusedCardFits = () => card.evaluate(element => {
         const cardRect = element.getBoundingClientRect();
         const fieldRect = document.getElementById('plazaViewport').getBoundingClientRect();
-        return document.activeElement === element && cardRect.top >= fieldRect.top - 1 &&
-            cardRect.bottom <= fieldRect.bottom + 1 && cardRect.left >= fieldRect.left - 1 &&
-            cardRect.right <= fieldRect.right + 1;
+        const viewport = document.getElementById('plazaViewport');
+        return { active: document.activeElement === element,
+            fits: cardRect.top >= fieldRect.top - 1 && cardRect.bottom <= fieldRect.bottom + 1 &&
+                cardRect.left >= fieldRect.left - 1 && cardRect.right <= fieldRect.right + 1,
+            card: cardRect.toJSON(), field: fieldRect.toJSON(),
+            scrollLeft: viewport.scrollLeft, scrollTop: viewport.scrollTop,
+            marketScrollTop: document.getElementById('buildMenu').scrollTop,
+            world: document.getElementById('plazaWorld').getBoundingClientRect().toJSON(),
+            market: document.getElementById('buildMenu').getBoundingClientRect().toJSON(),
+            transform: document.getElementById('plazaWorld').style.transform };
     });
-    await expect.poll(focusedCardFits).toBe(true);
+    // Market cards are intentionally hidden in town-only mode. Start from
+    // the visible overview and use real zoom controls to create an off-screen
+    // keyboard target instead of attempting to focus visibility:hidden content.
+    await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+    for (let step = 0; step < 12 && (await focusedCardFits()).fits; step++) {
+        await page.locator('#plazaCameraTools [data-field-zoom="in"]').click();
+    }
+    await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+    if ((await focusedCardFits()).fits) {
+        // Zoom can keep a central market card visible. Pan the enlarged world
+        // through the viewport's background to move that target off screen.
+        const viewport = await page.locator('#plazaViewport').boundingBox();
+        await page.mouse.move(viewport.x + 2, viewport.y + 2);
+        await page.mouse.down();
+        await page.mouse.move(viewport.x + viewport.width - 4, viewport.y + viewport.height - 4, { steps: 8 });
+        await page.mouse.up();
+    }
+    await expect.poll(async () => (await focusedCardFits()).fits).toBe(false);
+    await card.focus();
+    try {
+        await expect.poll(focusedCardFits).toMatchObject({ active: true, fits: true });
+    } catch (error) {
+        await testInfo.attach('plaza-focused-card-geometry', {
+            body: JSON.stringify(await focusedCardFits(), null, 2), contentType: 'application/json',
+        });
+        throw error;
+    }
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(focusedCardFits).toBe(true);
+    await expect.poll(focusedCardFits).toMatchObject({ active: true, fits: true });
+});
+
+
+test.describe('市場の連続操作', () => {
+    test.use({ serviceWorkers: 'block' });
+    for (const design of ['classic', 'sunset', 'plaza', 'cardboard']) {
+        test(`市場の詳細ボタンは購入再描画をまたぐ押下でも開く ${design}`, async ({ page }, testInfo) => {
+            await page.setViewportSize({ width: 390, height: 844 });
+            await stubAds(page);
+            await page.goto('/');
+            await selectDesignTheme(page, design);
+            await page.evaluate(() => {
+                startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
+                GameRuntimeState.runtime.setCpuPlayers([null, null]);
+                cancelCpuSchedule('market-pointer-fixture');
+                const game = GameRuntimeState.runtime.snapshot().game;
+                game.currentPlayerIndex = 0;
+                game.currentPlayer().coins = 30;
+                game.phase = GAME_PHASES.BUILD;
+                setTutorialEnabled(false);
+                render();
+                acceptHotseatHandoff();
+            });
+            const focusLandmarks = async (focusDetailBeforeCloseFrame = false) => {
+                if (design !== 'plaza') return;
+                await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+                if (focusDetailBeforeCloseFrame) {
+                    // Deterministically exercise a newer focus in the same
+                    // dispatch, before the menu's deferred heading callback.
+                    await page.evaluate(() => {
+                        document.getElementById('plazaCameraTools').addEventListener('click', () => {
+                            document.querySelector('#buildMenu [data-action="showLandmarkDetail"][data-landmark-name="駅"]').focus();
+                        }, { once: true });
+                    });
+                }
+                await page.locator('#plazaCameraTools [data-field-section="landmarks"]').click();
+            };
+            await focusLandmarks();
+            if (design === 'cardboard') {
+                await page.locator('[data-cardboard-camera="market"]').click();
+                await page.locator('#cardboardMarket .compact-market-expand').click();
+                await page.locator('#cardboardMarket .compact-market-goal-disclosure > summary').click();
+            }
+            const root = design === 'cardboard' ? '#cardboardMarket' : '#buildMenu';
+            const detail = page.locator(`${root} [data-action="showLandmarkDetail"][data-landmark-name="駅"]`);
+            await detail.scrollIntoViewIfNeeded();
+            await detail.hover();
+            await expect(detail).toBeInViewport({ ratio: 1 });
+            const bounds = await detail.boundingBox();
+            expect(bounds).not.toBeNull();
+            await detail.evaluate(element => {
+                window.__heldMarketDetail = element;
+                window.__marketPointerEvents = [];
+                for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'keydown', 'keyup', 'focusin']) {
+                    document.addEventListener(type, event => {
+                        const button = event.target.closest?.('[data-action], [data-ui-action]');
+                        window.__marketPointerEvents.push({ type, action: button?.dataset.action,
+                            uiAction: button?.dataset.uiAction, name: button?.dataset.landmarkName,
+                            held: button === window.__heldMarketDetail, targetId: event.target.id,
+                            tag: event.target.tagName, at: performance.now() });
+                    }, true);
+                }
+            });
+            await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+            expect(await detail.evaluate((element, point) =>
+                document.elementFromPoint(point.x, point.y)?.closest('[data-action]') === element,
+            { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }), '押下開始位置は詳細ボタン上').toBe(true);
+            await page.mouse.down();
+            const transition = await page.evaluate(point => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                const before = game.currentPlayer().cards.length;
+                const card = createCardByName('麦畑');
+                if (game.buildCard(card)) decrementMarketShopStock(game, SHOP_STOCK, card);
+                render();
+                return { before, after: game.currentPlayer().cards.length,
+                    targetRetained: window.__heldMarketDetail.isConnected,
+                    afterBounds: window.__heldMarketDetail.getBoundingClientRect().toJSON(),
+                    atOriginalPoint: document.elementFromPoint(point.x, point.y)?.closest('[data-action]')?.dataset.action,
+                    hitHeld: document.elementFromPoint(point.x, point.y)?.closest('[data-action]') === window.__heldMarketDetail };
+            }, { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 });
+            expect(transition.after).toBe(transition.before + 1);
+            const purchased = await page.evaluate(() => GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+            await page.mouse.up();
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-pointer-${design}.json`), JSON.stringify({ ...transition, beforeBounds: bounds, events: await page.evaluate(() => window.__marketPointerEvents) }));
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+            await expect(page.locator('#cardDetailTitle')).toHaveText(['classic', 'cardboard'].includes(design) ? '🚉 駅' : '駅');
+            expect(transition.targetRetained, '押している詳細ボタンを市場更新で破棄しない').toBe(true);
+            expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
+            await page.locator('#cardDetailModal [data-ui-action="closeCardDetail"]').click();
+            await focusLandmarks();
+            await detail.scrollIntoViewIfNeeded();
+            await detail.hover();
+            const drag = await detail.boundingBox();
+            const outsideX = drag.x > 80 ? drag.x - 24 : drag.x + drag.width + 24;
+            await page.mouse.move(drag.x + drag.width / 2, drag.y + drag.height / 2);
+            await page.mouse.down();
+            await page.mouse.move(outsideX, drag.y + drag.height / 2, { steps: 4 });
+            await page.mouse.up();
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-drag-${design}.json`),
+                JSON.stringify(await page.evaluate(() => window.__marketPointerEvents)));
+            await expect(page.locator('#cardDetailModal')).toBeHidden();
+            // A cancelled drag must not swallow the next ordinary activation.
+            await detail.click();
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+            await page.locator('#cardDetailModal [data-ui-action="closeCardDetail"]').click();
+            await focusLandmarks(true);
+            if (design !== 'plaza') await detail.focus();
+            // A queued menu-close frame must respect this newer focus.
+            await page.evaluate(async () => {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                await new Promise(resolve => requestAnimationFrame(resolve));
+            });
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-focus-${design}.json`),
+                JSON.stringify(await detail.evaluate(element => ({ focused: document.activeElement === element,
+                    activeId: document.activeElement?.id, activeTag: document.activeElement?.tagName,
+                    events: window.__marketPointerEvents }))));
+            await expect(detail).toBeFocused();
+            await page.keyboard.press('Enter');
+            await require('node:fs/promises').writeFile(testInfo.outputPath(`market-keyboard-${design}.json`),
+                JSON.stringify(await detail.evaluate(element => ({
+                    focused: document.activeElement === element,
+                    activeAction: document.activeElement?.dataset.action,
+                    events: window.__marketPointerEvents,
+                }))));
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+            expect(await page.evaluate(() => GameSnapshot.serializeUndoState(
+                GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(purchased);
+        });
+    }
 });

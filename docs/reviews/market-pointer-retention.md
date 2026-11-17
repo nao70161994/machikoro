@@ -1,0 +1,49 @@
+# 市場再描画中の詳細操作
+
+## 起点
+
+d225のNightly41625594178は夕暮れランドマーク詳細が初回hidden/再試行成功で失敗した。traceは初手CPU進行中の詳細ボタンdetachを記録するが、押下/解放/開閉の記録がなく元失敗の原因断定はしない。
+
+## 製品候補
+
+既存cardboardのpresentationNodeKey/patchPresentationChildrenをUiBuildMenuへ共有化し、他3テーマの市場innerHTML全置換を差分描画へ変更した。施設/ランドマークsectionとcard-wrapperのキーを追加し、SVG・詳細ボタンを保持、disabled/価格/在庫など実際の変更は反映する。要求HTML同一時のcacheはrootの子identityも検査し、外側からrootが置換された場合は再構築する。任意の内部DOM改変を完全修復する汎用関数ではない。
+
+独立ソースレビューでは重大な問題なし。Node構文3ファイル・ESLint3ファイル・既存card-board-field/facility-artテストは成功。実ブラウザでの採用判定は未完了で、最終版の全件CI判定は未完了。
+
+## 操作再現の証拠と限界
+
+- 15523855/41629784192：onBuildCardを呼ぶfixtureは操作ロックで購入不成立（枚数2のまま）。4失敗を製品不具合の証拠にしない。
+- 319aebc6/41630771533：制御fixtureを合法BUILD中のGameManager.buildCard＋市場在庫減少＋renderへ変更。通常mouse down/up間で購入再描画し、全4テーマで購入枚数は増えるが詳細modal hidden。
+- b514d638/41630929510：同fixture＋共有描画。targetRetained=trueが4/4。classicはmodal表示まで成功したが新testの見出し期待値がemoji仕様と不一致。他3テーマはmodal hiddenが残る。ノード保持だけで解消済みとはしない。
+- 16131a09/41669273320：classicは成功。sunsetは同じボタンがy399→-72へ、cardboardはy689→714へ移動し、解放が別要素へ届いた。plazaは初期座標x=-21で、こちらはfixtureの不備。DOM保持だけでは押下中の配置変更に対応できない。
+- 3ac958f5/41670798986：readonly詳細ボタンだけにnative pointer captureを追加。plazaも実際の「その他→ランドマークへ」で表示後に操作するfixtureへ修正。通常押下は4テーマとも詳細表示成功。ただしドラッグで外へ移動した後のclickがclassic/sunset/cardboardで残り、誤表示した。これを検出するassertは維持。
+- 693520ed/41672193230：8px超の移動・wheel・pointercancelでcaptureを解除し、そのキャンセル操作に続くclickだけを抑止する候補。新しいprimary押下ではキャンセル状態を初期化し、keyboard click(detail=0)は維持。購入・建設・Undoはcapture対象にしない。native WebKitは4/4初回成功（再試行0）。その後の独立レビューで取消状態をpointerId単位へ変更し、keyboard操作で取消情報を消費しないようにした。通常の次clickとEnterによる詳細表示も同じ4ケースへ追加した。最終版は全件CIと併せて再検証する。
+
+これは自動ブラウザのmouse保持による制御fixtureで、物理タッチやquickplay初手CPUの自然進行そのものではない。位置移動・hover後の座標・元nodeへのイベント到達を分けて確認する。synthetic clickやforceによる救済は行わない。購入後と詳細表示後のGameSnapshot一致で閲覧の正本不変も確認する。
+
+## 採用時の範囲
+
+全4テーマの市場表示のみを変更し、ルール・購入判定・在庫更新・CPU・オンライン・保存の正本は変更しない。キャッシュ済み旧JSを残さないためSWキャッシュ名をv351へ更新する。既存のNightly flakyと同じ機序と断定せず、元ケースを含む集中検証と全Nightlyで確認する。1440px建設のRAF間隔問題と、390px全体俯瞰で市場が小さいという視覚課題は別件で未解決。
+
+## f8e7a170全件結果と残る失敗
+
+- Nightly41673128837：361件（WebKit359/Chromium2）、360初回成功＋既定opt-in skip1、retries0、stable=true。6shardとcoverage検査、simulation/online-soak/release/PWA/onlineも成功。集計と対象ケースはassets/nightly-quality/market-pointer-f8-nightly.json。
+- 既存16画面/操作41673068803：成功。Release41673068807のbrowser/seeded対戦/CPUは成功、Node unitだけ失敗。
+- Node失敗：string内HTMLだけの既存fixtureにownerDocument/createElement/addEventListenerがなく、新しい実DOM境界が例外を出す。製品への偽DOM fallbackは追加せず、fixtureがHTML生成・ポリシーの実関数を保ち、HTML書込とpointer登録という2境界だけ明示adapterへ変更する。assertは削除しない。このfixtureではDOM identityやpointer captureを検証しないと明記し、その根拠はnative4テーマに置く。ui/integration/release-e2e各Node testは修正後成功。
+- 集中41673099528：23/24初回成功。元Nightlyの夕暮れ詳細、4テーマの押下/drag取消/次clickは成功。plazaのみ最後のEnterによる詳細表示でhidden。Nightlyの同ケースは成功しており、フォーカス競合の記録を加えて41676410722で調査する。再試行や強制clickで救済しない。
+
+Nightly一度の成功を安定化完了とはしない。通常ReleaseのNode失敗と集中keyboard失敗を解決し、採用HEADで再確認する。
+
+追加記録版28bc9830/41676410722は4/4初回成功。keypress直前に実際のfocusをassertし、keyboard/clickの到達先をJSONへ保存するようにした。最初の失敗時はその記録がなく、focusの移動元・移動時刻を特定できないため、原因断定や製品のkeyboard不具合解消とは主張しない。最終HEADの集中/全件検証で継続確認する。fixture adapterは独立レビューでも範囲が適切と確認された。
+
+## フォーカス競合の因果確認と修正
+
+e7a3fe32のRelease41677179342と16画面/操作41677179447は成功。一方、集中41677207854はplazaのEnter直前toBeFocusedで23/24。元の「modal hidden」だけでは不明だった失敗を、フォーカス自体の喪失まで絞った。
+
+PlazaFieldの「ランドマークへ」操作はdetailsを閉じた後のRAFで無条件に見出しへfocusしていた。この間に詳細ボタンやmodalへfocusが移っても奪い返していた。修正版は、現在のfocusがbody・非接続・元メニュー内に留まる場合だけ見出しへ戻す。他要素への新しいfocusと、既に解除された画面を尊重する。
+
+同じclick dispatch末尾で詳細ボタンへfocusを移し、2RAF後の保持と実Enterを検査する制御比較を実施。12138ef9 / run41679412663では旧版のplazaがtoBeFocusedで失敗し、修正版は全4テーマが初回成功（4 passed、retries0）。単なる期待値変更やsleep追加ではない。旧版取得指定の短縮SHAを修正する前の41679358990は実行を取り消し、比較証拠に含めない。
+
+独立ソースレビューでも、通常のmenu→見出し復帰を維持して新しいfocusを守る条件が妥当と確認された。物理タッチ/自然な1ゲームでの体感はこの制御fixtureでは証明しない。採用HEADの全件・実UI対局で引き続き確認する。
+
+比較時の実focusは旧版H4、修正版BUTTONで、JSONにも保存した（assets/nightly-quality/plaza-menu-focus-121.json）。旧版では後から来た見出しfocusin、修正版では詳細buttonのfocus保持をイベント列で確認できる。

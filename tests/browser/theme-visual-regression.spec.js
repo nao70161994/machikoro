@@ -189,6 +189,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                 // This baseline represents the resting board; turn-event
                 // animation is covered separately, not frozen mid-announcement.
                 await expect(page.locator('#turnAnnouncer')).toBeHidden();
+                if (theme === 'cardboard') await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-turn-cue/);
                 await expect(page).toHaveScreenshot(`${theme}-${viewport.name}.png`, {
                     animations: 'disabled',
                     caret: 'hide',

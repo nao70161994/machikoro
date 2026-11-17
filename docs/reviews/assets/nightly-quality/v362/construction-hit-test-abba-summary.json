@@ -1,0 +1,129 @@
+[
+  {
+    "case": 1,
+    "variant": "A",
+    "result": "failed",
+    "moving": {
+      "error": "fresh purchase flight was not observed while moving"
+    },
+    "notice": {
+      "error": "fresh construction notice never reached a painted frame"
+    },
+    "maxGap": 1530,
+    "hitTests": [],
+    "exceptions": [],
+    "pageErrors": [],
+    "canonicalUnchanged": true
+  },
+  {
+    "case": 2,
+    "variant": "B",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 65,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "notice": {
+      "elapsedAfterClose": 910,
+      "opacity": 1,
+      "text": "街1が建設麦畑建設費 1コイン",
+      "art": 1,
+      "pointerEvents": "none",
+      "paintedAboveExistingPanels": null,
+      "receiptClosed": true,
+      "artVisible": true,
+      "insideTable": true,
+      "insideScreen": true
+    },
+    "maxGap": 638,
+    "hitTests": [
+      {
+        "at": 10680,
+        "afterClose": 910,
+        "duration": 0,
+        "performed": false
+      }
+    ],
+    "exceptions": [],
+    "pageErrors": [],
+    "canonicalUnchanged": true
+  },
+  {
+    "case": 3,
+    "variant": "B",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 68,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "notice": {
+      "elapsedAfterClose": 663,
+      "opacity": 1,
+      "text": "街1が建設麦畑建設費 1コイン",
+      "art": 1,
+      "pointerEvents": "none",
+      "paintedAboveExistingPanels": null,
+      "receiptClosed": true,
+      "artVisible": true,
+      "insideTable": true,
+      "insideScreen": true
+    },
+    "maxGap": 392,
+    "hitTests": [
+      {
+        "at": 9774,
+        "afterClose": 663,
+        "duration": 0,
+        "performed": false
+      }
+    ],
+    "exceptions": [],
+    "pageErrors": [],
+    "canonicalUnchanged": true
+  },
+  {
+    "case": 4,
+    "variant": "A",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 71,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "notice": {
+      "elapsedAfterClose": 656,
+      "opacity": 1,
+      "text": "街1が建設麦畑建設費 1コイン",
+      "art": 1,
+      "pointerEvents": "none",
+      "paintedAboveExistingPanels": true,
+      "receiptClosed": true,
+      "artVisible": true,
+      "insideTable": true,
+      "insideScreen": true
+    },
+    "maxGap": 407,
+    "hitTests": [
+      {
+        "at": 9680,
+        "afterClose": 653,
+        "duration": 3,
+        "performed": true
+      }
+    ],
+    "exceptions": [],
+    "pageErrors": [],
+    "canonicalUnchanged": true
+  }
+]

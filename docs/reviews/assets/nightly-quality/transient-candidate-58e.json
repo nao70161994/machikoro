@@ -1,0 +1,3019 @@
+{
+  "commit": "58e35b6d",
+  "run": 41329715382,
+  "summary": "4 initial passes, 0 retries, 1.5min; original predicates and deadlines preserved",
+  "scope": "two real-roll activation cases and fresh construction390/1440; not full nightly or a proof of cause/stability",
+  "records": {
+    "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit/facility-construction-frame-1440.json": {
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 87,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "notice": {
+        "elapsedAfterClose": 301,
+        "opacity": 1,
+        "text": "街1が建設麦畑建設費 1コイン",
+        "art": 1,
+        "pointerEvents": "none",
+        "paintedAboveExistingPanels": true,
+        "receiptClosed": true,
+        "artVisible": true,
+        "insideTable": true,
+        "insideScreen": true
+      }
+    },
+    "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit/facility-flight-diagnostic-1440.json": {
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 87,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "flightDiagnostic": {
+        "frames": [
+          {
+            "afterClose": 300,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "paused",
+                "duration": 480
+              }
+            ]
+          },
+          {
+            "afterClose": 1013,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "paused",
+                "duration": 480
+              }
+            ]
+          },
+          {
+            "afterClose": 1034,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 20,
+                "playState": "running",
+                "duration": 480
+              }
+            ]
+          },
+          {
+            "afterClose": 1101,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 87,
+                "playState": "running",
+                "duration": 480
+              }
+            ]
+          }
+        ],
+        "mutations": [
+          {
+            "kind": "add",
+            "id": "cardboardBuildNotice",
+            "at": 2701,
+            "sameScrollRetained": null,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "running",
+                "duration": 180
+              }
+            ]
+          },
+          {
+            "kind": "add",
+            "id": "cardboardBuildFlight",
+            "at": 2702,
+            "sameScrollRetained": true,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "paused",
+                "duration": 480
+              }
+            ]
+          }
+        ],
+        "cancellations": [],
+        "tasks": [
+          {
+            "afterClose": 299,
+            "duration": 1,
+            "callback": "inspect",
+            "scheduledBy": null,
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 300,
+            "duration": 3,
+            "callback": "inspect",
+            "scheduledBy": null,
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 303,
+            "duration": 0,
+            "callback": "layout",
+            "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\nonLayout@http://127.0.0.1:3210/js/cardBoardField.js:446:55\nlayout@http://127.0.0.1:3210/js/cardTableLayout.js:417:21\nsetReadingSeat@http://127.0.0.1:3210/js/cardTableLayout.js:425:19\napplyReading@http://127.0.0.1:3210/js/cardTableCamera.js:274:28\nfocusCard@http://127.0.0.1:3210/js/cardTableCamera.js:378:25\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:895:35\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:965:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1024:26",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 303,
+            "duration": 0,
+            "callback": "",
+            "scheduledBy": "@\nshowBuildNotice@http://127.0.0.1:3210/js/cardBoardField.js:753:60\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:799:28\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:897:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:965:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1024:26",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 303,
+            "duration": 0,
+            "callback": "",
+            "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:643:64\nstageBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:658:17\nstartBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:705:25\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:800:34\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:897:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:965:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1024:26",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 1013,
+            "duration": 0,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 1013,
+            "duration": 0,
+            "callback": "",
+            "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:643:64\n@http://127.0.0.1:3210/js/cardBoardField.js:648:44\n@",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 1013,
+            "duration": 1,
+            "callback": "layout",
+            "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardTableLayout.js:53:73",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 1015,
+            "duration": 1,
+            "callback": "layout",
+            "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\n@http://127.0.0.1:3210/js/cardTableCamera.js:649:70",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 1033,
+            "duration": 1,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 1100,
+            "duration": 1,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",6,2,24,229,1016,348,[[0,360,601,344,445,0,\"2\"],[1,360,24,344,181,180,\"2\"]]]"
+          }
+        ],
+        "beforeClose": {
+          "at": 2403,
+          "hidden": false,
+          "reducedMotion": false,
+          "phase": "build",
+          "viewport": {
+            "x": 4,
+            "y": 68,
+            "width": 1432,
+            "height": 807.984375,
+            "top": 68,
+            "right": 1436,
+            "bottom": 875.984375,
+            "left": 4
+          },
+          "target": {
+            "x": 226.70347595214844,
+            "y": 487.9602966308594,
+            "width": 158.01487731933594,
+            "height": 122.46151733398438,
+            "top": 487.9602966308594,
+            "right": 384.7183532714844,
+            "bottom": 610.4218139648438,
+            "left": 226.70347595214844
+          },
+          "origin": {
+            "x": 136,
+            "y": 193,
+            "width": 229.59375,
+            "height": 237.375,
+            "top": 193,
+            "right": 365.59375,
+            "bottom": 430.375,
+            "left": 136
+          },
+          "shelf": {
+            "x": 132,
+            "y": 189,
+            "width": 1176,
+            "height": 524.15625,
+            "top": 189,
+            "right": 1308,
+            "bottom": 713.15625,
+            "left": 132
+          },
+          "cameraAngle": "0",
+          "ownerAngle": "0",
+          "suppressors": [
+            {
+              "className": "cardboard-activation-tag",
+              "display": "none",
+              "visibility": "visible",
+              "rects": 0
+            }
+          ],
+          "viewportSize": {
+            "width": 1440,
+            "height": 936
+          },
+          "screen": {
+            "left": 0,
+            "top": 0,
+            "width": 1440,
+            "height": 936
+          }
+        },
+        "current": {
+          "at": 3510,
+          "hidden": false,
+          "reducedMotion": false,
+          "phase": "build",
+          "viewport": {
+            "x": 4,
+            "y": 68,
+            "width": 1432,
+            "height": 807.984375,
+            "top": 68,
+            "right": 1436,
+            "bottom": 875.984375,
+            "left": 4
+          },
+          "target": {
+            "x": 641.5347290039062,
+            "y": 411.0980224609375,
+            "width": 158.014892578125,
+            "height": 122.4615478515625,
+            "top": 411.0980224609375,
+            "right": 799.5496215820312,
+            "bottom": 533.5595703125,
+            "left": 641.5347290039062
+          },
+          "origin": {
+            "x": 309.7034606933594,
+            "y": 56.55210876464844,
+            "width": 158.014892578125,
+            "height": 130.36228942871094,
+            "top": 56.55210876464844,
+            "right": 467.7183532714844,
+            "bottom": 186.91439819335938,
+            "left": 309.7034606933594
+          },
+          "shelf": {
+            "x": 309.7034606933594,
+            "y": 54.57692337036133,
+            "width": 987.593017578125,
+            "height": 272.57568359375,
+            "top": 54.57692337036133,
+            "right": 1297.2964782714844,
+            "bottom": 327.1526069641113,
+            "left": 309.7034606933594
+          },
+          "cameraAngle": "0",
+          "ownerAngle": "0",
+          "suppressors": [
+            {
+              "className": "cardboard-activation-tag",
+              "display": "none",
+              "visibility": "visible",
+              "rects": 0
+            }
+          ],
+          "viewportSize": {
+            "width": 1440,
+            "height": 936
+          },
+          "screen": {
+            "left": 0,
+            "top": 0,
+            "width": 1440,
+            "height": 936
+          }
+        }
+      }
+    },
+    "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-390px-mobile-webkit/facility-construction-frame-390.json": {
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 69,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "notice": {
+        "elapsedAfterClose": 667,
+        "opacity": 1,
+        "text": "街1が建設麦畑建設費 1コイン",
+        "art": 1,
+        "pointerEvents": "none",
+        "paintedAboveExistingPanels": true,
+        "receiptClosed": true,
+        "artVisible": true,
+        "insideTable": true,
+        "insideScreen": true
+      }
+    },
+    "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-390px-mobile-webkit/facility-flight-diagnostic-390.json": {
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 69,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "flightDiagnostic": {
+        "frames": [
+          {
+            "afterClose": 195,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "paused",
+                "duration": 480
+              }
+            ]
+          },
+          {
+            "afterClose": 665,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "paused",
+                "duration": 480
+              }
+            ]
+          },
+          {
+            "afterClose": 707,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 42,
+                "playState": "running",
+                "duration": 480
+              }
+            ]
+          },
+          {
+            "afterClose": 733,
+            "flight": true,
+            "animations": [
+              {
+                "currentTime": 69,
+                "playState": "running",
+                "duration": 480
+              }
+            ]
+          }
+        ],
+        "mutations": [
+          {
+            "kind": "add",
+            "id": "cardboardBuildNotice",
+            "at": 1387,
+            "sameScrollRetained": null,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "running",
+                "duration": 180
+              }
+            ]
+          },
+          {
+            "kind": "add",
+            "id": "cardboardBuildFlight",
+            "at": 1388,
+            "sameScrollRetained": true,
+            "animations": [
+              {
+                "currentTime": 0,
+                "playState": "paused",
+                "duration": 480
+              }
+            ]
+          }
+        ],
+        "cancellations": [],
+        "tasks": [
+          {
+            "afterClose": 193,
+            "duration": 2,
+            "callback": "inspect",
+            "scheduledBy": null,
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 195,
+            "duration": 0,
+            "callback": "inspect",
+            "scheduledBy": null,
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 195,
+            "duration": 0,
+            "callback": "layout",
+            "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\nonLayout@http://127.0.0.1:3210/js/cardBoardField.js:446:55\nlayout@http://127.0.0.1:3210/js/cardTableLayout.js:417:21\nsetReadingSeat@http://127.0.0.1:3210/js/cardTableLayout.js:425:19\napplyReading@http://127.0.0.1:3210/js/cardTableCamera.js:274:28\nfocusCard@http://127.0.0.1:3210/js/cardTableCamera.js:378:25\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:895:35\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:965:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1024:26",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 195,
+            "duration": 0,
+            "callback": "",
+            "scheduledBy": "@\nshowBuildNotice@http://127.0.0.1:3210/js/cardBoardField.js:753:60\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:799:28\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:897:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:965:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1024:26",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 195,
+            "duration": 0,
+            "callback": "",
+            "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:643:64\nstageBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:658:17\nstartBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:705:25\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:800:34\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:897:30\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:965:36\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:1024:26",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 663,
+            "duration": 2,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 665,
+            "duration": 3,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 668,
+            "duration": 1,
+            "callback": "",
+            "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardBoardField.js:643:64\n@http://127.0.0.1:3210/js/cardBoardField.js:648:44\n@",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 669,
+            "duration": 0,
+            "callback": "layout",
+            "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardTableLayout.js:53:73",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 669,
+            "duration": 1,
+            "callback": "layout",
+            "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:473:65\n@http://127.0.0.1:3210/js/cardTableCamera.js:649:70",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 705,
+            "duration": 2,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          },
+          {
+            "afterClose": 732,
+            "duration": 1,
+            "callback": "inspect",
+            "scheduledBy": "@\ninspect@\n@",
+            "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+            "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+          }
+        ],
+        "beforeClose": {
+          "at": 1195,
+          "hidden": false,
+          "reducedMotion": false,
+          "phase": "build",
+          "viewport": {
+            "x": 4,
+            "y": 116,
+            "width": 382,
+            "height": 667.984375,
+            "top": 116,
+            "right": 386,
+            "bottom": 783.984375,
+            "left": 4
+          },
+          "target": {
+            "x": 22,
+            "y": 475.75,
+            "width": 120,
+            "height": 93,
+            "top": 475.75,
+            "right": 142,
+            "bottom": 568.75,
+            "left": 22
+          },
+          "origin": {
+            "x": 24,
+            "y": 211.796875,
+            "width": 342,
+            "height": 236.375,
+            "top": 211.796875,
+            "right": 366,
+            "bottom": 448.171875,
+            "left": 24
+          },
+          "shelf": {
+            "x": 20,
+            "y": 207.796875,
+            "width": 350,
+            "height": 472.625,
+            "top": 207.796875,
+            "right": 370,
+            "bottom": 680.421875,
+            "left": 20
+          },
+          "cameraAngle": "0",
+          "ownerAngle": "0",
+          "suppressors": [
+            {
+              "className": "cardboard-activation-tag",
+              "display": "none",
+              "visibility": "visible",
+              "rects": 0
+            }
+          ],
+          "viewportSize": {
+            "width": 390,
+            "height": 844
+          },
+          "screen": {
+            "left": 0,
+            "top": 0,
+            "width": 390,
+            "height": 844
+          }
+        },
+        "current": {
+          "at": 1937,
+          "hidden": false,
+          "reducedMotion": false,
+          "phase": "build",
+          "viewport": {
+            "x": 4,
+            "y": 116,
+            "width": 382,
+            "height": 667.984375,
+            "top": 116,
+            "right": 386,
+            "bottom": 783.984375,
+            "left": 4
+          },
+          "target": {
+            "x": 127.5999984741211,
+            "y": 397.625,
+            "width": 136,
+            "height": 105.39999389648438,
+            "top": 397.625,
+            "right": 263.5999984741211,
+            "bottom": 503.0249938964844,
+            "left": 127.5999984741211
+          },
+          "origin": {
+            "x": 56.20000076293945,
+            "y": 77.0023422241211,
+            "width": 136,
+            "height": 112.20000457763672,
+            "top": 77.0023422241211,
+            "right": 192.20000076293945,
+            "bottom": 189.2023468017578,
+            "left": 56.20000076293945
+          },
+          "shelf": {
+            "x": 56.20000076293945,
+            "y": 75.3023452758789,
+            "width": 421.5999755859375,
+            "height": 234.60000610351562,
+            "top": 75.3023452758789,
+            "right": 477.79997634887695,
+            "bottom": 309.90235137939453,
+            "left": 56.20000076293945
+          },
+          "cameraAngle": "0",
+          "ownerAngle": "0",
+          "suppressors": [
+            {
+              "className": "cardboard-activation-tag",
+              "display": "none",
+              "visibility": "visible",
+              "rects": 0
+            }
+          ],
+          "viewportSize": {
+            "width": 390,
+            "height": 844
+          },
+          "screen": {
+            "left": 0,
+            "top": 0,
+            "width": 390,
+            "height": 844
+          }
+        }
+      }
+    },
+    "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-320px-mobile-webkit/activation-presentation.json": {
+      "at": 1793552846003,
+      "timeOrigin": 1793552838246,
+      "records": [
+        {
+          "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        }
+      ],
+      "timerTasks": [
+        {
+          "started": 4617,
+          "duration": 248,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 5438,
+          "duration": 11,
+          "delay": 500,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6049,
+          "duration": 1,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6120,
+          "duration": 1,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6124,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6124,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6124,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6125,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6139,
+          "duration": 7,
+          "delay": 1200,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6746,
+          "duration": 0,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 6839,
+          "duration": 5,
+          "delay": 1900,
+          "callback": "anonymous"
+        },
+        {
+          "started": 7444,
+          "duration": 1,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 7538,
+          "duration": 5,
+          "delay": 2600,
+          "callback": "anonymous"
+        }
+      ],
+      "renderTasks": [
+        {
+          "name": "renderDiceChoose",
+          "started": 4642,
+          "duration": 0
+        },
+        {
+          "name": "renderPending",
+          "started": 4642,
+          "duration": 0
+        },
+        {
+          "name": "renderLog",
+          "started": 4642,
+          "duration": 7
+        },
+        {
+          "name": "renderPlayers",
+          "started": 4649,
+          "duration": 74
+        },
+        {
+          "name": "renderBuildMenu",
+          "started": 4724,
+          "duration": 34
+        },
+        {
+          "name": "renderActiveGameState",
+          "started": 4640,
+          "duration": 131
+        },
+        {
+          "name": "_render",
+          "started": 4640,
+          "duration": 168
+        },
+        {
+          "name": "render",
+          "started": 4640,
+          "duration": 169
+        },
+        {
+          "name": "renderDiceChoose",
+          "started": 4830,
+          "duration": 0
+        },
+        {
+          "name": "renderPending",
+          "started": 4830,
+          "duration": 0
+        },
+        {
+          "name": "renderLog",
+          "started": 4830,
+          "duration": 2
+        },
+        {
+          "name": "renderPlayers",
+          "started": 4832,
+          "duration": 6
+        },
+        {
+          "name": "renderBuildMenu",
+          "started": 4838,
+          "duration": 1
+        },
+        {
+          "name": "renderActiveGameState",
+          "started": 4829,
+          "duration": 18
+        },
+        {
+          "name": "_render",
+          "started": 4829,
+          "duration": 18
+        },
+        {
+          "name": "render",
+          "started": 4829,
+          "duration": 18
+        }
+      ],
+      "frameTasks": [
+        {
+          "started": 4026,
+          "duration": 0,
+          "timestamp": 4019,
+          "callback": "measure"
+        },
+        {
+          "started": 4373,
+          "duration": 0,
+          "timestamp": 4373,
+          "callback": "measure"
+        },
+        {
+          "started": 4392,
+          "duration": 1,
+          "timestamp": 4392,
+          "callback": "measure"
+        },
+        {
+          "started": 4433,
+          "duration": 1,
+          "timestamp": 4433,
+          "callback": "measure"
+        },
+        {
+          "started": 4453,
+          "duration": 0,
+          "timestamp": 4453,
+          "callback": "measure"
+        },
+        {
+          "started": 4477,
+          "duration": 1,
+          "timestamp": 4477,
+          "callback": "measure"
+        },
+        {
+          "started": 4491,
+          "duration": 0,
+          "timestamp": 4491,
+          "callback": "measure"
+        },
+        {
+          "started": 4504,
+          "duration": 0,
+          "timestamp": 4504,
+          "callback": "measure"
+        },
+        {
+          "started": 4524,
+          "duration": 1,
+          "timestamp": 4524,
+          "callback": "measure"
+        },
+        {
+          "started": 4551,
+          "duration": 1,
+          "timestamp": 4551,
+          "callback": "measure"
+        },
+        {
+          "started": 4574,
+          "duration": 0,
+          "timestamp": 4574,
+          "callback": "measure"
+        },
+        {
+          "started": 4601,
+          "duration": 0,
+          "timestamp": 4600,
+          "callback": "measure"
+        },
+        {
+          "started": 4615,
+          "duration": 0,
+          "timestamp": 4614,
+          "callback": "measure"
+        },
+        {
+          "started": 4867,
+          "duration": 0,
+          "timestamp": 4866,
+          "callback": "measure"
+        },
+        {
+          "started": 4867,
+          "duration": 70,
+          "timestamp": 4866,
+          "callback": "layout"
+        },
+        {
+          "started": 4937,
+          "duration": 7,
+          "timestamp": 4866,
+          "callback": "anonymous"
+        },
+        {
+          "started": 4944,
+          "duration": 2,
+          "timestamp": 4866,
+          "callback": "anonymous"
+        },
+        {
+          "started": 4946,
+          "duration": 4,
+          "timestamp": 4866,
+          "callback": "layout"
+        },
+        {
+          "started": 5232,
+          "duration": 1,
+          "timestamp": 5231,
+          "callback": "measure"
+        },
+        {
+          "started": 5233,
+          "duration": 0,
+          "timestamp": 5231,
+          "callback": "anonymous"
+        },
+        {
+          "started": 5233,
+          "duration": 2,
+          "timestamp": 5231,
+          "callback": "layout"
+        },
+        {
+          "started": 5301,
+          "duration": 0,
+          "timestamp": 5300,
+          "callback": "measure"
+        },
+        {
+          "started": 5301,
+          "duration": 6,
+          "timestamp": 5300,
+          "callback": "layout"
+        },
+        {
+          "started": 5408,
+          "duration": 1,
+          "timestamp": 5407,
+          "callback": "measure"
+        },
+        {
+          "started": 5426,
+          "duration": 2,
+          "timestamp": 5426,
+          "callback": "measure"
+        },
+        {
+          "started": 5460,
+          "duration": 1,
+          "timestamp": 5460,
+          "callback": "measure"
+        },
+        {
+          "started": 5609,
+          "duration": 1,
+          "timestamp": 5609,
+          "callback": "measure"
+        },
+        {
+          "started": 5672,
+          "duration": 1,
+          "timestamp": 5672,
+          "callback": "measure"
+        },
+        {
+          "started": 5685,
+          "duration": 0,
+          "timestamp": 5685,
+          "callback": "measure"
+        },
+        {
+          "started": 5702,
+          "duration": 0,
+          "timestamp": 5701,
+          "callback": "measure"
+        },
+        {
+          "started": 5716,
+          "duration": 1,
+          "timestamp": 5716,
+          "callback": "measure"
+        },
+        {
+          "started": 5732,
+          "duration": 0,
+          "timestamp": 5732,
+          "callback": "measure"
+        },
+        {
+          "started": 5749,
+          "duration": 0,
+          "timestamp": 5749,
+          "callback": "measure"
+        },
+        {
+          "started": 5765,
+          "duration": 0,
+          "timestamp": 5765,
+          "callback": "measure"
+        },
+        {
+          "started": 5783,
+          "duration": 0,
+          "timestamp": 5783,
+          "callback": "measure"
+        },
+        {
+          "started": 5807,
+          "duration": 0,
+          "timestamp": 5807,
+          "callback": "measure"
+        },
+        {
+          "started": 5816,
+          "duration": 0,
+          "timestamp": 5816,
+          "callback": "measure"
+        },
+        {
+          "started": 5831,
+          "duration": 1,
+          "timestamp": 5831,
+          "callback": "measure"
+        },
+        {
+          "started": 5848,
+          "duration": 0,
+          "timestamp": 5848,
+          "callback": "measure"
+        },
+        {
+          "started": 5863,
+          "duration": 1,
+          "timestamp": 5863,
+          "callback": "measure"
+        },
+        {
+          "started": 5881,
+          "duration": 0,
+          "timestamp": 5881,
+          "callback": "measure"
+        },
+        {
+          "started": 5898,
+          "duration": 0,
+          "timestamp": 5897,
+          "callback": "measure"
+        },
+        {
+          "started": 5912,
+          "duration": 1,
+          "timestamp": 5912,
+          "callback": "measure"
+        },
+        {
+          "started": 5930,
+          "duration": 0,
+          "timestamp": 5930,
+          "callback": "measure"
+        },
+        {
+          "started": 5945,
+          "duration": 0,
+          "timestamp": 5945,
+          "callback": "measure"
+        },
+        {
+          "started": 5961,
+          "duration": 1,
+          "timestamp": 5961,
+          "callback": "measure"
+        },
+        {
+          "started": 5991,
+          "duration": 1,
+          "timestamp": 5990,
+          "callback": "measure"
+        },
+        {
+          "started": 6006,
+          "duration": 5,
+          "timestamp": 6006,
+          "callback": "measure"
+        },
+        {
+          "started": 6021,
+          "duration": 2,
+          "timestamp": 6021,
+          "callback": "measure"
+        },
+        {
+          "started": 6038,
+          "duration": 1,
+          "timestamp": 6038,
+          "callback": "measure"
+        },
+        {
+          "started": 6042,
+          "duration": 0,
+          "timestamp": 6042,
+          "callback": "measure"
+        },
+        {
+          "started": 6058,
+          "duration": 0,
+          "timestamp": 6058,
+          "callback": "measure"
+        },
+        {
+          "started": 6149,
+          "duration": 1,
+          "timestamp": 6148,
+          "callback": "measure"
+        },
+        {
+          "started": 6252,
+          "duration": 1,
+          "timestamp": 6252,
+          "callback": "measure"
+        },
+        {
+          "started": 6387,
+          "duration": 1,
+          "timestamp": 6387,
+          "callback": "measure"
+        },
+        {
+          "started": 6436,
+          "duration": 0,
+          "timestamp": 6435,
+          "callback": "measure"
+        },
+        {
+          "started": 6450,
+          "duration": 1,
+          "timestamp": 6450,
+          "callback": "measure"
+        },
+        {
+          "started": 6466,
+          "duration": 1,
+          "timestamp": 6466,
+          "callback": "measure"
+        },
+        {
+          "started": 6483,
+          "duration": 0,
+          "timestamp": 6483,
+          "callback": "measure"
+        },
+        {
+          "started": 6502,
+          "duration": 0,
+          "timestamp": 6502,
+          "callback": "measure"
+        },
+        {
+          "started": 6518,
+          "duration": 0,
+          "timestamp": 6518,
+          "callback": "measure"
+        },
+        {
+          "started": 6533,
+          "duration": 1,
+          "timestamp": 6533,
+          "callback": "measure"
+        },
+        {
+          "started": 6550,
+          "duration": 1,
+          "timestamp": 6550,
+          "callback": "measure"
+        },
+        {
+          "started": 6566,
+          "duration": 0,
+          "timestamp": 6565,
+          "callback": "measure"
+        },
+        {
+          "started": 6582,
+          "duration": 0,
+          "timestamp": 6582,
+          "callback": "measure"
+        },
+        {
+          "started": 6598,
+          "duration": 0,
+          "timestamp": 6598,
+          "callback": "measure"
+        },
+        {
+          "started": 6614,
+          "duration": 0,
+          "timestamp": 6614,
+          "callback": "measure"
+        },
+        {
+          "started": 6630,
+          "duration": 0,
+          "timestamp": 6630,
+          "callback": "measure"
+        },
+        {
+          "started": 6649,
+          "duration": 0,
+          "timestamp": 6649,
+          "callback": "measure"
+        },
+        {
+          "started": 6666,
+          "duration": 1,
+          "timestamp": 6666,
+          "callback": "measure"
+        },
+        {
+          "started": 6705,
+          "duration": 2,
+          "timestamp": 6705,
+          "callback": "measure"
+        },
+        {
+          "started": 6718,
+          "duration": 2,
+          "timestamp": 6718,
+          "callback": "measure"
+        },
+        {
+          "started": 6735,
+          "duration": 1,
+          "timestamp": 6735,
+          "callback": "measure"
+        },
+        {
+          "started": 6750,
+          "duration": 0,
+          "timestamp": 6750,
+          "callback": "measure"
+        },
+        {
+          "started": 6830,
+          "duration": 1,
+          "timestamp": 6829,
+          "callback": "measure"
+        },
+        {
+          "started": 6864,
+          "duration": 1,
+          "timestamp": 6864,
+          "callback": "measure"
+        },
+        {
+          "started": 7122,
+          "duration": 1,
+          "timestamp": 7122,
+          "callback": "measure"
+        },
+        {
+          "started": 7207,
+          "duration": 0,
+          "timestamp": 7207,
+          "callback": "measure"
+        },
+        {
+          "started": 7222,
+          "duration": 0,
+          "timestamp": 7222,
+          "callback": "measure"
+        },
+        {
+          "started": 7236,
+          "duration": 0,
+          "timestamp": 7236,
+          "callback": "measure"
+        },
+        {
+          "started": 7253,
+          "duration": 0,
+          "timestamp": 7253,
+          "callback": "measure"
+        },
+        {
+          "started": 7268,
+          "duration": 0,
+          "timestamp": 7267,
+          "callback": "measure"
+        },
+        {
+          "started": 7285,
+          "duration": 0,
+          "timestamp": 7285,
+          "callback": "measure"
+        },
+        {
+          "started": 7302,
+          "duration": 1,
+          "timestamp": 7302,
+          "callback": "measure"
+        },
+        {
+          "started": 7318,
+          "duration": 1,
+          "timestamp": 7318,
+          "callback": "measure"
+        },
+        {
+          "started": 7334,
+          "duration": 0,
+          "timestamp": 7334,
+          "callback": "measure"
+        },
+        {
+          "started": 7350,
+          "duration": 0,
+          "timestamp": 7350,
+          "callback": "measure"
+        },
+        {
+          "started": 7367,
+          "duration": 1,
+          "timestamp": 7367,
+          "callback": "measure"
+        },
+        {
+          "started": 7393,
+          "duration": 2,
+          "timestamp": 7393,
+          "callback": "measure"
+        },
+        {
+          "started": 7410,
+          "duration": 2,
+          "timestamp": 7410,
+          "callback": "measure"
+        },
+        {
+          "started": 7425,
+          "duration": 2,
+          "timestamp": 7425,
+          "callback": "measure"
+        },
+        {
+          "started": 7440,
+          "duration": 2,
+          "timestamp": 7440,
+          "callback": "measure"
+        },
+        {
+          "started": 7448,
+          "duration": 0,
+          "timestamp": 7448,
+          "callback": "measure"
+        },
+        {
+          "started": 7527,
+          "duration": 1,
+          "timestamp": 7526,
+          "callback": "measure"
+        },
+        {
+          "started": 7564,
+          "duration": 1,
+          "timestamp": 7564,
+          "callback": "measure"
+        },
+        {
+          "started": 7739,
+          "duration": 2,
+          "timestamp": 7739,
+          "callback": "measure"
+        }
+      ]
+    },
+    "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-320px-mobile-webkit/facility-chain-flight-sample.json": {
+      "rafTimestamp": 7739,
+      "measuredAt": 7740,
+      "elapsedMs": 273,
+      "currentTime": 2873,
+      "startTime": 4866,
+      "playState": "running",
+      "progress": 0.45500000000000024,
+      "localTime": 2873,
+      "delay": 2600,
+      "duration": 600,
+      "opacity": 1,
+      "frames": [
+        {
+          "rafTimestamp": 5231,
+          "measuredAt": 5233,
+          "elapsedMs": -2235,
+          "currentTime": 365,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 365,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5300,
+          "measuredAt": 5301,
+          "elapsedMs": -2166,
+          "currentTime": 434,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 434,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5407,
+          "measuredAt": 5409,
+          "elapsedMs": -2059,
+          "currentTime": 541,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 541,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5426,
+          "measuredAt": 5428,
+          "elapsedMs": -2040,
+          "currentTime": 560,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 560,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5460,
+          "measuredAt": 5461,
+          "elapsedMs": -2006,
+          "currentTime": 594,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 594,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5609,
+          "measuredAt": 5610,
+          "elapsedMs": -1857,
+          "currentTime": 743,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 743,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5672,
+          "measuredAt": 5673,
+          "elapsedMs": -1794,
+          "currentTime": 806,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 806,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5685,
+          "measuredAt": 5685,
+          "elapsedMs": -1781,
+          "currentTime": 819,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 819,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5701,
+          "measuredAt": 5702,
+          "elapsedMs": -1765,
+          "currentTime": 835,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 835,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5716,
+          "measuredAt": 5717,
+          "elapsedMs": -1750,
+          "currentTime": 850,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 850,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5732,
+          "measuredAt": 5732,
+          "elapsedMs": -1734,
+          "currentTime": 866,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 866,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5749,
+          "measuredAt": 5749,
+          "elapsedMs": -1717,
+          "currentTime": 883,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 883,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5765,
+          "measuredAt": 5765,
+          "elapsedMs": -1701,
+          "currentTime": 899,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 899,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5783,
+          "measuredAt": 5783,
+          "elapsedMs": -1683,
+          "currentTime": 917,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 917,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5807,
+          "measuredAt": 5807,
+          "elapsedMs": -1659,
+          "currentTime": 941,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 941,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5816,
+          "measuredAt": 5816,
+          "elapsedMs": -1650,
+          "currentTime": 950,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 950,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5831,
+          "measuredAt": 5831,
+          "elapsedMs": -1635,
+          "currentTime": 965,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 965,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5848,
+          "measuredAt": 5848,
+          "elapsedMs": -1618,
+          "currentTime": 982,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 982,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5863,
+          "measuredAt": 5864,
+          "elapsedMs": -1603,
+          "currentTime": 997,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 997,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5881,
+          "measuredAt": 5881,
+          "elapsedMs": -1585,
+          "currentTime": 1015,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1015,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5897,
+          "measuredAt": 5898,
+          "elapsedMs": -1569,
+          "currentTime": 1031,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1031,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5912,
+          "measuredAt": 5913,
+          "elapsedMs": -1554,
+          "currentTime": 1046,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1046,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5930,
+          "measuredAt": 5930,
+          "elapsedMs": -1536,
+          "currentTime": 1064,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1064,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5945,
+          "measuredAt": 5945,
+          "elapsedMs": -1521,
+          "currentTime": 1079,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1079,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5961,
+          "measuredAt": 5962,
+          "elapsedMs": -1505,
+          "currentTime": 1095,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1095,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 5990,
+          "measuredAt": 5992,
+          "elapsedMs": -1476,
+          "currentTime": 1124,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1124,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6006,
+          "measuredAt": 6011,
+          "elapsedMs": -1460,
+          "currentTime": 1140,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1140,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6021,
+          "measuredAt": 6023,
+          "elapsedMs": -1445,
+          "currentTime": 1155,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1155,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6038,
+          "measuredAt": 6039,
+          "elapsedMs": -1428,
+          "currentTime": 1172,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1172,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6042,
+          "measuredAt": 6042,
+          "elapsedMs": -1424,
+          "currentTime": 1176,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1176,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6058,
+          "measuredAt": 6058,
+          "elapsedMs": -1408,
+          "currentTime": 1192,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1192,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6148,
+          "measuredAt": 6150,
+          "elapsedMs": -1318,
+          "currentTime": 1282,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1282,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6252,
+          "measuredAt": 6253,
+          "elapsedMs": -1214,
+          "currentTime": 1386,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1386,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6387,
+          "measuredAt": 6388,
+          "elapsedMs": -1079,
+          "currentTime": 1521,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1521,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6435,
+          "measuredAt": 6436,
+          "elapsedMs": -1031,
+          "currentTime": 1569,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1569,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6450,
+          "measuredAt": 6451,
+          "elapsedMs": -1016,
+          "currentTime": 1584,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1584,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6466,
+          "measuredAt": 6467,
+          "elapsedMs": -1000,
+          "currentTime": 1600,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1600,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6483,
+          "measuredAt": 6483,
+          "elapsedMs": -983,
+          "currentTime": 1617,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1617,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6502,
+          "measuredAt": 6502,
+          "elapsedMs": -964,
+          "currentTime": 1636,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1636,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6518,
+          "measuredAt": 6518,
+          "elapsedMs": -948,
+          "currentTime": 1652,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1652,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6533,
+          "measuredAt": 6534,
+          "elapsedMs": -933,
+          "currentTime": 1667,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1667,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6550,
+          "measuredAt": 6551,
+          "elapsedMs": -916,
+          "currentTime": 1684,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1684,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6565,
+          "measuredAt": 6566,
+          "elapsedMs": -901,
+          "currentTime": 1699,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1699,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6582,
+          "measuredAt": 6582,
+          "elapsedMs": -884,
+          "currentTime": 1716,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1716,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6598,
+          "measuredAt": 6598,
+          "elapsedMs": -868,
+          "currentTime": 1732,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1732,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6614,
+          "measuredAt": 6614,
+          "elapsedMs": -852,
+          "currentTime": 1748,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1748,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6630,
+          "measuredAt": 6630,
+          "elapsedMs": -836,
+          "currentTime": 1764,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1764,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6649,
+          "measuredAt": 6649,
+          "elapsedMs": -817,
+          "currentTime": 1783,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1783,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6666,
+          "measuredAt": 6667,
+          "elapsedMs": -800,
+          "currentTime": 1800,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1800,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6705,
+          "measuredAt": 6707,
+          "elapsedMs": -761,
+          "currentTime": 1839,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1839,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6718,
+          "measuredAt": 6720,
+          "elapsedMs": -748,
+          "currentTime": 1852,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1852,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6735,
+          "measuredAt": 6736,
+          "elapsedMs": -731,
+          "currentTime": 1869,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1869,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6750,
+          "measuredAt": 6750,
+          "elapsedMs": -716,
+          "currentTime": 1884,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1884,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6829,
+          "measuredAt": 6831,
+          "elapsedMs": -637,
+          "currentTime": 1963,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1963,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 6864,
+          "measuredAt": 6865,
+          "elapsedMs": -602,
+          "currentTime": 1998,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1998,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7122,
+          "measuredAt": 7123,
+          "elapsedMs": -344,
+          "currentTime": 2256,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2256,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7207,
+          "measuredAt": 7207,
+          "elapsedMs": -259,
+          "currentTime": 2341,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2341,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7222,
+          "measuredAt": 7222,
+          "elapsedMs": -244,
+          "currentTime": 2356,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2356,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7236,
+          "measuredAt": 7236,
+          "elapsedMs": -230,
+          "currentTime": 2370,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2370,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7253,
+          "measuredAt": 7253,
+          "elapsedMs": -213,
+          "currentTime": 2387,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2387,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7267,
+          "measuredAt": 7268,
+          "elapsedMs": -199,
+          "currentTime": 2401,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2401,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7285,
+          "measuredAt": 7285,
+          "elapsedMs": -181,
+          "currentTime": 2419,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2419,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7302,
+          "measuredAt": 7302,
+          "elapsedMs": -164,
+          "currentTime": 2436,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2436,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7318,
+          "measuredAt": 7318,
+          "elapsedMs": -148,
+          "currentTime": 2452,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2452,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7334,
+          "measuredAt": 7334,
+          "elapsedMs": -132,
+          "currentTime": 2468,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2468,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7350,
+          "measuredAt": 7350,
+          "elapsedMs": -116,
+          "currentTime": 2484,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2484,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7367,
+          "measuredAt": 7368,
+          "elapsedMs": -99,
+          "currentTime": 2501,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2501,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7393,
+          "measuredAt": 7395,
+          "elapsedMs": -73,
+          "currentTime": 2527,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2527,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7410,
+          "measuredAt": 7412,
+          "elapsedMs": -56,
+          "currentTime": 2544,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2544,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7425,
+          "measuredAt": 7427,
+          "elapsedMs": -41,
+          "currentTime": 2559,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2559,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7440,
+          "measuredAt": 7442,
+          "elapsedMs": -26,
+          "currentTime": 2574,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2574,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7448,
+          "measuredAt": 7448,
+          "elapsedMs": -18,
+          "currentTime": 2582,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2582,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 7526,
+          "measuredAt": 7528,
+          "elapsedMs": 60,
+          "currentTime": 2660,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0.10000000000000009,
+          "localTime": 2660,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0.861776
+        },
+        {
+          "rafTimestamp": 7564,
+          "measuredAt": 7565,
+          "elapsedMs": 98,
+          "currentTime": 2698,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0.16333333333333386,
+          "localTime": 2698,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 1
+        },
+        {
+          "rafTimestamp": 7739,
+          "measuredAt": 7740,
+          "elapsedMs": 273,
+          "currentTime": 2873,
+          "startTime": 4866,
+          "playState": "running",
+          "progress": 0.45500000000000024,
+          "localTime": 2873,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 1
+        }
+      ],
+      "route": "銀行 → 街4",
+      "bounds": {
+        "x": 158.3636932373047,
+        "y": 264.45526123046875,
+        "width": 70,
+        "height": 40.5,
+        "top": 264.45526123046875,
+        "right": 228.3636932373047,
+        "bottom": 304.95526123046875,
+        "left": 158.3636932373047
+      }
+    },
+    "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-844px-mobile-webkit/activation-presentation.json": {
+      "at": 1793552832570,
+      "timeOrigin": 1793552821907,
+      "records": [
+        {
+          "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        },
+        {
+          "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+          "pointerEvents": "none",
+          "presentation": "illustrated",
+          "ownerCovered": false,
+          "artWidth": 100,
+          "artHeight": 65,
+          "sourceCovered": false,
+          "highlightedCards": 1,
+          "highlightedOwners": 1,
+          "contained": true
+        }
+      ],
+      "timerTasks": [
+        {
+          "started": 7471,
+          "duration": 219,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8200,
+          "duration": 10,
+          "delay": 500,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8810,
+          "duration": 1,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8900,
+          "duration": 7,
+          "delay": 1200,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8976,
+          "duration": 1,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8980,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8981,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8981,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8981,
+          "duration": 0,
+          "delay": 1400,
+          "callback": "anonymous"
+        },
+        {
+          "started": 9507,
+          "duration": 0,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 9600,
+          "duration": 8,
+          "delay": 1900,
+          "callback": "anonymous"
+        },
+        {
+          "started": 10208,
+          "duration": 0,
+          "delay": 600,
+          "callback": "anonymous"
+        },
+        {
+          "started": 10307,
+          "duration": 9,
+          "delay": 2600,
+          "callback": "anonymous"
+        }
+      ],
+      "renderTasks": [
+        {
+          "name": "renderDiceChoose",
+          "started": 7492,
+          "duration": 0
+        },
+        {
+          "name": "renderPending",
+          "started": 7492,
+          "duration": 0
+        },
+        {
+          "name": "renderLog",
+          "started": 7492,
+          "duration": 5
+        },
+        {
+          "name": "renderPlayers",
+          "started": 7497,
+          "duration": 83
+        },
+        {
+          "name": "renderBuildMenu",
+          "started": 7581,
+          "duration": 40
+        },
+        {
+          "name": "renderActiveGameState",
+          "started": 7490,
+          "duration": 145
+        },
+        {
+          "name": "_render",
+          "started": 7490,
+          "duration": 146
+        },
+        {
+          "name": "render",
+          "started": 7490,
+          "duration": 146
+        },
+        {
+          "name": "renderDiceChoose",
+          "started": 7653,
+          "duration": 0
+        },
+        {
+          "name": "renderPending",
+          "started": 7653,
+          "duration": 0
+        },
+        {
+          "name": "renderLog",
+          "started": 7654,
+          "duration": 1
+        },
+        {
+          "name": "renderPlayers",
+          "started": 7655,
+          "duration": 6
+        },
+        {
+          "name": "renderBuildMenu",
+          "started": 7661,
+          "duration": 1
+        },
+        {
+          "name": "renderActiveGameState",
+          "started": 7653,
+          "duration": 18
+        },
+        {
+          "name": "_render",
+          "started": 7653,
+          "duration": 19
+        },
+        {
+          "name": "render",
+          "started": 7653,
+          "duration": 19
+        }
+      ],
+      "frameTasks": [
+        {
+          "started": 6973,
+          "duration": 0,
+          "timestamp": 6961,
+          "callback": "measure"
+        },
+        {
+          "started": 7691,
+          "duration": 1,
+          "timestamp": 7690,
+          "callback": "measure"
+        },
+        {
+          "started": 7692,
+          "duration": 1,
+          "timestamp": 7690,
+          "callback": "layout"
+        },
+        {
+          "started": 7693,
+          "duration": 5,
+          "timestamp": 7690,
+          "callback": "layout"
+        },
+        {
+          "started": 7698,
+          "duration": 7,
+          "timestamp": 7690,
+          "callback": "anonymous"
+        },
+        {
+          "started": 7705,
+          "duration": 3,
+          "timestamp": 7690,
+          "callback": "anonymous"
+        },
+        {
+          "started": 8708,
+          "duration": 0,
+          "timestamp": 8705,
+          "callback": "measure"
+        },
+        {
+          "started": 9015,
+          "duration": 2,
+          "timestamp": 9013,
+          "callback": "measure"
+        },
+        {
+          "started": 9283,
+          "duration": 1,
+          "timestamp": 9283,
+          "callback": "measure"
+        },
+        {
+          "started": 9350,
+          "duration": 2,
+          "timestamp": 9349,
+          "callback": "measure"
+        },
+        {
+          "started": 9386,
+          "duration": 3,
+          "timestamp": 9386,
+          "callback": "measure"
+        },
+        {
+          "started": 9406,
+          "duration": 1,
+          "timestamp": 9406,
+          "callback": "measure"
+        },
+        {
+          "started": 9447,
+          "duration": 2,
+          "timestamp": 9447,
+          "callback": "measure"
+        },
+        {
+          "started": 9484,
+          "duration": 2,
+          "timestamp": 9484,
+          "callback": "measure"
+        },
+        {
+          "started": 9504,
+          "duration": 2,
+          "timestamp": 9504,
+          "callback": "measure"
+        },
+        {
+          "started": 9519,
+          "duration": 2,
+          "timestamp": 9519,
+          "callback": "measure"
+        },
+        {
+          "started": 9725,
+          "duration": 0,
+          "timestamp": 9723,
+          "callback": "measure"
+        },
+        {
+          "started": 10301,
+          "duration": 2,
+          "timestamp": 10299,
+          "callback": "measure"
+        },
+        {
+          "started": 10452,
+          "duration": 3,
+          "timestamp": 10452,
+          "callback": "measure"
+        },
+        {
+          "started": 10644,
+          "duration": 2,
+          "timestamp": 10644,
+          "callback": "measure"
+        }
+      ]
+    },
+    "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-844px-mobile-webkit/facility-chain-flight-sample.json": {
+      "rafTimestamp": 10644,
+      "measuredAt": 10645,
+      "elapsedMs": 354,
+      "currentTime": 2954,
+      "startTime": 7690,
+      "playState": "running",
+      "progress": 0.5899999999999994,
+      "localTime": 2954,
+      "delay": 2600,
+      "duration": 600,
+      "opacity": 1,
+      "frames": [
+        {
+          "rafTimestamp": 8705,
+          "measuredAt": 8708,
+          "elapsedMs": -1585,
+          "currentTime": 1015,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1015,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9013,
+          "measuredAt": 9017,
+          "elapsedMs": -1277,
+          "currentTime": 1323,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1323,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9283,
+          "measuredAt": 9284,
+          "elapsedMs": -1007,
+          "currentTime": 1593,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1593,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9349,
+          "measuredAt": 9352,
+          "elapsedMs": -941,
+          "currentTime": 1659,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1659,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9386,
+          "measuredAt": 9389,
+          "elapsedMs": -904,
+          "currentTime": 1696,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1696,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9406,
+          "measuredAt": 9407,
+          "elapsedMs": -884,
+          "currentTime": 1716,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1716,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9447,
+          "measuredAt": 9449,
+          "elapsedMs": -843,
+          "currentTime": 1757,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1757,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9484,
+          "measuredAt": 9486,
+          "elapsedMs": -806,
+          "currentTime": 1794,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1794,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9504,
+          "measuredAt": 9506,
+          "elapsedMs": -786,
+          "currentTime": 1814,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1814,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9519,
+          "measuredAt": 9521,
+          "elapsedMs": -771,
+          "currentTime": 1829,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 1829,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 9723,
+          "measuredAt": 9725,
+          "elapsedMs": -567,
+          "currentTime": 2033,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0,
+          "localTime": 2033,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0
+        },
+        {
+          "rafTimestamp": 10299,
+          "measuredAt": 10303,
+          "elapsedMs": 9,
+          "currentTime": 2609,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0.014999999999998348,
+          "localTime": 2609,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 0.227644
+        },
+        {
+          "rafTimestamp": 10452,
+          "measuredAt": 10455,
+          "elapsedMs": 162,
+          "currentTime": 2762,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0.26999999999999913,
+          "localTime": 2762,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 1
+        },
+        {
+          "rafTimestamp": 10644,
+          "measuredAt": 10645,
+          "elapsedMs": 354,
+          "currentTime": 2954,
+          "startTime": 7690,
+          "playState": "running",
+          "progress": 0.5899999999999994,
+          "localTime": 2954,
+          "delay": 2600,
+          "duration": 600,
+          "opacity": 1
+        }
+      ],
+      "route": "銀行 → 街4",
+      "bounds": {
+        "x": 511.3703918457031,
+        "y": 177.54617309570312,
+        "width": 69.99996948242188,
+        "height": 40.5,
+        "top": 177.54617309570312,
+        "right": 581.370361328125,
+        "bottom": 218.04617309570312,
+        "left": 511.3703918457031
+      }
+    }
+  }
+}

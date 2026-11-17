@@ -1,0 +1,134 @@
+[
+  {
+    "case": "320-early",
+    "samples": 9,
+    "routes": 7,
+    "finished": 7,
+    "firstFinishAfterCreationMs": 611,
+    "lastFinishBeforeTurnMs": 2516,
+    "statuses": [
+      "complete"
+    ],
+    "nets": [
+      {
+        "owner": 0,
+        "net": -1,
+        "text": "−1"
+      },
+      {
+        "owner": 3,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 2,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 1,
+        "net": 2,
+        "text": "+2"
+      }
+    ]
+  },
+  {
+    "case": "320-late",
+    "samples": 4,
+    "routes": 7,
+    "finished": 7,
+    "firstFinishAfterCreationMs": 595,
+    "lastFinishBeforeTurnMs": 4128,
+    "statuses": [
+      "complete"
+    ],
+    "nets": [
+      {
+        "owner": 0,
+        "net": 0,
+        "text": "0"
+      },
+      {
+        "owner": 3,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 2,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 1,
+        "net": 2,
+        "text": "+2"
+      }
+    ]
+  },
+  {
+    "case": "844-early",
+    "samples": 6,
+    "routes": 7,
+    "finished": 7,
+    "firstFinishAfterCreationMs": 581,
+    "lastFinishBeforeTurnMs": 2542,
+    "statuses": [
+      "complete"
+    ],
+    "nets": [
+      {
+        "owner": 0,
+        "net": -1,
+        "text": "−1"
+      },
+      {
+        "owner": 3,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 2,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 1,
+        "net": 2,
+        "text": "+2"
+      }
+    ]
+  },
+  {
+    "case": "844-late",
+    "samples": 3,
+    "routes": 7,
+    "finished": 7,
+    "firstFinishAfterCreationMs": 630,
+    "lastFinishBeforeTurnMs": 4323,
+    "statuses": [
+      "complete"
+    ],
+    "nets": [
+      {
+        "owner": 0,
+        "net": 0,
+        "text": "0"
+      },
+      {
+        "owner": 3,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 2,
+        "net": 2,
+        "text": "+2"
+      },
+      {
+        "owner": 1,
+        "net": 2,
+        "text": "+2"
+      }
+    ]
+  }
+]

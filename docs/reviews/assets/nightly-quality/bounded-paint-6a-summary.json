@@ -1,0 +1,117 @@
+{
+  "head": "6a30511f",
+  "run": 41626369905,
+  "adopted": false,
+  "reason": "Both variants pass 3/3, but roughly one-second frame gaps remain. Ordering/warm-up is not controlled; no evidence of root cause resolution.",
+  "records": [
+    {
+      "variant": "baseline",
+      "repeat": "first",
+      "observationsAfterCloseMs": [
+        273,
+        1458,
+        1567
+      ],
+      "maxObservationGapMs": 1185,
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 112,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      }
+    },
+    {
+      "variant": "baseline",
+      "repeat": "-repeat1",
+      "observationsAfterCloseMs": [
+        278,
+        1255,
+        1370
+      ],
+      "maxObservationGapMs": 977,
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 116,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      }
+    },
+    {
+      "variant": "baseline",
+      "repeat": "-repeat2",
+      "observationsAfterCloseMs": [
+        269,
+        1216,
+        1338
+      ],
+      "maxObservationGapMs": 947,
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 122,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      }
+    },
+    {
+      "variant": "candidate",
+      "repeat": "first",
+      "observationsAfterCloseMs": [
+        399,
+        1354,
+        1377,
+        1493
+      ],
+      "maxObservationGapMs": 955,
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 138,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      }
+    },
+    {
+      "variant": "candidate",
+      "repeat": "-repeat1",
+      "observationsAfterCloseMs": [
+        306,
+        1239,
+        1373
+      ],
+      "maxObservationGapMs": 933,
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 134,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      }
+    },
+    {
+      "variant": "candidate",
+      "repeat": "-repeat2",
+      "observationsAfterCloseMs": [
+        287,
+        1229,
+        1369
+      ],
+      "maxObservationGapMs": 942,
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 139,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      }
+    }
+  ]
+}

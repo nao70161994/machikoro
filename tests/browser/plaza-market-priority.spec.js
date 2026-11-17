@@ -7,7 +7,7 @@ for (const width of [390, 1440]) {
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/');
         await page.evaluate(() => {
-            startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'cpu', difficulty: 'normal', name: '街2' }]);
+            startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
             const state = GameRuntimeState.runtime.snapshot();
             state.cpuPlayers.fill(null);
             cancelCpuSchedule('plaza-market-priority');

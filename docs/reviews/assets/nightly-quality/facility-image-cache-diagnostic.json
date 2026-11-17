@@ -1,0 +1,110 @@
+{
+  "run": 43010995826,
+  "candidate": "7f898ee1",
+  "baseline": "ceb2693f",
+  "adopted": false,
+  "limitations": [
+    "n=3 per variant",
+    "all baseline runs precede candidate runs",
+    "no direct native paint/raster timing",
+    "about 0.6 second RAF stall remains"
+  ],
+  "variants": {
+    "before": {
+      "stats": {
+        "startTime": "2026-11-11T11:20:25.813Z",
+        "duration": 111640.52799999999,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "samples": [
+        {
+          "maxRafGapMs": 745,
+          "movingObservedAfterCloseMs": 1016,
+          "moving": {
+            "name": "麦畑",
+            "elapsed": 85,
+            "duration": 480,
+            "arrivalStarted": false,
+            "pointerEvents": "none",
+            "insideScreen": true
+          }
+        },
+        {
+          "maxRafGapMs": 654,
+          "movingObservedAfterCloseMs": 927,
+          "moving": {
+            "name": "麦畑",
+            "elapsed": 85,
+            "duration": 480,
+            "arrivalStarted": false,
+            "pointerEvents": "none",
+            "insideScreen": true
+          }
+        },
+        {
+          "maxRafGapMs": 609,
+          "movingObservedAfterCloseMs": 890,
+          "moving": {
+            "name": "麦畑",
+            "elapsed": 88,
+            "duration": 480,
+            "arrivalStarted": false,
+            "pointerEvents": "none",
+            "insideScreen": true
+          }
+        }
+      ]
+    },
+    "after": {
+      "stats": {
+        "startTime": "2026-11-11T11:22:18.527Z",
+        "duration": 103278.734,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "samples": [
+        {
+          "maxRafGapMs": 599,
+          "movingObservedAfterCloseMs": 826,
+          "moving": {
+            "name": "麦畑",
+            "elapsed": 83,
+            "duration": 480,
+            "arrivalStarted": false,
+            "pointerEvents": "none",
+            "insideScreen": true
+          }
+        },
+        {
+          "maxRafGapMs": 587,
+          "movingObservedAfterCloseMs": 790,
+          "moving": {
+            "name": "麦畑",
+            "elapsed": 81,
+            "duration": 480,
+            "arrivalStarted": false,
+            "pointerEvents": "none",
+            "insideScreen": true
+          }
+        },
+        {
+          "maxRafGapMs": 592,
+          "movingObservedAfterCloseMs": 809,
+          "moving": {
+            "name": "麦畑",
+            "elapsed": 80,
+            "duration": 480,
+            "arrivalStarted": false,
+            "pointerEvents": "none",
+            "insideScreen": true
+          }
+        }
+      ]
+    }
+  }
+}

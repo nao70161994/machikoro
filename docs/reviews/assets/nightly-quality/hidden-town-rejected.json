@@ -1,0 +1,101 @@
+{
+  "scope": "Local Termux Chromium,844x390 DPR1, controlled4p12facilities each; direct coin increments cause legacy markup updates. No real roll or nativeWebKit timing proof.",
+  "results": [
+    {
+      "version": "before",
+      "cardboard": {
+        "towns": 4,
+        "cards": 48,
+        "legacyNodes": 879,
+        "timings": [
+          279.60000002384186,
+          277,
+          265,
+          1000.5999999046326,
+          973.1999999284744
+        ],
+        "townCost": [
+          0.7000000476837158,
+          0.3999999761581421,
+          0.5
+        ]
+      },
+      "snapshots": [
+        {
+          "theme": "classic",
+          "actual": "classic",
+          "towns": 4,
+          "stateUnchanged": true
+        },
+        {
+          "theme": "sunset",
+          "actual": "sunset",
+          "towns": 4,
+          "stateUnchanged": true
+        },
+        {
+          "theme": "plaza",
+          "actual": "plaza",
+          "towns": 4,
+          "stateUnchanged": true
+        },
+        {
+          "theme": "cardboard",
+          "actual": "cardboard",
+          "towns": 4,
+          "stateUnchanged": true
+        }
+      ],
+      "finalState": "{\"playerCoins\":[35,30,30,30],\"playerCardNames\":[[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"],[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"],[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"],[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"]],\"playerDormantIndices\":[[],[],[],[]],\"playerLandmarks\":[{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false},{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false},{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false},{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false}],\"playerItVenture\":[0,0,0,0],\"playerHasYakusho\":[true,true,true,true],\"hadAmusementParkAtRoll\":false,\"shopStock\":{\"麦畑\":6,\"牧場\":6,\"森林\":6,\"鉱山\":6,\"リンゴ園\":6,\"パン屋\":6,\"コンビニ\":6,\"チーズ工場\":6,\"家具工場\":6,\"青果市場\":6,\"カフェ\":6,\"ファミレス\":6,\"スタジアム\":4,\"テレビ局\":4,\"ビジネスセンター\":4,\"花畑\":6,\"サンマ漁船\":6,\"マグロ漁船\":6,\"フラワーショップ\":6,\"食品倉庫\":6,\"寿司屋\":6,\"ピザ屋\":6,\"バーガーショップ\":6,\"出版社\":4,\"税務署\":4,\"コーン畑\":6,\"ブドウ園\":6,\"雑貨屋\":6,\"改装屋\":6,\"貸金業\":6,\"ワイナリー\":6,\"引越し屋\":6,\"ドリンク工場\":6,\"高級フレンチ\":6,\"会員制BAR\":6,\"清掃業\":4,\"ITベンチャー\":4,\"公園\":4},\"builtThisTurn\":false,\"log\":[{\"type\":\"system\",\"message\":\"👤 街3のターン\"}],\"reviewSummary\":{\"complete\":true,\"totalsComplete\":true,\"counts\":{\"dice\":0,\"gain\":0,\"lose\":0,\"build\":0,\"special\":0,\"system\":1,\"error\":0},\"totals\":{\"gain\":0,\"lose\":0}}}",
+      "pageErrors": []
+    },
+    {
+      "version": "after",
+      "cardboard": {
+        "towns": 0,
+        "cards": 48,
+        "legacyNodes": 95,
+        "timings": [
+          299.2999999523163,
+          302.39999997615814,
+          314.5,
+          1091.6000000238419,
+          1063.3000000715256
+        ],
+        "townCost": [
+          3.799999952316284,
+          0.8000000715255737,
+          0.6000000238418579
+        ]
+      },
+      "snapshots": [
+        {
+          "theme": "classic",
+          "actual": "classic",
+          "towns": 0,
+          "stateUnchanged": true
+        },
+        {
+          "theme": "sunset",
+          "actual": "sunset",
+          "towns": 0,
+          "stateUnchanged": true
+        },
+        {
+          "theme": "plaza",
+          "actual": "plaza",
+          "towns": 0,
+          "stateUnchanged": true
+        },
+        {
+          "theme": "cardboard",
+          "actual": "cardboard",
+          "towns": 0,
+          "stateUnchanged": true
+        }
+      ],
+      "finalState": "{\"playerCoins\":[35,30,30,30],\"playerCardNames\":[[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"],[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"],[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"],[\"麦畑\",\"牧場\",\"森林\",\"鉱山\",\"リンゴ園\",\"パン屋\",\"コンビニ\",\"チーズ工場\",\"家具工場\",\"青果市場\",\"カフェ\",\"ファミレス\"]],\"playerDormantIndices\":[[],[],[],[]],\"playerLandmarks\":[{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false},{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false},{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false},{\"駅\":false,\"ショッピングモール\":false,\"遊園地\":false,\"電波塔\":false,\"港\":false,\"空港\":false}],\"playerItVenture\":[0,0,0,0],\"playerHasYakusho\":[true,true,true,true],\"hadAmusementParkAtRoll\":false,\"shopStock\":{\"麦畑\":6,\"牧場\":6,\"森林\":6,\"鉱山\":6,\"リンゴ園\":6,\"パン屋\":6,\"コンビニ\":6,\"チーズ工場\":6,\"家具工場\":6,\"青果市場\":6,\"カフェ\":6,\"ファミレス\":6,\"スタジアム\":4,\"テレビ局\":4,\"ビジネスセンター\":4,\"花畑\":6,\"サンマ漁船\":6,\"マグロ漁船\":6,\"フラワーショップ\":6,\"食品倉庫\":6,\"寿司屋\":6,\"ピザ屋\":6,\"バーガーショップ\":6,\"出版社\":4,\"税務署\":4,\"コーン畑\":6,\"ブドウ園\":6,\"雑貨屋\":6,\"改装屋\":6,\"貸金業\":6,\"ワイナリー\":6,\"引越し屋\":6,\"ドリンク工場\":6,\"高級フレンチ\":6,\"会員制BAR\":6,\"清掃業\":4,\"ITベンチャー\":4,\"公園\":4},\"builtThisTurn\":false,\"log\":[{\"type\":\"system\",\"message\":\"👤 街1のターン\"}],\"reviewSummary\":{\"complete\":true,\"totalsComplete\":true,\"counts\":{\"dice\":0,\"gain\":0,\"lose\":0,\"build\":0,\"special\":0,\"system\":1,\"error\":0},\"totals\":{\"gain\":0,\"lose\":0}}}",
+      "pageErrors": []
+    }
+  ]
+}

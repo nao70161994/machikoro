@@ -1,0 +1,15 @@
+{
+  "fixture": "Controlled initial four CPU seats, paused scheduling, not a played match. Before: 437e65a9 CSS/main; after: working tree. Sequential Termux Chromium contexts, not physical-device verification.",
+  "records": {
+    "before": {
+      "viewportHeight": 218,
+      "activityHeight": 28,
+      "canonicalUnchanged": true
+    },
+    "after": {
+      "viewportHeight": 250,
+      "activityHeight": 44,
+      "canonicalUnchanged": true
+    }
+  }
+}

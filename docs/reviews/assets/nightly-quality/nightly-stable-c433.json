@@ -1,0 +1,30 @@
+{
+  "sourceRevision": "c4335aabc4ad6feaa039f525da89253ab8b3fb0e",
+  "releaseRun": 41333500329,
+  "visualRun": 41333500338,
+  "nightlyRun": 41333510157,
+  "focusedRun": 41333513105,
+  "nightlyDiscovered": 354,
+  "initialPassed": 353,
+  "flaky": 0,
+  "allowedOptInSkip": 1,
+  "coverageJob": 124932716247,
+  "shardMinutes": [
+    15.9,
+    8.7,
+    15.8,
+    12.4,
+    13.2,
+    10.3
+  ],
+  "scope": "CI results for c433 only, before the narrow camera/menu candidate. Not physical-device or commercial-quality proof. Existing retry policy unchanged.",
+  "summaryLogLines": [
+    "mobile-webkit-e2e (6)\tComplete browser E2E shard\t2026-11-01T18:07:23.4130944Z   1 skipped",
+    "mobile-webkit-e2e (6)\tComplete browser E2E shard\t2026-11-01T18:07:23.4136228Z   58 passed (15.9m)",
+    "mobile-webkit-e2e (2)\tComplete browser E2E shard\t2026-11-01T18:00:15.8912556Z   59 passed (8.7m)",
+    "mobile-webkit-e2e (3)\tComplete browser E2E shard\t2026-11-01T18:07:15.9873473Z   59 passed (15.8m)",
+    "mobile-webkit-e2e (4)\tComplete browser E2E shard\t2026-11-01T18:03:56.3075507Z   59 passed (12.4m)",
+    "mobile-webkit-e2e (1)\tComplete browser E2E shard\t2026-11-01T18:04:47.0015717Z   59 passed (13.2m)",
+    "mobile-webkit-e2e (5)\tComplete browser E2E shard\t2026-11-01T18:02:33.8742431Z   59 passed (10.3m)"
+  ]
+}

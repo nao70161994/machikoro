@@ -1,0 +1,1105 @@
+{
+  "commit": "ad5f90f2ff884759eeda756fbb014c704a8c6e84",
+  "run": 41302816863,
+  "artifact": 13081704398,
+  "result": "3 passed; retries0;1.0min",
+  "scope": "Single candidate run; prior83d844 failure retained. Shadows static, keyframe transform only. Native highDPR3 unchanged; long RAF gaps remain and speed/stability/root cause is not proven.",
+  "cases": [
+    {
+      "case": "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-320px-mobile-webkit",
+      "presentation": {
+        "at": 1793533212188,
+        "timeOrigin": 1793533203616,
+        "records": [
+          {
+            "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          }
+        ],
+        "timerTasks": [
+          {
+            "started": 5312,
+            "duration": 308,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6225,
+            "duration": 19,
+            "delay": 500,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6828,
+            "duration": 1,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6832,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6832,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6832,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6832,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6844,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6921,
+            "duration": 9,
+            "delay": 1200,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7530,
+            "duration": 0,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 7622,
+            "duration": 8,
+            "delay": 1900,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8230,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 8322,
+            "duration": 7,
+            "delay": 2600,
+            "callback": "anonymous"
+          }
+        ],
+        "renderTasks": [
+          {
+            "name": "renderDiceChoose",
+            "started": 5335,
+            "duration": 0
+          },
+          {
+            "name": "renderPending",
+            "started": 5335,
+            "duration": 0
+          },
+          {
+            "name": "renderLog",
+            "started": 5335,
+            "duration": 6
+          },
+          {
+            "name": "renderPlayers",
+            "started": 5341,
+            "duration": 90
+          },
+          {
+            "name": "renderBuildMenu",
+            "started": 5432,
+            "duration": 48
+          },
+          {
+            "name": "renderActiveGameState",
+            "started": 5333,
+            "duration": 163
+          },
+          {
+            "name": "_render",
+            "started": 5333,
+            "duration": 215
+          },
+          {
+            "name": "render",
+            "started": 5333,
+            "duration": 215
+          },
+          {
+            "name": "renderDiceChoose",
+            "started": 5575,
+            "duration": 0
+          },
+          {
+            "name": "renderPending",
+            "started": 5575,
+            "duration": 0
+          },
+          {
+            "name": "renderLog",
+            "started": 5575,
+            "duration": 2
+          },
+          {
+            "name": "renderPlayers",
+            "started": 5577,
+            "duration": 6
+          },
+          {
+            "name": "renderBuildMenu",
+            "started": 5583,
+            "duration": 2
+          },
+          {
+            "name": "renderActiveGameState",
+            "started": 5574,
+            "duration": 22
+          },
+          {
+            "name": "_render",
+            "started": 5574,
+            "duration": 23
+          },
+          {
+            "name": "render",
+            "started": 5574,
+            "duration": 23
+          }
+        ],
+        "frameTasks": [
+          {
+            "started": 4725,
+            "duration": 1,
+            "timestamp": 4716,
+            "callback": "measure"
+          },
+          {
+            "started": 5213,
+            "duration": 0,
+            "timestamp": 5213,
+            "callback": "measure"
+          },
+          {
+            "started": 5245,
+            "duration": 0,
+            "timestamp": 5245,
+            "callback": "measure"
+          },
+          {
+            "started": 5293,
+            "duration": 1,
+            "timestamp": 5293,
+            "callback": "measure"
+          },
+          {
+            "started": 5621,
+            "duration": 0,
+            "timestamp": 5620,
+            "callback": "measure"
+          },
+          {
+            "started": 5621,
+            "duration": 99,
+            "timestamp": 5620,
+            "callback": "layout"
+          },
+          {
+            "started": 5720,
+            "duration": 9,
+            "timestamp": 5620,
+            "callback": "anonymous"
+          },
+          {
+            "started": 5729,
+            "duration": 2,
+            "timestamp": 5620,
+            "callback": "anonymous"
+          },
+          {
+            "started": 5731,
+            "duration": 5,
+            "timestamp": 5620,
+            "callback": "layout"
+          },
+          {
+            "started": 6188,
+            "duration": 1,
+            "timestamp": 6187,
+            "callback": "measure"
+          },
+          {
+            "started": 6189,
+            "duration": 0,
+            "timestamp": 6187,
+            "callback": "anonymous"
+          },
+          {
+            "started": 6189,
+            "duration": 2,
+            "timestamp": 6187,
+            "callback": "layout"
+          },
+          {
+            "started": 6560,
+            "duration": 1,
+            "timestamp": 6558,
+            "callback": "measure"
+          },
+          {
+            "started": 6561,
+            "duration": 4,
+            "timestamp": 6558,
+            "callback": "layout"
+          },
+          {
+            "started": 6666,
+            "duration": 1,
+            "timestamp": 6666,
+            "callback": "measure"
+          },
+          {
+            "started": 6714,
+            "duration": 2,
+            "timestamp": 6714,
+            "callback": "measure"
+          },
+          {
+            "started": 6731,
+            "duration": 1,
+            "timestamp": 6731,
+            "callback": "measure"
+          },
+          {
+            "started": 6765,
+            "duration": 3,
+            "timestamp": 6765,
+            "callback": "measure"
+          },
+          {
+            "started": 6784,
+            "duration": 1,
+            "timestamp": 6784,
+            "callback": "measure"
+          },
+          {
+            "started": 6798,
+            "duration": 1,
+            "timestamp": 6798,
+            "callback": "measure"
+          },
+          {
+            "started": 6816,
+            "duration": 2,
+            "timestamp": 6816,
+            "callback": "measure"
+          },
+          {
+            "started": 6839,
+            "duration": 1,
+            "timestamp": 6839,
+            "callback": "measure"
+          },
+          {
+            "started": 6900,
+            "duration": 1,
+            "timestamp": 6899,
+            "callback": "measure"
+          },
+          {
+            "started": 7152,
+            "duration": 1,
+            "timestamp": 7152,
+            "callback": "measure"
+          },
+          {
+            "started": 7401,
+            "duration": 1,
+            "timestamp": 7401,
+            "callback": "measure"
+          },
+          {
+            "started": 7504,
+            "duration": 1,
+            "timestamp": 7504,
+            "callback": "measure"
+          },
+          {
+            "started": 7523,
+            "duration": 1,
+            "timestamp": 7523,
+            "callback": "measure"
+          },
+          {
+            "started": 7585,
+            "duration": 1,
+            "timestamp": 7584,
+            "callback": "measure"
+          },
+          {
+            "started": 7856,
+            "duration": 1,
+            "timestamp": 7856,
+            "callback": "measure"
+          },
+          {
+            "started": 8065,
+            "duration": 1,
+            "timestamp": 8065,
+            "callback": "measure"
+          },
+          {
+            "started": 8204,
+            "duration": 1,
+            "timestamp": 8204,
+            "callback": "measure"
+          },
+          {
+            "started": 8221,
+            "duration": 1,
+            "timestamp": 8221,
+            "callback": "measure"
+          },
+          {
+            "started": 8265,
+            "duration": 0,
+            "timestamp": 8263,
+            "callback": "measure"
+          },
+          {
+            "started": 8549,
+            "duration": 2,
+            "timestamp": 8549,
+            "callback": "measure"
+          }
+        ]
+      },
+      "flight": {
+        "rafTimestamp": 8549,
+        "measuredAt": 8550,
+        "elapsedMs": 329,
+        "currentTime": 2929,
+        "startTime": 5620,
+        "playState": "running",
+        "progress": 0.5483333333333322,
+        "localTime": 2929,
+        "delay": 2600,
+        "duration": 600,
+        "opacity": 1,
+        "frames": [
+          {
+            "rafTimestamp": 6187,
+            "measuredAt": 6189,
+            "elapsedMs": -2033,
+            "currentTime": 567,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 567,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6558,
+            "measuredAt": 6560,
+            "elapsedMs": -1662,
+            "currentTime": 938,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 938,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6666,
+            "measuredAt": 6667,
+            "elapsedMs": -1554,
+            "currentTime": 1046,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1046,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6714,
+            "measuredAt": 6716,
+            "elapsedMs": -1506,
+            "currentTime": 1094,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1094,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6731,
+            "measuredAt": 6732,
+            "elapsedMs": -1489,
+            "currentTime": 1111,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1111,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6765,
+            "measuredAt": 6767,
+            "elapsedMs": -1455,
+            "currentTime": 1145,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1145,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6784,
+            "measuredAt": 6785,
+            "elapsedMs": -1436,
+            "currentTime": 1164,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1164,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6798,
+            "measuredAt": 6799,
+            "elapsedMs": -1422,
+            "currentTime": 1178,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1178,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6816,
+            "measuredAt": 6818,
+            "elapsedMs": -1404,
+            "currentTime": 1196,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1196,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6839,
+            "measuredAt": 6840,
+            "elapsedMs": -1381,
+            "currentTime": 1219,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1219,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 6899,
+            "measuredAt": 6901,
+            "elapsedMs": -1321,
+            "currentTime": 1279,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1279,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7152,
+            "measuredAt": 7153,
+            "elapsedMs": -1068,
+            "currentTime": 1532,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1532,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7401,
+            "measuredAt": 7402,
+            "elapsedMs": -819,
+            "currentTime": 1781,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1781,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7504,
+            "measuredAt": 7505,
+            "elapsedMs": -716,
+            "currentTime": 1884,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1884,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7523,
+            "measuredAt": 7524,
+            "elapsedMs": -697,
+            "currentTime": 1903,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1903,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7584,
+            "measuredAt": 7585,
+            "elapsedMs": -636,
+            "currentTime": 1964,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1964,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 7856,
+            "measuredAt": 7857,
+            "elapsedMs": -364,
+            "currentTime": 2236,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2236,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8065,
+            "measuredAt": 8066,
+            "elapsedMs": -155,
+            "currentTime": 2445,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2445,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8204,
+            "measuredAt": 8205,
+            "elapsedMs": -16,
+            "currentTime": 2584,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2584,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 8221,
+            "measuredAt": 8222,
+            "elapsedMs": 1,
+            "currentTime": 2601,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0.0016666666666664831,
+            "localTime": 2601,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0.018768
+          },
+          {
+            "rafTimestamp": 8263,
+            "measuredAt": 8265,
+            "elapsedMs": 43,
+            "currentTime": 2643,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0.07166666666666618,
+            "localTime": 2643,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0.684643
+          },
+          {
+            "rafTimestamp": 8549,
+            "measuredAt": 8550,
+            "elapsedMs": 329,
+            "currentTime": 2929,
+            "startTime": 5620,
+            "playState": "running",
+            "progress": 0.5483333333333322,
+            "localTime": 2929,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 1
+          }
+        ],
+        "route": "銀行 → 街4",
+        "bounds": {
+          "x": 177.9274139404297,
+          "y": 264.9176940917969,
+          "width": 70,
+          "height": 40.5,
+          "top": 264.9176940917969,
+          "right": 247.9274139404297,
+          "bottom": 305.4176940917969,
+          "left": 177.9274139404297
+        }
+      }
+    },
+    {
+      "case": "cardboard-view-新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない-844px-mobile-webkit",
+      "presentation": {
+        "at": 1793533194879,
+        "timeOrigin": 1793533181685,
+        "records": [
+          {
+            "text": "森林街1 · +1コイン銀行 → 街1施設発動 1 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街2 · +1コイン銀行 → 街2施設発動 2 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街3 · +1コイン銀行 → 街3施設発動 3 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          },
+          {
+            "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+            "pointerEvents": "none",
+            "presentation": "illustrated",
+            "ownerCovered": false,
+            "artWidth": 100,
+            "artHeight": 65,
+            "sourceCovered": false,
+            "highlightedCards": 1,
+            "highlightedOwners": 1,
+            "contained": true
+          }
+        ],
+        "timerTasks": [
+          {
+            "started": 9896,
+            "duration": 279,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 10735,
+            "duration": 14,
+            "delay": 500,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11349,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11425,
+            "duration": 2,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11430,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11431,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11431,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11431,
+            "duration": 0,
+            "delay": 1400,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11435,
+            "duration": 10,
+            "delay": 1200,
+            "callback": "anonymous"
+          },
+          {
+            "started": 12045,
+            "duration": 0,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 12137,
+            "duration": 14,
+            "delay": 1900,
+            "callback": "anonymous"
+          },
+          {
+            "started": 12751,
+            "duration": 1,
+            "delay": 600,
+            "callback": "anonymous"
+          },
+          {
+            "started": 12835,
+            "duration": 8,
+            "delay": 2600,
+            "callback": "anonymous"
+          }
+        ],
+        "renderTasks": [
+          {
+            "name": "renderDiceChoose",
+            "started": 9917,
+            "duration": 0
+          },
+          {
+            "name": "renderPending",
+            "started": 9917,
+            "duration": 0
+          },
+          {
+            "name": "renderLog",
+            "started": 9917,
+            "duration": 6
+          },
+          {
+            "name": "renderPlayers",
+            "started": 9923,
+            "duration": 107
+          },
+          {
+            "name": "renderBuildMenu",
+            "started": 10031,
+            "duration": 52
+          },
+          {
+            "name": "renderActiveGameState",
+            "started": 9915,
+            "duration": 187
+          },
+          {
+            "name": "_render",
+            "started": 9915,
+            "duration": 188
+          },
+          {
+            "name": "render",
+            "started": 9915,
+            "duration": 188
+          },
+          {
+            "name": "renderDiceChoose",
+            "started": 10129,
+            "duration": 0
+          },
+          {
+            "name": "renderPending",
+            "started": 10129,
+            "duration": 0
+          },
+          {
+            "name": "renderLog",
+            "started": 10129,
+            "duration": 2
+          },
+          {
+            "name": "renderPlayers",
+            "started": 10131,
+            "duration": 7
+          },
+          {
+            "name": "renderBuildMenu",
+            "started": 10138,
+            "duration": 1
+          },
+          {
+            "name": "renderActiveGameState",
+            "started": 10128,
+            "duration": 22
+          },
+          {
+            "name": "_render",
+            "started": 10128,
+            "duration": 23
+          },
+          {
+            "name": "render",
+            "started": 10128,
+            "duration": 23
+          }
+        ],
+        "frameTasks": [
+          {
+            "started": 9446,
+            "duration": 1,
+            "timestamp": 9432,
+            "callback": "measure"
+          },
+          {
+            "started": 10222,
+            "duration": 0,
+            "timestamp": 10221,
+            "callback": "measure"
+          },
+          {
+            "started": 10222,
+            "duration": 3,
+            "timestamp": 10221,
+            "callback": "layout"
+          },
+          {
+            "started": 10225,
+            "duration": 8,
+            "timestamp": 10221,
+            "callback": "layout"
+          },
+          {
+            "started": 10233,
+            "duration": 9,
+            "timestamp": 10221,
+            "callback": "anonymous"
+          },
+          {
+            "started": 10242,
+            "duration": 3,
+            "timestamp": 10221,
+            "callback": "anonymous"
+          },
+          {
+            "started": 11669,
+            "duration": 1,
+            "timestamp": 11669,
+            "callback": "measure"
+          },
+          {
+            "started": 12642,
+            "duration": 1,
+            "timestamp": 12641,
+            "callback": "measure"
+          },
+          {
+            "started": 12895,
+            "duration": 1,
+            "timestamp": 12894,
+            "callback": "measure"
+          },
+          {
+            "started": 13162,
+            "duration": 1,
+            "timestamp": 13160,
+            "callback": "measure"
+          }
+        ]
+      },
+      "flight": {
+        "rafTimestamp": 13160,
+        "measuredAt": 13163,
+        "elapsedMs": 339,
+        "currentTime": 2939,
+        "startTime": 10221,
+        "playState": "running",
+        "progress": 0.565,
+        "localTime": 2939,
+        "delay": 2600,
+        "duration": 600,
+        "opacity": 1,
+        "frames": [
+          {
+            "rafTimestamp": 11669,
+            "measuredAt": 11670,
+            "elapsedMs": -1152,
+            "currentTime": 1448,
+            "startTime": 10221,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 1448,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 12641,
+            "measuredAt": 12643,
+            "elapsedMs": -180,
+            "currentTime": 2420,
+            "startTime": 10221,
+            "playState": "running",
+            "progress": 0,
+            "localTime": 2420,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0
+          },
+          {
+            "rafTimestamp": 12894,
+            "measuredAt": 12896,
+            "elapsedMs": 73,
+            "currentTime": 2673,
+            "startTime": 10221,
+            "playState": "running",
+            "progress": 0.12166666666666659,
+            "localTime": 2673,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 0.943925
+          },
+          {
+            "rafTimestamp": 13160,
+            "measuredAt": 13163,
+            "elapsedMs": 339,
+            "currentTime": 2939,
+            "startTime": 10221,
+            "playState": "running",
+            "progress": 0.565,
+            "localTime": 2939,
+            "delay": 2600,
+            "duration": 600,
+            "opacity": 1
+          }
+        ],
+        "route": "銀行 → 街4",
+        "bounds": {
+          "x": 502.4282531738281,
+          "y": 177.33912658691406,
+          "width": 69.99996948242188,
+          "height": 40.5,
+          "top": 177.33912658691406,
+          "right": 572.42822265625,
+          "bottom": 217.83912658691406,
+          "left": 502.4282531738281
+        }
+      }
+    }
+  ]
+}

@@ -7,7 +7,7 @@ async function prepare(page, width = 390) {
     await page.goto('/');
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
-            type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
+            type: 'human', name: `街${index + 1}`,
         })));
         const state = GameRuntimeState.runtime.snapshot();
         state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
@@ -17,6 +17,7 @@ async function prepare(page, width = 390) {
         state.game.currentPlayer().cards = Array.from({ length: 6 }, () => createCardByName('森林'));
         state.game.currentPlayer().coins = 30;
         state.game.log = [];
+        state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
         render();
         acceptHotseatHandoff();
         PlazaField.focusTarget('self');
@@ -32,8 +33,18 @@ test('縦持ちのガイドは序盤の説明を保ち後から開閉できる',
         render();
         acceptHotseatHandoff();
     });
-    await expect(page.locator('#tutorialBox .tutorial-body')).toBeVisible();
-    await expect(page.locator('.plaza-guide-disclosure')).toHaveCount(0);
+    const initialGuide = page.locator('#tutorialBox .plaza-guide-disclosure');
+    await expect(initialGuide).toHaveCount(1);
+    await expect(initialGuide.locator('.tutorial-body')).toBeHidden();
+    expect(await initialGuide.evaluate(guide => {
+        const summary = guide.querySelector('summary').textContent;
+        const body = guide.querySelector('.tutorial-body').textContent.trim();
+        return body.length > 0 && summary.includes(body);
+    }), '初手も説明全文は閉じたガイド見出しから読める').toBe(true);
+    await initialGuide.locator('summary').click();
+    await expect(initialGuide.locator('.tutorial-body')).toBeVisible();
+    await initialGuide.locator('summary').click();
+    await expect(initialGuide.locator('.tutorial-body')).toBeHidden();
     await page.evaluate(() => {
         GameRuntimeState.runtime.snapshot().game.turnCount = 4;
         render();

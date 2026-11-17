@@ -393,7 +393,7 @@ const mainCompositionGlobals = Object.freeze(Object.fromEntries([
     'MainHumanActionRuntime', 'MainUiEventRuntime', 'PageActivationPolicy', 'PageActivationRuntime',
     'RoomQrCode', 'UiCpuTournament', 'UiDiceDisplay', 'UiEventDelegation', 'UiGameStatusView',
     'UiPlayerCount', 'UiPlayerDisplay', 'PlazaField', 'UiRangeControl', 'UiScreenFocus', 'UiTabView', 'UiWinner',
-    '_readOnlineActionLog', 'getEnabledCardSelection', 'getEnabledLandmarkSelection',
+    '_readOnlineActionLog', 'dismissTurnGreeting', 'getEnabledCardSelection', 'getEnabledLandmarkSelection',
     'getLocalSaveRepository', 'isOnlineReconnectInputBlocked', 'isValidSavedGameState',
     'readOnlineSession', 'recordFlowTrace', 'replaceEnabledCardSelection',
     'replaceEnabledLandmarkSelection', 'replaceMarketRuleSelection', 'resetFullLog',

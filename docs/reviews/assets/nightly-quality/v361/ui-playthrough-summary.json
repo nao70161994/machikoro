@@ -1,0 +1,610 @@
+[
+  {
+    "players": 2,
+    "width": 320,
+    "cpuSpeedMs": 1500,
+    "turns": 50,
+    "humanActions": 123,
+    "clicks": 199,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 12,
+      "targetIndex": 1,
+      "initialScale": "0.307",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.307",
+        "angle": "0",
+        "mode": "overview",
+        "width": 304,
+        "height": 384,
+        "worldWidth": 728,
+        "worldHeight": 1249,
+        "frames": [
+          {
+            "scale": "0.307",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 728,
+            "worldHeight": 1249
+          },
+          {
+            "scale": "0.307",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 728,
+            "worldHeight": 1249
+          },
+          {
+            "scale": "0.307",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 728,
+            "worldHeight": 1249
+          },
+          {
+            "scale": "0.307",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 384,
+            "worldWidth": 728,
+            "worldHeight": 1249
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.307",
+        "angle": "0",
+        "width": 304,
+        "height": 384,
+        "worldWidth": 728,
+        "worldHeight": 1249
+      },
+      "clicks": 2,
+      "readableScale": "1.591",
+      "elapsedMs": 615
+    }
+  },
+  {
+    "players": 2,
+    "width": 1440,
+    "cpuSpeedMs": 1500,
+    "turns": 69,
+    "humanActions": 182,
+    "clicks": 279,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 13,
+      "targetIndex": 0,
+      "initialScale": "0.810",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.810",
+        "angle": "0",
+        "mode": "overview",
+        "width": 1420,
+        "height": 760,
+        "worldWidth": 1400,
+        "worldHeight": 938,
+        "frames": [
+          {
+            "scale": "0.810",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1400,
+            "worldHeight": 938
+          },
+          {
+            "scale": "0.810",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1400,
+            "worldHeight": 938
+          },
+          {
+            "scale": "0.810",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1400,
+            "worldHeight": 938
+          },
+          {
+            "scale": "0.810",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1400,
+            "worldHeight": 938
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.810",
+        "angle": "0",
+        "width": 1420,
+        "height": 760,
+        "worldWidth": 1400,
+        "worldHeight": 938
+      },
+      "clicks": 2,
+      "readableScale": "1.600",
+      "elapsedMs": 2080
+    }
+  },
+  {
+    "players": 4,
+    "width": 390,
+    "cpuSpeedMs": 1500,
+    "turns": 89,
+    "humanActions": 103,
+    "clicks": 168,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 13,
+      "targetIndex": 2,
+      "initialScale": "0.358",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.358",
+        "angle": "0",
+        "mode": "overview",
+        "width": 374,
+        "height": 660,
+        "worldWidth": 1046,
+        "worldHeight": 1532,
+        "frames": [
+          {
+            "scale": "0.358",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1046,
+            "worldHeight": 1532
+          },
+          {
+            "scale": "0.358",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1046,
+            "worldHeight": 1532
+          },
+          {
+            "scale": "0.358",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1046,
+            "worldHeight": 1532
+          },
+          {
+            "scale": "0.358",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 660,
+            "worldWidth": 1046,
+            "worldHeight": 1532
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.358",
+        "angle": "0",
+        "width": 374,
+        "height": 660,
+        "worldWidth": 1046,
+        "worldHeight": 1532
+      },
+      "clicks": 2,
+      "readableScale": "1.080",
+      "elapsedMs": 736
+    }
+  },
+  {
+    "players": 4,
+    "width": 844,
+    "cpuSpeedMs": 1500,
+    "turns": 105,
+    "humanActions": 119,
+    "clicks": 194,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 13,
+      "targetIndex": 2,
+      "initialScale": "0.267",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.267",
+        "angle": "0",
+        "mode": "overview",
+        "width": 824,
+        "height": 250,
+        "worldWidth": 2634,
+        "worldHeight": 938,
+        "frames": [
+          {
+            "scale": "0.267",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2634,
+            "worldHeight": 938
+          },
+          {
+            "scale": "0.267",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2634,
+            "worldHeight": 938
+          },
+          {
+            "scale": "0.267",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2634,
+            "worldHeight": 938
+          },
+          {
+            "scale": "0.267",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2634,
+            "worldHeight": 938
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.267",
+        "angle": "0",
+        "width": 824,
+        "height": 250,
+        "worldWidth": 2634,
+        "worldHeight": 938
+      },
+      "clicks": 2,
+      "readableScale": "1.531",
+      "elapsedMs": 807
+    }
+  },
+  {
+    "players": 5,
+    "width": 320,
+    "cpuSpeedMs": 100,
+    "turns": 114,
+    "humanActions": 96,
+    "clicks": 166,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 14,
+      "targetIndex": 0,
+      "initialScale": "0.141",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.141",
+        "angle": "0",
+        "mode": "overview",
+        "width": 304,
+        "height": 332,
+        "worldWidth": 1046,
+        "worldHeight": 2358,
+        "frames": [
+          {
+            "scale": "0.141",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 332,
+            "worldWidth": 1046,
+            "worldHeight": 2358
+          },
+          {
+            "scale": "0.141",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 332,
+            "worldWidth": 1046,
+            "worldHeight": 2358
+          },
+          {
+            "scale": "0.141",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 332,
+            "worldWidth": 1046,
+            "worldHeight": 2358
+          },
+          {
+            "scale": "0.141",
+            "angle": "0",
+            "mode": "overview",
+            "width": 304,
+            "height": 332,
+            "worldWidth": 1046,
+            "worldHeight": 2358
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.141",
+        "angle": "0",
+        "width": 304,
+        "height": 332,
+        "worldWidth": 1046,
+        "worldHeight": 2358
+      },
+      "clicks": 2,
+      "readableScale": "1.591",
+      "elapsedMs": 714
+    }
+  },
+  {
+    "players": 5,
+    "width": 1440,
+    "cpuSpeedMs": 100,
+    "turns": 119,
+    "humanActions": 108,
+    "clicks": 178,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 14,
+      "targetIndex": 0,
+      "initialScale": "0.394",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.394",
+        "angle": "0",
+        "mode": "overview",
+        "width": 1420,
+        "height": 760,
+        "worldWidth": 1732,
+        "worldHeight": 1930,
+        "frames": [
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1732,
+            "worldHeight": 1930
+          },
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1732,
+            "worldHeight": 1930
+          },
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1732,
+            "worldHeight": 1930
+          },
+          {
+            "scale": "0.394",
+            "angle": "0",
+            "mode": "overview",
+            "width": 1420,
+            "height": 760,
+            "worldWidth": 1732,
+            "worldHeight": 1930
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.394",
+        "angle": "0",
+        "width": 1420,
+        "height": 760,
+        "worldWidth": 1732,
+        "worldHeight": 1930
+      },
+      "clicks": 2,
+      "readableScale": "1.600",
+      "elapsedMs": 1929
+    }
+  },
+  {
+    "players": 10,
+    "width": 390,
+    "cpuSpeedMs": 100,
+    "turns": 196,
+    "humanActions": 92,
+    "clicks": 155,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 16,
+      "targetIndex": 7,
+      "initialScale": "0.210",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.210",
+        "angle": "0",
+        "mode": "overview",
+        "width": 374,
+        "height": 608,
+        "worldWidth": 1782,
+        "worldHeight": 2590,
+        "frames": [
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 608,
+            "worldWidth": 1782,
+            "worldHeight": 2590
+          },
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 608,
+            "worldWidth": 1782,
+            "worldHeight": 2590
+          },
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 608,
+            "worldWidth": 1782,
+            "worldHeight": 2590
+          },
+          {
+            "scale": "0.210",
+            "angle": "0",
+            "mode": "overview",
+            "width": 374,
+            "height": 608,
+            "worldWidth": 1782,
+            "worldHeight": 2590
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.210",
+        "angle": "0",
+        "width": 374,
+        "height": 608,
+        "worldWidth": 1782,
+        "worldHeight": 2590
+      },
+      "clicks": 2,
+      "readableScale": "1.289",
+      "elapsedMs": 604
+    }
+  },
+  {
+    "players": 10,
+    "width": 844,
+    "cpuSpeedMs": 100,
+    "turns": 128,
+    "humanActions": 56,
+    "clicks": 105,
+    "completed": true,
+    "pageErrors": [],
+    "cameraReview": {
+      "turn": 18,
+      "targetIndex": 9,
+      "initialScale": "0.139",
+      "initialAngle": "0",
+      "settledView": {
+        "scale": "0.139",
+        "angle": "0",
+        "mode": "overview",
+        "width": 824,
+        "height": 250,
+        "worldWidth": 2390,
+        "worldHeight": 1794,
+        "frames": [
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2390,
+            "worldHeight": 1794
+          },
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2390,
+            "worldHeight": 1794
+          },
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2390,
+            "worldHeight": 1794
+          },
+          {
+            "scale": "0.139",
+            "angle": "0",
+            "mode": "overview",
+            "width": 824,
+            "height": 250,
+            "worldWidth": 2390,
+            "worldHeight": 1794
+          }
+        ]
+      },
+      "restored": true,
+      "stateUnchanged": true,
+      "restoredView": {
+        "scale": "0.139",
+        "angle": "0",
+        "width": 824,
+        "height": 250,
+        "worldWidth": 2390,
+        "worldHeight": 1794
+      },
+      "clicks": 2,
+      "readableScale": "1.600",
+      "elapsedMs": 813
+    }
+  }
+]

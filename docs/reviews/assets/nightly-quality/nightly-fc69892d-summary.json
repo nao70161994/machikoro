@@ -1,0 +1,38 @@
+{
+  "skipped": 1,
+  "total": 356,
+  "projects": {
+    "mobile-webkit": 354,
+    "chromium-desktop": 2
+  },
+  "stable": true,
+  "retries": 0,
+  "commit": "fc69892da2906c8337b740ed8ace6d46a619a46d",
+  "run": "https://github.com/nao70161994/machikoro/actions/runs/41489331646",
+  "coverageArtifact": 13164327988,
+  "firstAttemptPasses": 355,
+  "nonPasses": [
+    {
+      "id": "mobile-webkit:ac15e2cb055c96d26310-8262792c3d554a8a299e",
+      "project": "mobile-webkit",
+      "file": "ui-playthrough.spec.js",
+      "title": "人間席の実UI操作とCPU弱で開始から結果まで進める",
+      "expectedStatus": "skipped",
+      "optInSkipAllowed": true,
+      "annotations": [
+        {
+          "type": "skip",
+          "description": "任意実行のUI対局",
+          "location": {
+            "file": "/__w/machikoro/machikoro/tests/browser/ui-playthrough.spec.js",
+            "line": 14,
+            "column": 10
+          }
+        }
+      ],
+      "outcomes": [
+        "skipped"
+      ]
+    }
+  ]
+}

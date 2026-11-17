@@ -1,0 +1,103 @@
+{
+  "run": 41862446714,
+  "results": [
+    {
+      "side": "after",
+      "repeat": "-repeat1",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 115,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frames": [
+        290,
+        1213,
+        1331
+      ],
+      "maxFrameGapMs": 923
+    },
+    {
+      "side": "after",
+      "repeat": "-repeat2",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 115,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frames": [
+        373,
+        1320,
+        1340,
+        1435
+      ],
+      "maxFrameGapMs": 947
+    },
+    {
+      "side": "after",
+      "repeat": "",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 121,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frames": [
+        306,
+        1293,
+        1413
+      ],
+      "maxFrameGapMs": 987
+    },
+    {
+      "side": "before",
+      "repeat": "-repeat1",
+      "moving": {
+        "error": "fresh purchase flight was not observed while moving"
+      },
+      "frames": [
+        416,
+        1532
+      ],
+      "maxFrameGapMs": 1116
+    },
+    {
+      "side": "before",
+      "repeat": "-repeat2",
+      "moving": {
+        "name": "麦畑",
+        "elapsed": 120,
+        "duration": 480,
+        "arrivalStarted": false,
+        "pointerEvents": "none",
+        "insideScreen": true
+      },
+      "frames": [
+        373,
+        1323,
+        1343,
+        1445
+      ],
+      "maxFrameGapMs": 950
+    },
+    {
+      "side": "before",
+      "repeat": "",
+      "moving": {
+        "error": "fresh purchase flight was not observed while moving"
+      },
+      "frames": [
+        267,
+        1553
+      ],
+      "maxFrameGapMs": 1286
+    }
+  ]
+}

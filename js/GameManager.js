@@ -546,7 +546,7 @@ class GameManager {
                 card.color === "red" && this._redActivationPlan(card, other, current).active
             );
             const activations = [];
-            for (const card of other.cards) {
+            for (const [cardIndex, card] of other.cards.entries()) {
                 if (!GameCardActivationPolicy.isActivationCandidate({
                     card,
                     revivedCards,
@@ -558,6 +558,7 @@ class GameManager {
                 if (!activation.active) continue;
                 activations.push({
                     card,
+                    cardIndex,
                     kind: activation.kind,
                     requested: activation.requested,
                 });
@@ -571,18 +572,23 @@ class GameManager {
             other.coins += plan.total;
             activations.forEach((activation, index) => {
                 const transfer = plan.transfers[index];
+                const coinResolution = this.coinResolution(activation.card.name,
+                    [{ from: ci, to: i, amount: transfer }], activation.cardIndex, i);
                 if (activation.kind === 'french') {
                     this.addLog(LOG_TYPES.LOSE, `🍽️ ${other.name}の高級フレンチ発動 → ${transfer}コイン獲得`, {
+                        coinResolution,
                         gainAmount: transfer,
                         loseAmount: transfer,
                     });
                 } else if (activation.kind === 'member-bar') {
                     this.addLog(LOG_TYPES.LOSE, `🍸 ${other.name}の会員制BAR発動 → ${transfer}コイン全奪取`, {
+                        coinResolution,
                         gainAmount: transfer,
                         loseAmount: transfer,
                     });
                 } else {
                     this.addLog(LOG_TYPES.LOSE, `💸 ${other.name}の${activation.card.name}発動 → ${transfer}コイン獲得`, {
+                        coinResolution,
                         gainAmount: transfer,
                         loseAmount: transfer,
                     });
@@ -592,11 +598,11 @@ class GameManager {
     }
 
     _processBlue(dice, tunaDice) {
-        for (const p of this.players) {
+        for (const [owner, p] of this.players.entries()) {
             const revivedCards = this._reviveDormantCardsForDice(p, dice, card =>
                 card.color === "blue" && this._blueIncomePlan(card, p, [0, 0]).active
             );
-            for (const card of p.cards) {
+            for (const [cardIndex, card] of p.cards.entries()) {
                 if (!GameCardActivationPolicy.isActivationCandidate({
                     card,
                     revivedCards,
@@ -608,14 +614,15 @@ class GameManager {
                 const plan = this._blueIncomePlan(card, p, tunaDice);
                 if (!plan.active) continue;
                 p.coins += plan.amount;
+                const coinResolution = this.coinResolution(card.name, [{ from: null, to: owner, amount: plan.amount }], cardIndex, owner);
                 if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.CORNFIELD) {
-                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
+                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${plan.amount}コイン`, { gainAmount: plan.amount, coinResolution });
                 } else if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.HARBOR) {
-                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount, coinResolution });
                 } else if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.TUNA) {
-                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${plan.dice[0]}+${plan.dice[1]}=${plan.amount}コイン`, { gainAmount: plan.amount });
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${plan.dice[0]}+${plan.dice[1]}=${plan.amount}コイン`, { gainAmount: plan.amount, coinResolution });
                 } else {
-                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
+                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount, coinResolution });
                 }
             }
         }
@@ -628,7 +635,7 @@ class GameManager {
                 GameManager.calcCardIncome(card, current, this) > 0
             )
         );
-        for (const card of current.cards) {
+        for (const [cardIndex, card] of current.cards.entries()) {
             if (!GameCardActivationPolicy.isActivationCandidate({
                 card,
                 revivedCards,
@@ -648,7 +655,8 @@ class GameManager {
             });
             if (plan.kind === GameCardActivationPolicy.greenActivationKinds.WINERY) {
                 current.coins += plan.amount;
-                this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
+                this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`, { gainAmount: plan.amount,
+                    coinResolution: this.coinResolution(card.name, [{ from: null, to: this.currentPlayerIndex, amount: plan.amount }], cardIndex) });
                 if (plan.shouldDormant) current.makeDormant(card);
                 this.addLog(LOG_TYPES.SPECIAL, `💤 ワイナリーが休業`);
                 continue;
@@ -670,7 +678,8 @@ class GameManager {
             }
             if (plan.amount > 0) {
                 current.coins += plan.amount;
-                this.addLog(LOG_TYPES.GAIN, `💰 ${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
+                this.addLog(LOG_TYPES.GAIN, `💰 ${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount,
+                    coinResolution: this.coinResolution(card.name, [{ from: null, to: this.currentPlayerIndex, amount: plan.amount }], cardIndex) });
             }
         }
 
@@ -1273,10 +1282,10 @@ class GameManager {
         return false;
     }
 
-    coinResolution(subject, transfers, activation) {
+    coinResolution(subject, transfers, activation, owner = this.currentPlayerIndex) {
         // The owned-card ordinal or remaining pending count is shared gameplay
         // state. Log lengths can differ because transport notices are local.
-        return { owner: this.currentPlayerIndex, subject, activation, transfers };
+        return { owner, subject, activation, transfers };
     }
 
     collectionResolution(subject, plan, activation) {

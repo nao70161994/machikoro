@@ -1,0 +1,140 @@
+{
+  "run": 41677302849,
+  "candidate": "651c632e",
+  "baseline": "f8e7a1706ac66d9f3a344b82a4b30c297144dd68",
+  "scope": "4p controlled static fixtures; reduced motion; no physical touch or full-game inference",
+  "scenes": [
+    {
+      "width": 320,
+      "stage": "early",
+      "packing": "cross",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 320,
+      "stage": "middle",
+      "packing": "cross",
+      "marketScaleGain": 1.2736319206216857,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 320,
+      "stage": "late",
+      "packing": "pinwheel",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 390,
+      "stage": "early",
+      "packing": "cross",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 390,
+      "stage": "middle",
+      "packing": "cross",
+      "marketScaleGain": 1.4883719992674187,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 390,
+      "stage": "late",
+      "packing": "pinwheel",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 844,
+      "stage": "early",
+      "packing": "cross",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 844,
+      "stage": "middle",
+      "packing": "cross",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 844,
+      "stage": "late",
+      "packing": "pinwheel",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 1440,
+      "stage": "early",
+      "packing": "cross",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 1440,
+      "stage": "middle",
+      "packing": "cross",
+      "marketScaleGain": 1.0,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    },
+    {
+      "width": 1440,
+      "stage": "late",
+      "packing": "pinwheel",
+      "marketScaleGain": 1.4025590398590924,
+      "worldUnchanged": true,
+      "cameraScaleUnchanged": true,
+      "ownerGeometryUnchanged": true,
+      "stateUnchanged": true,
+      "failures": []
+    }
+  ]
+}

@@ -515,6 +515,7 @@ function updateGameActivityStatus(now = Date.now()) {
     const gameState = mainGameRuntimeSnapshot();
     const onlineState = mainOnlineRuntimeSnapshot();
     const currentGame = gameState.game;
+    const isCpuTurn = !!(currentGame && gameState.cpuPlayers[currentGame.currentPlayerIndex]);
     const actionFlight = mainOnlineActionFlightState();
     const navigatorRef = typeof navigator !== 'undefined' ? navigator : null;
     const connectionFacts = {
@@ -541,7 +542,7 @@ function updateGameActivityStatus(now = Date.now()) {
         pendingPhase: GAME_PHASES.PENDING,
         currentPlayerIndex: currentGame ? currentGame.currentPlayerIndex : -1,
         currentName: currentGame && currentGame.currentPlayer ? currentGame.currentPlayer().name : '',
-        isCpuTurn: !!(currentGame && gameState.cpuPlayers[currentGame.currentPlayerIndex]),
+        isCpuTurn,
         cpuHealth: currentCpuTurnSchedulerHealth(),
         cpuActionExplanation: currentGame &&
             latestCpuActionExplanation.playerIndex === currentGame.currentPlayerIndex &&
@@ -568,6 +569,14 @@ function updateGameActivityStatus(now = Date.now()) {
         connectivityPanel.style.display = activity.visible || connectionView.visible || hasOnlineMessage
             ? 'grid'
             : 'none';
+        connectivityPanel.classList.toggle('is-local-cpu-activity',
+            !onlineState.isOnlineGame && isCpuTurn && activity.visible && activity.kind === 'waiting' &&
+            !connectionView.visible && !hasOnlineMessage);
+    }
+    // Keep the overview fitted in the same task that changes the status row;
+    // waiting for ResizeObserver can briefly clip the bottom player's cards.
+    if (typeof CardBoardField !== 'undefined' && typeof CardBoardField.syncViewport === 'function') {
+        CardBoardField.syncViewport();
     }
     return activity;
 }
@@ -1353,11 +1362,7 @@ const diceArrivalController = UiDiceDisplay.createArrivalController();
 
 function updateDiceDisplay(nums, rolling = false) {
     // The turn announcement yields to the dice as soon as play begins.
-    const turnAnnouncer = document.getElementById('turnAnnouncer');
-    if (rolling && turnAnnouncer) {
-        turnAnnouncer.style.display = 'none';
-        turnAnnouncer.classList.remove('hiding');
-    }
+    if (rolling) dismissTurnGreeting();
     if (rolling) document.getElementById('cardboardDiceConfirmation')?.remove();
     const el = document.getElementById("diceResult");
     const view = UiDiceDisplay.buildView(nums, rolling);

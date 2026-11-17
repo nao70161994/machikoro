@@ -1,0 +1,614 @@
+[
+  {
+    "case": 1,
+    "treatment": "table-art-hidden",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 61,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "noticeMs": 878,
+    "maxGap": 674,
+    "initialAfterCloseGaps": [
+      206,
+      674,
+      26,
+      16,
+      19,
+      15
+    ],
+    "hitTests": [
+      {
+        "at": 12205,
+        "afterClose": 876,
+        "duration": 2,
+        "performed": true
+      }
+    ],
+    "canonicalUnchanged": true,
+    "artCounts": [
+      {
+        "stage": "installed",
+        "targets": {
+          "table": {
+            "count": 20,
+            "hiddenCount": 20
+          },
+          "ghost": {
+            "count": 0,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 0,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildNotice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 64
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildFlight",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 64
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "capture-notice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 64
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": 2,
+    "treatment": "normal",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 74,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "noticeMs": 1070,
+    "maxGap": 866,
+    "initialAfterCloseGaps": [
+      209,
+      866,
+      25,
+      16,
+      17,
+      16
+    ],
+    "hitTests": [
+      {
+        "at": 8431,
+        "afterClose": 1069,
+        "duration": 1,
+        "performed": true
+      }
+    ],
+    "canonicalUnchanged": true,
+    "artCounts": [
+      {
+        "stage": "installed",
+        "targets": {
+          "table": {
+            "count": 20,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 0,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 0,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildNotice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildFlight",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "capture-notice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": 3,
+    "treatment": "ghost-art-hidden",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 60,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "noticeMs": 491,
+    "maxGap": 313,
+    "initialAfterCloseGaps": [
+      193,
+      298,
+      27,
+      16,
+      18,
+      1
+    ],
+    "hitTests": [
+      {
+        "at": 7907,
+        "afterClose": 489,
+        "duration": 2,
+        "performed": true
+      }
+    ],
+    "canonicalUnchanged": true,
+    "artCounts": [
+      {
+        "stage": "installed",
+        "targets": {
+          "table": {
+            "count": 20,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 0,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 0,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildNotice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 1
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildFlight",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 1
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "capture-notice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 1
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": 4,
+    "treatment": "normal",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 60,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "noticeMs": 469,
+    "maxGap": 297,
+    "initialAfterCloseGaps": [
+      194,
+      273,
+      27,
+      16,
+      19,
+      4
+    ],
+    "hitTests": [
+      {
+        "at": 7845,
+        "afterClose": 467,
+        "duration": 2,
+        "performed": true
+      }
+    ],
+    "canonicalUnchanged": true,
+    "artCounts": [
+      {
+        "stage": "installed",
+        "targets": {
+          "table": {
+            "count": 20,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 0,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 0,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildNotice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildFlight",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "capture-notice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": 5,
+    "treatment": "table-art-hidden",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 71,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "noticeMs": 449,
+    "maxGap": 277,
+    "initialAfterCloseGaps": [
+      208,
+      242,
+      27,
+      16,
+      16,
+      12
+    ],
+    "hitTests": [
+      {
+        "at": 8272,
+        "afterClose": 447,
+        "duration": 2,
+        "performed": true
+      }
+    ],
+    "canonicalUnchanged": true,
+    "artCounts": [
+      {
+        "stage": "installed",
+        "targets": {
+          "table": {
+            "count": 20,
+            "hiddenCount": 20
+          },
+          "ghost": {
+            "count": 0,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 0,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildNotice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 64
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildFlight",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 64
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "capture-notice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 64
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": 6,
+    "treatment": "ghost-art-hidden",
+    "result": "passed",
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 69,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    },
+    "noticeMs": 463,
+    "maxGap": 296,
+    "initialAfterCloseGaps": [
+      196,
+      269,
+      26,
+      14,
+      18,
+      12
+    ],
+    "hitTests": [
+      {
+        "at": 7776,
+        "afterClose": 461,
+        "duration": 2,
+        "performed": true
+      }
+    ],
+    "canonicalUnchanged": true,
+    "artCounts": [
+      {
+        "stage": "installed",
+        "targets": {
+          "table": {
+            "count": 20,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 0,
+            "hiddenCount": 0
+          },
+          "notice": {
+            "count": 0,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildNotice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 1
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "cardboardBuildFlight",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 1
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      },
+      {
+        "stage": "capture-notice",
+        "targets": {
+          "table": {
+            "count": 64,
+            "hiddenCount": 0
+          },
+          "ghost": {
+            "count": 1,
+            "hiddenCount": 1
+          },
+          "notice": {
+            "count": 1,
+            "hiddenCount": 0
+          }
+        }
+      }
+    ]
+  }
+]

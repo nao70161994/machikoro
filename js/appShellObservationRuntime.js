@@ -316,7 +316,21 @@ const AppShellObservationRuntime = (() => {
             let hasWinner = false;
             try { hasWinner = !!(hasGame && typeof currentGame.checkWinner === 'function' && currentGame.checkWinner()); } catch (_) {}
             const includeDom = options.includeDom !== false;
-            const dom = includeDom ? {
+            // Recovery only needs shell/modal state, not every facility button
+            // or serialized HTML from the whole table. Default diagnostics keep
+            // their complete snapshots and interactive-child counts.
+            const postBuild = options.purpose === 'post-build';
+            const modalIds = ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal', 'hotseatHandoffOverlay'];
+            const shallowUi = postBuild && includeDom ? Object.fromEntries(['gameScreen', 'btnSkip', ...modalIds]
+                .map(id => [id, domSnapshot.snapshotById(id, { shallow: true })])) : null;
+            const dom = shallowUi ? {
+                ui: shallowUi,
+                visibleModals: modalIds.filter(id => {
+                    const state = shallowUi[id];
+                    return state && !state.hidden && state.display !== 'none' && state.computedDisplay !== 'none' &&
+                        state.visibility !== 'hidden' && state.computedVisibility !== 'hidden';
+                }),
+            } : includeDom ? {
                 activeElement: document && document.activeElement ? {
                     id: document.activeElement.id || '',
                     tagName: document.activeElement.tagName || '',

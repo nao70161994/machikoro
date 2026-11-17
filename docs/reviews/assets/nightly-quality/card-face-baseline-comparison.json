@@ -1,0 +1,107 @@
+[
+  {
+    "name": "cardboard-desktop-1440-mobile-webkit-linux.png",
+    "changed": 287813,
+    "box": {
+      "left": 14,
+      "top": 6,
+      "right": 1425,
+      "bottom": 863
+    }
+  },
+  {
+    "name": "cardboard-landscape-844-mobile-webkit-linux.png",
+    "changed": 29265,
+    "box": {
+      "left": 149,
+      "top": 6,
+      "right": 773,
+      "bottom": 319
+    }
+  },
+  {
+    "name": "cardboard-phone-320-mobile-webkit-linux.png",
+    "changed": 44220,
+    "box": {
+      "left": 12,
+      "top": 121,
+      "right": 307,
+      "bottom": 778
+    }
+  },
+  {
+    "name": "cardboard-phone-390-mobile-webkit-linux.png",
+    "changed": 62483,
+    "box": {
+      "left": 8,
+      "top": 52,
+      "right": 381,
+      "bottom": 713
+    }
+  },
+  {
+    "name": "classic-desktop-1440-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "classic-landscape-844-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "classic-phone-320-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "classic-phone-390-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "plaza-desktop-1440-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "plaza-landscape-844-mobile-webkit-linux.png",
+    "changed": 693,
+    "box": {
+      "left": 639,
+      "top": 357,
+      "right": 806,
+      "bottom": 371
+    }
+  },
+  {
+    "name": "plaza-phone-320-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "plaza-phone-390-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "sunset-desktop-1440-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "sunset-landscape-844-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "sunset-phone-320-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  },
+  {
+    "name": "sunset-phone-390-mobile-webkit-linux.png",
+    "changed": 0,
+    "box": null
+  }
+]

@@ -1,0 +1,328 @@
+{
+  "sourceRevision": "4e83cf7a",
+  "review": "ui-playthrough-4e-image-review.md",
+  "scope": "Automated unseeded human-seat UI plus weak CPU at 1500ms; static images and recorded summary, not physical-device or continuous-motion review.",
+  "results": [
+    {
+      "mode": "automated-human-seat-ui",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "cpuSpeedMs": 1500,
+      "completed": true,
+      "humanActions": 200,
+      "clicks": 315,
+      "keyboardActions": 39,
+      "cpuWaitMs": 293961,
+      "marketOpens": 40,
+      "winner": "プレイヤー1",
+      "elapsedMs": 504772,
+      "lastTurn": 77,
+      "pageErrors": [],
+      "diceMotion": [
+        {
+          "index": 0,
+          "targetMs": 0,
+          "elapsedMs": 291
+        },
+        {
+          "index": 1,
+          "targetMs": 180,
+          "elapsedMs": 530
+        },
+        {
+          "index": 2,
+          "targetMs": 450,
+          "elapsedMs": 823
+        },
+        {
+          "index": 3,
+          "targetMs": 800,
+          "elapsedMs": 1124
+        },
+        {
+          "index": 4,
+          "targetMs": 1200,
+          "elapsedMs": 1443
+        }
+      ],
+      "source": "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-summary.json",
+      "cameraReview": {
+        "turn": 13,
+        "targetIndex": 0,
+        "initialScale": "0.344",
+        "initialAngle": "0",
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.344",
+          "angle": "0",
+          "width": 304,
+          "height": 384,
+          "worldWidth": 728,
+          "worldHeight": 1115
+        },
+        "clicks": 2,
+        "readableScale": "1.591",
+        "elapsedMs": 637
+      },
+      "reviewedPngs": [
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-build.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-roll.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-late-game.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame-opponent-upright.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-special-effect.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-start.png",
+        "artifacts/ui-playthrough-4e/320/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-winner.png"
+      ]
+    },
+    {
+      "mode": "automated-human-seat-ui",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "cpuSpeedMs": 1500,
+      "completed": true,
+      "humanActions": 180,
+      "clicks": 287,
+      "keyboardActions": 37,
+      "cpuWaitMs": 281652,
+      "marketOpens": 38,
+      "winner": "プレイヤー1",
+      "elapsedMs": 568271,
+      "lastTurn": 71,
+      "pageErrors": [],
+      "diceMotion": [
+        {
+          "index": 0,
+          "targetMs": 0,
+          "elapsedMs": 441
+        },
+        {
+          "index": 1,
+          "targetMs": 180,
+          "elapsedMs": 1120
+        },
+        {
+          "index": 2,
+          "targetMs": 450,
+          "elapsedMs": 1621
+        },
+        {
+          "index": 3,
+          "targetMs": 800,
+          "elapsedMs": 2157
+        },
+        {
+          "index": 4,
+          "targetMs": 1200,
+          "elapsedMs": 2521
+        }
+      ],
+      "source": "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-summary.json",
+      "cameraReview": {
+        "turn": 13,
+        "targetIndex": 0,
+        "initialScale": "0.514",
+        "initialAngle": "0",
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.514",
+          "angle": "0",
+          "width": 374,
+          "height": 660,
+          "worldWidth": 728,
+          "worldHeight": 1237
+        },
+        "clicks": 2,
+        "readableScale": "1.017",
+        "elapsedMs": 1274
+      },
+      "reviewedPngs": [
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-build.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-roll.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-late-game.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame-opponent-upright.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-special-effect.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-start.png",
+        "artifacts/ui-playthrough-4e/390/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-winner.png"
+      ],
+      "zip": {
+        "bytes": 16808300,
+        "sha256": "acffe79c2417217c4b7771f3888dd452da4d3eac3d1ebcf9bb9052d582458c80",
+        "allEntriesCrcValid": true,
+        "extractedPngCount": 8,
+        "extractedSummaryCount": 1
+      }
+    },
+    {
+      "mode": "automated-human-seat-ui",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "cpuSpeedMs": 1500,
+      "completed": true,
+      "humanActions": 178,
+      "clicks": 275,
+      "keyboardActions": 34,
+      "cpuWaitMs": 297270,
+      "marketOpens": 35,
+      "winner": "プレイヤー1",
+      "elapsedMs": 696472,
+      "lastTurn": 69,
+      "pageErrors": [],
+      "diceMotion": [
+        {
+          "index": 0,
+          "targetMs": 0,
+          "elapsedMs": 585
+        },
+        {
+          "index": 1,
+          "targetMs": 180,
+          "elapsedMs": 1392
+        },
+        {
+          "index": 2,
+          "targetMs": 450,
+          "elapsedMs": 1990
+        },
+        {
+          "index": 3,
+          "targetMs": 800,
+          "elapsedMs": 2483
+        },
+        {
+          "index": 4,
+          "targetMs": 1200,
+          "elapsedMs": 2971
+        }
+      ],
+      "source": "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-summary.json",
+      "cameraReview": {
+        "turn": 13,
+        "targetIndex": 0,
+        "initialScale": "0.367",
+        "initialAngle": "0",
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.367",
+          "angle": "0",
+          "width": 824,
+          "height": 250,
+          "worldWidth": 1226,
+          "worldHeight": 682
+        },
+        "clicks": 2,
+        "readableScale": "0.925",
+        "elapsedMs": 992
+      },
+      "reviewedPngs": [
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-build.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-roll.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-late-game.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame-opponent-upright.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-special-effect.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-start.png",
+        "artifacts/ui-playthrough-4e/844/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-winner.png"
+      ],
+      "zip": {
+        "bytes": 16063114,
+        "sha256": "9cf65d7ef22524790926fb57d899fb1a144248b467bc573af4828eeed38aaf27",
+        "allEntriesCrcValid": true,
+        "extractedPngCount": 8,
+        "extractedSummaryCount": 1
+      }
+    },
+    {
+      "mode": "automated-human-seat-ui",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "cpuSpeedMs": 1500,
+      "completed": true,
+      "humanActions": 141,
+      "clicks": 228,
+      "keyboardActions": 28,
+      "cpuWaitMs": 194427,
+      "marketOpens": 29,
+      "winner": "プレイヤー1",
+      "elapsedMs": 620149,
+      "lastTurn": 54,
+      "pageErrors": [],
+      "diceMotion": [
+        {
+          "index": 0,
+          "targetMs": 0,
+          "elapsedMs": 1847
+        },
+        {
+          "index": 1,
+          "targetMs": 180,
+          "elapsedMs": 3298
+        },
+        {
+          "index": 2,
+          "targetMs": 450,
+          "elapsedMs": 5044
+        },
+        {
+          "index": 3,
+          "targetMs": 800,
+          "elapsedMs": 6456
+        },
+        {
+          "index": 4,
+          "targetMs": 1200,
+          "elapsedMs": 8201
+        }
+      ],
+      "source": "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-summary.json",
+      "cameraReview": {
+        "turn": 12,
+        "targetIndex": 1,
+        "initialScale": "0.721",
+        "initialAngle": "0",
+        "restored": true,
+        "stateUnchanged": true,
+        "restoredView": {
+          "scale": "0.721",
+          "angle": "0",
+          "width": 1420,
+          "height": 760,
+          "worldWidth": 1064,
+          "worldHeight": 1054
+        },
+        "clicks": 2,
+        "readableScale": "1.600",
+        "elapsedMs": 1858
+      },
+      "reviewedPngs": [
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-build.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-first-roll.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-late-game.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame-opponent-upright.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-midgame.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-special-effect.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-start.png",
+        "artifacts/ui-playthrough-4e/1440/ui-playthrough-人間席の実UI操作とCPU弱で開始から結果まで進める-mobile-webkit/ui-playthrough-winner.png"
+      ],
+      "zip": {
+        "bytes": 43437648,
+        "sha256": "ab49f3ab39d9496c946f5a164abe0af9062df72d60e33deea8bca489087f9135",
+        "allEntriesCrcValid": true,
+        "extractedPngCount": 8,
+        "extractedSummaryCount": 1
+      }
+    }
+  ]
+}

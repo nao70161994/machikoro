@@ -64,9 +64,31 @@ const UiTurnReceipt = (() => {
         const visibleActivations = [...activationSummaries.values()];
         const facilityActivationCount = visibleActivations.reduce((total, summary) => summary.typed &&
             Number.isSafeInteger(total + summary.repeats) ? total + summary.repeats : total, 0);
-        const featured = visibleActivations.slice(0, 3).map(summary => ({
-            ...summary.event, count: summary.repeats, typedActivation: summary.typed,
-        }));
+        // One typed record per owned copy must not consume every compact slot.
+        // Keep the detailed activation order and the identity-deduplicated total
+        // above; combine only the compact sample's identical owner/route groups.
+        const compactSummaries = [];
+        const compactGroups = new Map();
+        for (const summary of visibleActivations) {
+            const event = summary.event;
+            const compact = { ...event, count: summary.repeats, typedActivation: summary.typed };
+            if (summary.typed && Number.isInteger(event.owner) && event.owner >= 0 &&
+                    Number.isSafeInteger(event.amount) && event.amount >= 0) {
+                const key = JSON.stringify([event.owner, event.subject, event.from, event.to]);
+                const previous = compactGroups.get(key);
+                if (previous && Number.isSafeInteger(previous.amount + event.amount) &&
+                        Number.isSafeInteger(previous.count + summary.repeats)) {
+                    previous.amount += event.amount;
+                    previous.count += summary.repeats;
+                    continue;
+                }
+                // On overflow keep separate truthful entries rather than losing
+                // money or displaying an imprecise number in the compact view.
+                compactGroups.set(key, compact);
+            }
+            compactSummaries.push(compact);
+        }
+        const featured = compactSummaries.slice(0, 3);
         const featuredHtml = receipt.turnContextKnown !== false && (featured.length || facilityActivationCount) ? `<p class="plaza-receipt-featured">${facilityActivationCount
             ? `<span class="plaza-receipt-activation-count">施設発動${escape(facilityActivationCount)}回</span>` : ''}${featured.map(event => {
             const route = `${shortName(event.from)} → ${shortName(event.to)}`;

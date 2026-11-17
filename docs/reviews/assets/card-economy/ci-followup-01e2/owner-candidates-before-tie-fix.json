@@ -1,0 +1,5915 @@
+[
+  {
+    "owner": 0,
+    "labelText": "あいうえおかきくけこさし",
+    "width": 164,
+    "height": 22,
+    "lines": null,
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 83.22606658935547,
+        "top": 386.6109924316406,
+        "right": 132.7576446533203,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 386.6109924316406,
+        "right": 184.76577758789062,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 187.2423553466797,
+        "top": 386.6109924316406,
+        "right": 236.77392578125,
+        "bottom": 428.09368896484375
+      }
+    ],
+    "placed": [],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 33,
+      "obstacle": 35,
+      "placed": 0,
+      "ownership": 16
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          23.157329559326172,
+          369.4195556640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          75.25049591064453,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          75.25049591064453,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -87.2505111694336,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          65.20544548034668,
+          374.4107940673828
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          22.524639892578122,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          22.524639892578122,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -87.2505111694336,
+          370.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          370.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          41.177950668334965,
+          371.55865783691405
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          54.22484130859374,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          54.22484130859374,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -87.2505111694336,
+          381.9417419433594
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 0,
+    "labelText": "あいうえおかきくけこさし",
+    "width": 164,
+    "height": 22,
+    "lines": null,
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 83.22606658935547,
+        "top": 386.6109924316406,
+        "right": 132.7576446533203,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 386.6109924316406,
+        "right": 184.76577758789062,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 187.2423553466797,
+        "top": 386.6109924316406,
+        "right": 236.77392578125,
+        "bottom": 428.09368896484375
+      }
+    ],
+    "placed": [],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 33,
+      "obstacle": 35,
+      "placed": 0,
+      "ownership": 16
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          23.157329559326172,
+          369.4195556640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          75.25049591064453,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          75.25049591064453,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -87.2505111694336,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          65.20544548034668,
+          374.4107940673828
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          22.524639892578122,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          22.524639892578122,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -87.2505111694336,
+          370.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          370.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          41.177950668334965,
+          371.55865783691405
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          54.22484130859374,
+          346.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          54.22484130859374,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -87.2505111694336,
+          381.9417419433594
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 0,
+    "labelText": "あいうえおかきくけこさし",
+    "width": 90,
+    "height": 38,
+    "lines": [
+      "あいうえおか",
+      "きくけこさし"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 83.22606658935547,
+        "top": 386.6109924316406,
+        "right": 132.7576446533203,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 386.6109924316406,
+        "right": 184.76577758789062,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 187.2423553466797,
+        "top": 386.6109924316406,
+        "right": 236.77392578125,
+        "bottom": 428.09368896484375
+      }
+    ],
+    "placed": [],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 25,
+      "placed": 0,
+      "ownership": 6
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          60.15732955932617,
+          361.4195556640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          149.25049591064453,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          149.25049591064453,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -13.250511169433594,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          76.30544548034668,
+          372.0107940673828
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          59.52463989257812,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          59.52463989257812,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -13.250511169433594,
+          362.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          362.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          67.07795066833496,
+          365.9586578369141
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          91.22484130859374,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          91.22484130859374,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -13.250511169433594,
+          373.9417419433594
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 0,
+    "labelText": "あいうえおかきくけこさし",
+    "width": 90,
+    "height": 38,
+    "lines": [
+      "あいうえおか",
+      "きくけこさし"
+    ],
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 83.22606658935547,
+        "top": 386.6109924316406,
+        "right": 132.7576446533203,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 386.6109924316406,
+        "right": 184.76577758789062,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 187.2423553466797,
+        "top": 386.6109924316406,
+        "right": 236.77392578125,
+        "bottom": 428.09368896484375
+      }
+    ],
+    "placed": [],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 25,
+      "placed": 0,
+      "ownership": 6
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          60.15732955932617,
+          361.4195556640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          149.25049591064453,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          149.25049591064453,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -13.250511169433594,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          76.30544548034668,
+          372.0107940673828
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          59.52463989257812,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          59.52463989257812,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -13.250511169433594,
+          362.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          362.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          67.07795066833496,
+          365.9586578369141
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          91.22484130859374,
+          330.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          91.22484130859374,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -13.250511169433594,
+          373.9417419433594
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 0,
+    "labelText": "あいうえおかきくけこさし",
+    "width": 66,
+    "height": 54,
+    "lines": [
+      "あいうえ",
+      "おかきく",
+      "けこさし"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 83.22606658935547,
+        "top": 386.6109924316406,
+        "right": 132.7576446533203,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 386.6109924316406,
+        "right": 184.76577758789062,
+        "bottom": 428.09368896484375
+      },
+      {
+        "left": 187.2423553466797,
+        "top": 386.6109924316406,
+        "right": 236.77392578125,
+        "bottom": 428.09368896484375
+      }
+    ],
+    "placed": [],
+    "candidateCount": 50,
+    "availableCount": 2,
+    "rejectedCounts": {
+      "bounds": 25,
+      "obstacle": 25,
+      "placed": 0,
+      "ownership": 6
+    },
+    "ranked": [
+      {
+        "position": [
+          240.77392578125,
+          386.6109924316406
+        ],
+        "score": 4.227891879614342,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          13.226066589355469,
+          386.6109924316406
+        ],
+        "score": 4.227891889771511,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      }
+    ],
+    "rejected": [
+      {
+        "position": [
+          72.15732955932617,
+          353.4195556640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          314.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          173.25049591064453,
+          314.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          173.25049591064453,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          10.749488830566406,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          372.68023681640625
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          79.90544548034669,
+          369.6107940673828
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          71.52463989257812,
+          314.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          71.52463989257812,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          10.749488830566406,
+          354.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          354.3637390136719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          75.47795066833496,
+          360.35865783691406
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          103.22484130859374,
+          314.68023681640625
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          103.22484130859374,
+          434.57025146484375
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          10.749488830566406,
+          365.9417419433594
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": true
+        }
+      }
+    ]
+  },
+  {
+    "owner": 1,
+    "labelText": "席2 · CPU（弱）",
+    "width": 104,
+    "height": 22,
+    "lines": null,
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 17.906312942504883,
+        "top": 209.22607421875,
+        "right": 59.38900184631348,
+        "bottom": 258.75762939453125
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 261.2342224121094,
+        "right": 59.38900184631348,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 313.24237060546875,
+        "right": 59.38900184631348,
+        "bottom": 362.77392578125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 47,
+      "placed": 0,
+      "ownership": 14
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          13.580448150634766,
+          223.8480224609375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -30.68024253845215,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -30.68024253845215,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -92.57026481628418,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          47.27168922424316,
+          213.61265869140624
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.886761474609376,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.886761474609376,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -92.57026481628418,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          28.01955146789551,
+          219.46143798828126
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -16.30875701904297,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -16.30875701904297,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -92.57026481628418,
+          251.22485427856446
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 1,
+    "labelText": "席2 · CPU（弱）",
+    "width": 104,
+    "height": 22,
+    "lines": null,
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 17.906312942504883,
+        "top": 209.22607421875,
+        "right": 59.38900184631348,
+        "bottom": 258.75762939453125
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 261.2342224121094,
+        "right": 59.38900184631348,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 313.24237060546875,
+        "right": 59.38900184631348,
+        "bottom": 362.77392578125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 47,
+      "placed": 0,
+      "ownership": 14
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          13.580448150634766,
+          223.8480224609375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -30.68024253845215,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -30.68024253845215,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -92.57026481628418,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          47.27168922424316,
+          213.61265869140624
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.886761474609376,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.886761474609376,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -92.57026481628418,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          28.01955146789551,
+          219.46143798828126
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -16.30875701904297,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -16.30875701904297,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -92.57026481628418,
+          251.22485427856446
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 1,
+    "labelText": "席2 · CPU（弱）",
+    "width": 74,
+    "height": 38,
+    "lines": [
+      "席2 · ",
+      "CPU（弱）"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 17.906312942504883,
+        "top": 209.22607421875,
+        "right": 59.38900184631348,
+        "bottom": 258.75762939453125
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 261.2342224121094,
+        "right": 59.38900184631348,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 313.24237060546875,
+        "right": 59.38900184631348,
+        "bottom": 362.77392578125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 24,
+      "obstacle": 33,
+      "placed": 0,
+      "ownership": 10
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          28.580448150634766,
+          215.8480224609375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -0.6802425384521484,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -0.6802425384521484,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -62.57026481628418,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          51.77168922424316,
+          211.21265869140626
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -12.886761474609376,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -12.886761474609376,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -62.57026481628418,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          38.51955146789551,
+          213.86143798828124
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -1.3087570190429716,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -1.3087570190429716,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -62.57026481628418,
+          243.22485427856446
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 1,
+    "labelText": "席2 · CPU（弱）",
+    "width": 74,
+    "height": 38,
+    "lines": [
+      "席2 · ",
+      "CPU（弱）"
+    ],
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 17.906312942504883,
+        "top": 209.22607421875,
+        "right": 59.38900184631348,
+        "bottom": 258.75762939453125
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 261.2342224121094,
+        "right": 59.38900184631348,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 313.24237060546875,
+        "right": 59.38900184631348,
+        "bottom": 362.77392578125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 24,
+      "obstacle": 33,
+      "placed": 0,
+      "ownership": 10
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          28.580448150634766,
+          215.8480224609375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -0.6802425384521484,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          15.42973518371582,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -0.6802425384521484,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -62.57026481628418,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          51.77168922424316,
+          211.21265869140626
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -12.886761474609376,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -12.886761474609376,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -62.57026481628418,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          38.51955146789551,
+          213.86143798828124
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -1.3087570190429716,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -1.3087570190429716,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -62.57026481628418,
+          243.22485427856446
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 1,
+    "labelText": "席2 · CPU（弱）",
+    "width": 52,
+    "height": 54,
+    "lines": [
+      "席2 · ",
+      "CPU",
+      "（弱）"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 17.906312942504883,
+        "top": 209.22607421875,
+        "right": 59.38900184631348,
+        "bottom": 258.75762939453125
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 261.2342224121094,
+        "right": 59.38900184631348,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 313.24237060546875,
+        "right": 59.38900184631348,
+        "bottom": 362.77392578125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 8,
+    "rejectedCounts": {
+      "bounds": 19,
+      "obstacle": 25,
+      "placed": 0,
+      "ownership": 4
+    },
+    "ranked": [
+      {
+        "position": [
+          17.906312942504883,
+          151.22607421875
+        ],
+        "score": 4.2158042866717516,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          17.906312942504883,
+          366.77392578125
+        ],
+        "score": 4.2158042866717516,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          15.42973518371582,
+          148.74949645996094
+        ],
+        "score": 6.697148958066374,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          15.42973518371582,
+          369.2505187988281
+        ],
+        "score": 6.697164247363304,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          18.374746322631836,
+          148.74949645996094
+        ],
+        "score": 6.697376065652353,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          18.374746322631836,
+          369.2505187988281
+        ],
+        "score": 6.697391354917903,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          21.31975746154785,
+          148.74949645996094
+        ],
+        "score": 6.697759845318751,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          21.31975746154785,
+          369.2505187988281
+        ],
+        "score": 6.69777513453142,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      }
+    ],
+    "rejected": [
+      {
+        "position": [
+          39.580448150634766,
+          207.8480224609375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -40.57026481628418,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          55.071689224243165,
+          208.81265869140626
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -1.8867614746093757,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -1.8867614746093757,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -40.57026481628418,
+          203.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          203.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          46.219551467895506,
+          208.26143798828124
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          9.691242980957028,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          9.691242980957028,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -40.57026481628418,
+          235.22485427856446
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          235.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          39.580448150634766,
+          207.8480224609375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -40.57026481628418,
+          259.00000762939453
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          77.31975746154785,
+          259.00000762939453
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 2,
+    "labelText": "席3 · CPU（弱）",
+    "width": 104,
+    "height": 22,
+    "lines": null,
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 187.2423553466797,
+        "top": 143.90631103515625,
+        "right": 236.77392578125,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 143.90631103515625,
+        "right": 184.76577758789062,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 83.22606658935547,
+        "top": 143.90631103515625,
+        "right": 132.7576446533203,
+        "bottom": 185.38900756835938
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 35,
+      "placed": 12,
+      "ownership": 4
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          159.15198516845703,
+          180.58045196533203
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          135.25049591064453,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          135.25049591064453,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.250511169433594,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          177.61662673950195,
+          185.57169570922852
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          52.52463989257812,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          52.52463989257812,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -27.250511169433594,
+          139.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          139.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          167.06540298461914,
+          182.71955642700195
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          84.22484130859374,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          84.22484130859374,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.250511169433594,
+          150.69124374389648
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 2,
+    "labelText": "席3 · CPU（弱）",
+    "width": 104,
+    "height": 22,
+    "lines": null,
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 187.2423553466797,
+        "top": 143.90631103515625,
+        "right": 236.77392578125,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 143.90631103515625,
+        "right": 184.76577758789062,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 83.22606658935547,
+        "top": 143.90631103515625,
+        "right": 132.7576446533203,
+        "bottom": 185.38900756835938
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 35,
+      "placed": 12,
+      "ownership": 4
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          159.15198516845703,
+          180.58045196533203
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          135.25049591064453,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          135.25049591064453,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.250511169433594,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          177.61662673950195,
+          185.57169570922852
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          52.52463989257812,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          52.52463989257812,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          -27.250511169433594,
+          139.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          139.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          167.06540298461914,
+          182.71955642700195
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          84.22484130859374,
+          115.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          84.22484130859374,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          -27.250511169433594,
+          150.69124374389648
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 2,
+    "labelText": "席3 · CPU（弱）",
+    "width": 74,
+    "height": 38,
+    "lines": [
+      "席3 · ",
+      "CPU（弱）"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 187.2423553466797,
+        "top": 143.90631103515625,
+        "right": 236.77392578125,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 143.90631103515625,
+        "right": 184.76577758789062,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 83.22606658935547,
+        "top": 143.90631103515625,
+        "right": 132.7576446533203,
+        "bottom": 185.38900756835938
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 25,
+      "placed": 10,
+      "ownership": 6
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          174.15198516845703,
+          172.58045196533203
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          165.25049591064453,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          165.25049591064453,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          2.7494888305664062,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          182.11662673950195,
+          183.17169570922852
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          67.52463989257812,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          67.52463989257812,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          2.7494888305664062,
+          131.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          131.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          177.56540298461914,
+          177.11955642700195
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          99.22484130859374,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          99.22484130859374,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          2.7494888305664062,
+          142.69124374389648
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 2,
+    "labelText": "席3 · CPU（弱）",
+    "width": 74,
+    "height": 38,
+    "lines": [
+      "席3 · ",
+      "CPU（弱）"
+    ],
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 187.2423553466797,
+        "top": 143.90631103515625,
+        "right": 236.77392578125,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 143.90631103515625,
+        "right": 184.76577758789062,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 83.22606658935547,
+        "top": 143.90631103515625,
+        "right": 132.7576446533203,
+        "bottom": 185.38900756835938
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 25,
+      "placed": 10,
+      "ownership": 6
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          174.15198516845703,
+          172.58045196533203
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          165.25049591064453,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          165.25049591064453,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          2.7494888305664062,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          182.11662673950195,
+          183.17169570922852
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          67.52463989257812,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          67.52463989257812,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          2.7494888305664062,
+          131.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          131.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          177.56540298461914,
+          177.11955642700195
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          99.22484130859374,
+          99.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          99.22484130859374,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          2.7494888305664062,
+          142.69124374389648
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 2,
+    "labelText": "席3 · CPU（弱）",
+    "width": 52,
+    "height": 54,
+    "lines": [
+      "席3 · ",
+      "CPU",
+      "（弱）"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 187.2423553466797,
+        "top": 143.90631103515625,
+        "right": 236.77392578125,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 135.23422241210938,
+        "top": 143.90631103515625,
+        "right": 184.76577758789062,
+        "bottom": 185.38900756835938
+      },
+      {
+        "left": 83.22606658935547,
+        "top": 143.90631103515625,
+        "right": 132.7576446533203,
+        "bottom": 185.38900756835938
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 4,
+    "rejectedCounts": {
+      "bounds": 15,
+      "obstacle": 25,
+      "placed": 7,
+      "ownership": 4
+    },
+    "ranked": [
+      {
+        "position": [
+          240.77392578125,
+          143.90631103515625
+        ],
+        "score": 4.213914396147618,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          243.25049591064453,
+          134.69124374389648
+        ],
+        "score": 6.695151112350605,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          243.25049591064453,
+          141.4297332763672
+        ],
+        "score": 6.695202013785711,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      },
+      {
+        "position": [
+          243.25049591064453,
+          143.37474822998047
+        ],
+        "score": 6.695371141112045,
+        "adjustedReceipt": false,
+        "crowdedReceipt": false,
+        "blocksReceipt": false
+      }
+    ],
+    "rejected": [
+      {
+        "position": [
+          185.15198516845703,
+          164.58045196533203
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          83.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          187.25049591064453,
+          83.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          80.7494888305664,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          187.25049591064453,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          24.749488830566406,
+          141.4297332763672
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          185.41662673950196,
+          180.7716957092285
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          78.52463989257812,
+          83.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          78.52463989257812,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          24.749488830566406,
+          123.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.25049591064453,
+          123.11323776245118
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          185.26540298461913,
+          171.51955642700196
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          110.22484130859374,
+          83.42973327636719
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          110.22484130859374,
+          203.31976318359375
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          24.749488830566406,
+          134.69124374389648
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          185.15198516845703,
+          164.58045196533203
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 94,
+    "height": 22,
+    "lines": null,
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 47,
+      "placed": 20,
+      "ownership": 14
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          207.4195556640625,
+          321.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          210.57025146484375,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          210.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          148.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          237.6107940673828,
+          308.33911590576173
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          208.36373901367188,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          208.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          148.68023681640625,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          220.35865783691406,
+          315.97083587646483
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          219.94174194335938,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          219.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          148.68023681640625,
+          251.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 96,
+    "height": 22,
+    "lines": null,
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 47,
+      "placed": 20,
+      "ownership": 14
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          206.4195556640625,
+          321.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          208.57025146484375,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          208.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          146.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          237.3107940673828,
+          308.33911590576173
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          207.36373901367188,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          207.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          146.68023681640625,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          219.65865783691407,
+          315.97083587646483
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          218.94174194335938,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          218.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          146.68023681640625,
+          251.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 94,
+    "height": 22,
+    "lines": null,
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 47,
+      "placed": 20,
+      "ownership": 14
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          207.4195556640625,
+          321.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          210.57025146484375,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          210.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          148.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          237.6107940673828,
+          308.33911590576173
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          208.36373901367188,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          208.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          148.68023681640625,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          220.35865783691406,
+          315.97083587646483
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          219.94174194335938,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          219.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          148.68023681640625,
+          251.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 96,
+    "height": 22,
+    "lines": null,
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 62,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 27,
+      "obstacle": 47,
+      "placed": 20,
+      "ownership": 14
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          206.4195556640625,
+          321.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          208.57025146484375,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          208.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          146.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          237.3107940673828,
+          308.33911590576173
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          207.36373901367188,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          207.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          146.68023681640625,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          219.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          219.65865783691407,
+          315.97083587646483
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          218.94174194335938,
+          180.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          218.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          146.68023681640625,
+          251.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 74,
+    "height": 38,
+    "lines": [
+      "CPU（弱）",
+      "・4"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 24,
+      "obstacle": 33,
+      "placed": 18,
+      "ownership": 10
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          217.4195556640625,
+          313.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          230.57025146484375,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          230.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          168.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          240.6107940673828,
+          305.9391159057617
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          218.36373901367188,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          218.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          168.68023681640625,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          227.35865783691406,
+          310.37083587646487
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          229.94174194335938,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          229.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          168.68023681640625,
+          243.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 74,
+    "height": 38,
+    "lines": [
+      "CPU（弱）",
+      "・4"
+    ],
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 24,
+      "obstacle": 33,
+      "placed": 18,
+      "ownership": 10
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          217.4195556640625,
+          313.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          230.57025146484375,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          230.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          168.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          240.6107940673828,
+          305.9391159057617
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          218.36373901367188,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          218.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          168.68023681640625,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          211.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          227.35865783691406,
+          310.37083587646487
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          229.94174194335938,
+          164.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          229.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          168.68023681640625,
+          243.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 52,
+    "height": 54,
+    "lines": [
+      "CPU",
+      "（弱）",
+      "・4"
+    ],
+    "inset": false,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 19,
+      "obstacle": 25,
+      "placed": 18,
+      "ownership": 4
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          228.4195556640625,
+          305.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          252.57025146484375,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          252.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          190.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.91079406738282,
+          303.5391159057617
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          229.36373901367188,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          229.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          190.68023681640625,
+          203.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          203.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          235.05865783691405,
+          304.77083587646484
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          240.94174194335938,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          240.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          190.68023681640625,
+          235.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  },
+  {
+    "owner": 3,
+    "labelText": "CPU（弱）・4",
+    "width": 52,
+    "height": 54,
+    "lines": [
+      "CPU",
+      "（弱）",
+      "・4"
+    ],
+    "inset": true,
+    "bounds": {
+      "innerLeft": 8,
+      "innerTop": 120,
+      "innerRight": 312,
+      "innerBottom": 452
+    },
+    "ownCards": [
+      {
+        "left": 260.6109924316406,
+        "top": 313.24237060546875,
+        "right": 302.09368896484375,
+        "bottom": 362.77392578125
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 261.2342224121094,
+        "right": 302.09368896484375,
+        "bottom": 310.7657775878906
+      },
+      {
+        "left": 260.6109924316406,
+        "top": 209.22607421875,
+        "right": 302.09368896484375,
+        "bottom": 258.75762939453125
+      }
+    ],
+    "placed": [
+      {
+        "left": 240.77392578125,
+        "top": 386.6109924316406,
+        "right": 306.77392578125,
+        "bottom": 440.6109924316406
+      },
+      {
+        "left": 17.906312942504883,
+        "top": 151.22607421875,
+        "right": 69.90631294250488,
+        "bottom": 205.22607421875
+      },
+      {
+        "left": 240.77392578125,
+        "top": 143.90631103515625,
+        "right": 292.77392578125,
+        "bottom": 197.90631103515625
+      }
+    ],
+    "candidateCount": 50,
+    "availableCount": 0,
+    "rejectedCounts": {
+      "bounds": 19,
+      "obstacle": 25,
+      "placed": 18,
+      "ownership": 4
+    },
+    "ranked": [],
+    "rejected": [
+      {
+        "position": [
+          228.4195556640625,
+          305.6946258544922
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          252.57025146484375,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          246.68023681640625,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          252.57025146484375,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          190.68023681640625,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          206.74949645996094
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          243.91079406738282,
+          303.5391159057617
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          229.36373901367188,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          229.36373901367188,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          190.68023681640625,
+          203.524649810791
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          308.57025146484375,
+          203.524649810791
+        ],
+        "reasons": {
+          "bounds": true,
+          "obstacle": false,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          235.05865783691405,
+          304.77083587646484
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      },
+      {
+        "position": [
+          240.94174194335938,
+          148.74949645996094
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          240.94174194335938,
+          369.2505187988281
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": false,
+          "placed": true,
+          "ownership": true
+        }
+      },
+      {
+        "position": [
+          190.68023681640625,
+          235.22485427856446
+        ],
+        "reasons": {
+          "bounds": false,
+          "obstacle": true,
+          "placed": false,
+          "ownership": false
+        }
+      }
+    ]
+  }
+]

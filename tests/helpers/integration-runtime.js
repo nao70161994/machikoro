@@ -1,5 +1,6 @@
 const vm = require('vm');
-const { createStorage, loadScripts, makeElement } = require('./test-utils');
+const { createStorage, makeElement } = require('./test-utils');
+const { loadScriptsWithStringMarket } = require('./string-market-runtime');
 
 function loadIntegrationRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
@@ -425,7 +426,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/online.js');
     }
     files.push('js/main.js');
-    loadScripts(context, files);
+    loadScriptsWithStringMarket(context, files);
     vm.runInContext(`
         this.CARDS = CARDS;
         this.Player = Player;

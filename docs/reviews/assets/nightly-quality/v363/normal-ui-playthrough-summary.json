@@ -1,0 +1,90 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "playerCount": 2,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "humanActions": 164,
+    "clicks": 266,
+    "keyboardActions": 36,
+    "pageErrors": [],
+    "elapsedMs": 615627,
+    "lastTurn": 72,
+    "winner": "プレイヤー1",
+    "cameraReview": {
+      "clicks": 2,
+      "restored": true,
+      "stateUnchanged": true,
+      "elapsedMs": 1176
+    }
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "playerCount": 2,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "humanActions": 181,
+    "clicks": 282,
+    "keyboardActions": 34,
+    "pageErrors": [],
+    "elapsedMs": 498909,
+    "lastTurn": 68,
+    "winner": "プレイヤー1",
+    "cameraReview": {
+      "clicks": 2,
+      "restored": true,
+      "stateUnchanged": true,
+      "elapsedMs": 622
+    }
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "playerCount": 4,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "humanActions": 84,
+    "clicks": 139,
+    "keyboardActions": 19,
+    "pageErrors": [],
+    "elapsedMs": 516987,
+    "lastTurn": 79,
+    "winner": "プレイヤー1",
+    "cameraReview": {
+      "clicks": 2,
+      "restored": true,
+      "stateUnchanged": true,
+      "elapsedMs": 548
+    }
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "playerCount": 4,
+    "cpuSpeedMs": 1500,
+    "completed": true,
+    "humanActions": 115,
+    "clicks": 188,
+    "keyboardActions": 27,
+    "pageErrors": [],
+    "elapsedMs": 791502,
+    "lastTurn": 111,
+    "winner": "プレイヤー1",
+    "cameraReview": {
+      "clicks": 2,
+      "restored": true,
+      "stateUnchanged": true,
+      "elapsedMs": 826
+    }
+  }
+]
