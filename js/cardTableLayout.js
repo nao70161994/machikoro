@@ -34,6 +34,21 @@ const CardTableLayout = (() => {
         return Math.max(1, Math.min(maximum, hole.width / market.width, hole.height / market.height));
     }
 
+    function endColumnCandidates({ wide, denseFour, densePortraitOpponents, denseWideOpponents }) {
+        if (denseFour) return [4, 6, 8, 12, 18];
+        if (wide) return denseWideOpponents ? [4, 6, 8, 12, 18] : [4, 6, 8, 12];
+        return densePortraitOpponents ? [1, 2, 3, 4, 6, 8] : [1, 2, 3, 4];
+    }
+
+    function ownerColumnGap({ playerCount, wide, reading, maximumCardCount }) {
+        return playerCount === 2 && wide && !reading && maximumCardCount >= 13 ? 4 : 8;
+    }
+
+    function railColumnCandidates(chosenColumns, counts) {
+        const maximum = Math.max(1, ...counts);
+        return [...new Set([chosenColumns, 4, 6, 8, 12, 18].map(columns => Math.min(columns, maximum)))];
+    }
+
     function create({ world, viewport, market, onLayout = () => {} }) {
         let state = { selfIndex: 0, playerCount: 0, session: null };
         let frame = 0;
@@ -115,6 +130,9 @@ const CardTableLayout = (() => {
             const rowsFor = columns => Math.max(1, Math.ceil(visibleMarketCards / columns));
             const angles = { bottom: 0, left: 90, top: 180, right: 270 };
             const nativeWidthFor = columns => columns * 160 + (columns - 1) * 8 + 16;
+            const facilityColumnGap = ownerColumnGap({ playerCount: panels.length, wide, reading: !!readingSeat,
+                maximumCardCount: Math.max(...panels.map(panel => panel.querySelectorAll('.cardboard-card').length)) });
+            const ownerWidthFor = columns => columns * 160 + (columns - 1) * facilityColumnGap + 16;
             function applyOwnerShape(panel, columns, rail = false) {
                 const built = panel.querySelectorAll('.cardboard-landmark-built').length;
                 rail = rail && built > 0;
@@ -123,9 +141,10 @@ const CardTableLayout = (() => {
                 setStyle(panel, 'display', rail ? 'grid' : 'flex');
                 const railWidth = built ? built * 82 + Math.max(0, built - 1) * 6 : 0;
                 setStyle(panel, '--table-owner-columns', String(columns));
-                setStyle(panel, '--table-facility-width', `${nativeWidthFor(columns) - 16}px`);
+                setStyle(panel, '--table-owner-column-gap', `${facilityColumnGap}px`);
+                setStyle(panel, '--table-facility-width', `${ownerWidthFor(columns) - 16}px`);
                 setStyle(panel, '--table-landmark-width', `${railWidth}px`);
-                setStyle(panel, 'width', `${nativeWidthFor(columns) + (railWidth && rail ? railWidth + 16 : 0)}px`);
+                setStyle(panel, 'width', `${ownerWidthFor(columns) + (railWidth && rail ? railWidth + 16 : 0)}px`);
             }
             function ownerSize(panel, columns, rail = false) {
                 const key = JSON.stringify([panel.querySelectorAll('.cardboard-card').length,
@@ -133,7 +152,7 @@ const CardTableLayout = (() => {
                     // The table hides the balance/turn HUD. Only the visible
                     // heading can change this header's measured footprint.
                     panel.querySelector('.cardboard-player-heading')?.textContent,
-                    viewportWidth, viewportHeight,
+                    viewportWidth, viewportHeight, facilityColumnGap,
                     world.ownerDocument.body?.className, world.ownerDocument.documentElement.className]);
                 let history = ownerMeasurements.get(panel);
                 if (!history) {
@@ -211,8 +230,8 @@ const CardTableLayout = (() => {
                 // room on fewer rows. Keep reading views and other tables intact.
                 const densePortraitOpponents = oppositeOnly && !wide && !readingSeat &&
                     panels.some(panel => countFor(panel) >= 13);
-                const endCandidates = denseFour ? [4, 6, 8, 12, 18] : wide ? [4, 6, 8, 12]
-                    : densePortraitOpponents ? [1, 2, 3, 4, 6, 8] : [1, 2, 3, 4];
+                const endCandidates = endColumnCandidates({ wide, denseFour, densePortraitOpponents,
+                    denseWideOpponents: oppositeOnly && !readingSeat && panels.some(panel => countFor(panel) >= 13) });
                 const marketCandidates = wide ? [6, 4] : [2, 3, 1];
                 let bestScore = -1;
                 const marketPlans = new Map();
@@ -275,7 +294,8 @@ const CardTableLayout = (() => {
                 const baseline = scoreFor(chosen.end, false);
                 let bestScore = baseline;
                 let bestColumns = chosen.end;
-                for (const columns of [4, 6, 8, 12]) {
+                for (const columns of endColumnCandidates({ wide: true, denseFour: false, densePortraitOpponents: false,
+                    denseWideOpponents: panels.some(panel => countFor(panel) >= 13) })) {
                     const score = scoreFor(columns, true);
                     if (score > bestScore + 0.0001) {
                         bestScore = score;
@@ -338,13 +358,13 @@ const CardTableLayout = (() => {
             if (wide && panels.length === 4 && !readingSeat && marketAtHome &&
                 [...sides.top, ...sides.bottom].some(panel => panel.querySelector('.cardboard-landmark-built'))) {
                 const marketBox = marketSize(chosen.market, chosen.rows);
-                const scoreFor = (endColumns, rail, packing) => {
+                const scoreFor = (endColumns, rail, packing, sideColumns = chosen.side) => {
                     /** @type {Record<string, CardTableFootprint>} */
                     const dimensions = {};
                     for (const [side, owners] of Object.entries(sides)) {
                         const lateral = side === 'left' || side === 'right';
                         const panel = owners[0];
-                        const columns = Math.min(lateral ? chosen.side : endColumns, Math.max(1, countFor(panel)));
+                        const columns = Math.min(lateral ? sideColumns : endColumns, Math.max(1, countFor(panel)));
                         const box = ownerSize(panel, columns, rail && !lateral);
                         dimensions[side] = { width: lateral ? box.nativeHeight : box.nativeWidth,
                             height: lateral ? box.nativeWidth : box.nativeHeight };
@@ -364,12 +384,31 @@ const CardTableLayout = (() => {
                     return Math.min(viewportWidth / width, viewportHeight / height);
                 };
                 const baseline = scoreFor(chosen.end, false, chosen.packing);
-                // Reuse the selected card columns; this adds only the two end
-                // rail measurements, rather than another full shape search.
-                const railScore = scoreFor(chosen.end, true, 'cross');
+                // A taller printed footer can change the best facility-only
+                // column count. Compare the small existing end-column set with
+                // rails too, instead of carrying that unrelated choice forward.
+                // Clamp/deduplicate before reading native boxes (five cards need
+                // only the four- and five-column rail measurements).
+                let railScore = -1;
+                let railColumns = chosen.end;
+                let railSideColumns = chosen.side;
+                // Moving the end landmarks changes the best lateral depth too.
+                // Reuse the existing bounded side shapes instead of retaining
+                // a facility-only optimum that can hide a genuine rail gain.
+                const railSides = denseFour ? [1, 2, 3, 4, 6, 8] : shallow ? [1, 2, 3] : [2, 3, 4, 6];
+                for (const sideColumns of railSides) {
+                    for (const columns of railColumnCandidates(chosen.end, [...sides.top, ...sides.bottom].map(countFor))) {
+                        const score = scoreFor(columns, true, 'cross', sideColumns);
+                        if (score > railScore + 0.0001) {
+                            railScore = score;
+                            railColumns = columns;
+                            railSideColumns = sideColumns;
+                        }
+                    }
+                }
                 if (railScore >= baseline * 1.15) {
                     landmarkRail = true;
-                    chosen = { ...chosen, packing: 'cross' };
+                    chosen = { ...chosen, side: railSideColumns, end: railColumns, packing: 'cross' };
                 }
             }
             if (marketAtHome) lastSelection = { ...chosen, landmarkRail };
@@ -524,7 +563,7 @@ const CardTableLayout = (() => {
         observe(market);
         return Object.freeze({ refresh, syncLayout, setReadingSeat, destroy });
     }
-    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole });
+    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableLayout;

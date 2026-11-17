@@ -13988,7 +13988,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     min-height: 0;
     max-height: none;
     padding: 0;
-    gap: 8px;
+    row-gap: 8px;
+    column-gap: var(--table-owner-column-gap, 8px);
     overflow: visible;
     scroll-snap-type: none;
 }
