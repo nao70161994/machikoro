@@ -2339,7 +2339,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores, snapOwnerPosition });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, clearFeedback, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores, snapOwnerPosition });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

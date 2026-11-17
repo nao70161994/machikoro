@@ -93,3 +93,14 @@ CPU844終盤は初回移動採取が1点のみ、retryでは2点となりflaky�
 送金は手動で新規animation.startTimeへdocument時計を入れていた。[Web Animations仕様](https://www.w3.org/TR/web-animations-1/#the-default-document-timeline)ではdocument時計は更新間に進まないため、前frameの時計へ遡らせずブラウザのpending開始に任せる修正を採用候補とした。duration600ms/delay0/retarget時計不変と全7経路の可視2地点・金額・非被覆・完走を維持し、描画時の開始時計一致も追加検査。今回の途中sampleは320序盤5/終盤2、844序盤3/終盤2。[最新844終盤原本](assets/card-economy/ci-followup-01e2/cpu-native-start-844-late.json)。ただし最終的にブラウザが解決したstartTimeは作成時のdocument時計と同じであり、今回の成功だけで描画前時間消費や低frame間隔の根絶・性能改善を証明しない。主版全Release/Nightlyで安定性を再確認する。
 
 共有ルール・CPU判断・オンライン・保存の正本は変更しない。SW候補v370で修正した描画資産を更新する。全体CIが成功するまではGoal未完了・マージ保留。
+
+
+### v371：実対局の勝利画面に残った収益表示を修復
+
+通常速度CPUの実対局は[390/844px・4人](https://github.com/nao70161994/machikoro/actions/runs/44001576286)と[320/1440px・2人](https://github.com/nao70161994/machikoro/actions/runs/44001582072)で全て勝利まで成功した。実行版0a5ce5efは99fc58ffと実行コードが同じ（後者は型注釈と記録のみ）。これは後述v371の修正前の通しプレイ証拠である。
+
+PC実対局画像の独立レビューで、勝利コレクション上に直前の「+4」が残る不具合を発見。原因は勝利カード自体ではなく、bodyに置いた盤面の収益レイヤーが勝利遷移で残ったこと。勝利処理内の最終プレイヤー再描画後に既存clearFeedbackを呼び、送金・収益タグ・予約frameを解除する。勝利演出、再戦、保存処理は維持する。
+
+[対象native検証44003739457](https://github.com/nao70161994/machikoro/actions/runs/44003739457)で320/390/844/1440pxの既存勝利4ケースが初回成功。実際の出目3で自動収益を発生させ、遷移直前に存在したレイヤーが同じ同期処理内で0になることを検査し、通常の消滅timeoutでは通らない構成にした。既存36施設・18種類・6ランドマーク・フォーカス・詳細閲覧の検査も維持。Node UI検証は最終再描画後の解除順序を確認した。新実行コードの全体CI・勝利画像は主版Push後に確認する。
+
+全体検証では[99fc58ff Release](https://github.com/nao70161994/machikoro/actions/runs/44001881184)と[Visual](https://github.com/nao70161994/machikoro/actions/runs/44001881187)が成功。[同実行コード0a5ce5efのNightly](https://github.com/nao70161994/machikoro/actions/runs/44000681109)も全6分割・集約を成功した。これらはv371の勝利遷移修正前の結果として区別する。商用作品と同等の体感性能や物理スマートフォンでの動作を保証する結果ではない。

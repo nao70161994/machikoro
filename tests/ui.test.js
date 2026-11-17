@@ -898,7 +898,13 @@ runTest('render helper は勝利・通常描画・保存境界へ分かれてい
 });
 
 runTest('renderWinnerState はローカル終了時に既存オンライン復元bundleを消す', () => {
-    const { context, elements } = loadUiRuntime();
+    const feedbackCleanup = [];
+    const { context, elements } = loadUiRuntime({ globals: { CardBoardField: {
+        closeTown(focus) { feedbackCleanup.push(['town', focus]); },
+        closeMarket(focus) { feedbackCleanup.push(['market', focus]); },
+        render() { feedbackCleanup.push(['players']); },
+        clearFeedback() { feedbackCleanup.push(['feedback']); },
+    } } });
     assert.strictEqual(context.fullLog, undefined);
     const winner = { name: 'Alice', coins: 20, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
     const opponent = { name: 'Bob', coins: 3, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
@@ -913,6 +919,7 @@ runTest('renderWinnerState はローカル終了時に既存オンライン復�
 
     context.renderWinnerState(winner);
 
+    assert.deepStrictEqual(feedbackCleanup, [['town', false], ['market', false], ['players'], ['feedback']]);
     assert.strictEqual(context.localStorage.getItem('savedGame'), null);
     assert.strictEqual(context.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(context.clearOnlineSessionStorageCalls, 1);

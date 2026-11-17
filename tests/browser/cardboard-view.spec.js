@@ -1088,15 +1088,28 @@ test('OSの動き低減中もランドマーク完成を静的に強調する', 
 for (const viewport of [{ width: 320, height: 720 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
 test(`にぎわい広場の勝利カードコレクション ${viewport.width}px`, async ({ page }) => {
     await prepare(page, viewport, 2, false);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.evaluate(() => {
         const state = GameRuntimeState.runtime.snapshot();
         cancelCpuSchedule('cardboard-winner-layout');
         state.game.currentPlayerIndex = 0;
         state.game.players[0].cards = CARDS.slice(0, 18).flatMap(card => [card, card]);
+        state.game.rollDice(3);
+        render();
+    });
+    // Exercise real automatic feedback before winning, rather than injecting
+    // a fake overlay or waiting for its ordinary timeout to hide the defect.
+    await expect(page.locator('.cardboard-transfers-viewport')).toHaveCount(1);
+    await expect.poll(() => page.locator('.cardboard-owner-net').count()).toBeGreaterThan(0);
+    const winnerTransition = await page.evaluate(() => {
+        const before = document.querySelectorAll('.cardboard-transfers-viewport').length;
+        const state = GameRuntimeState.runtime.snapshot();
         for (const name of getEnabledLandmarkSelection()) state.game.players[0].landmarks[name] = true;
         showTurnAnnouncer(state.game.players[0].name, false, 0);
         render();
+        return { before, remaining: document.querySelectorAll('.cardboard-transfers-viewport, .cardboard-owner-net').length };
     });
+    expect(winnerTransition).toEqual({ before: 1, remaining: 0 });
     await expect(page.locator('.winner-screen')).toBeVisible();
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
     await expect(page.locator('.winner-stats-row').first()).toHaveClass(/highlight/);
