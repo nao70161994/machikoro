@@ -4,6 +4,23 @@ const { test, expect } = require('@playwright/test');
 // Explicit banner cases below and the PWA suite retain update coverage.
 test.use({ serviceWorkers: 'block' });
 
+test.beforeEach(async ({ page }, info) => {
+    if (info.title !== '共通カード卓の人数適応 2') return;
+    await page.addInitScript(() => {
+        window.__twoSeatRailMeasurements = [];
+        window.__twoSeatRailDiagnostic = value => {
+            window.__twoSeatRailMeasurements.push(value);
+            if (window.__twoSeatRailMeasurements.length > 20) window.__twoSeatRailMeasurements.shift();
+        };
+    });
+});
+test.afterEach(async ({ page }, info) => {
+    if (info.title !== '共通カード卓の人数適応 2') return;
+    const file = info.outputPath('two-seat-rail-measurements.json');
+    await require('node:fs/promises').writeFile(file, JSON.stringify(await page.evaluate(() => window.__twoSeatRailMeasurements), null, 2));
+    await info.attach('two-seat-rail-measurements', { path: file, contentType: 'application/json' });
+});
+
 async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => { if (!localStorage.getItem('machikoroDesignTheme')) localStorage.setItem('machikoroDesignTheme', 'cardboard'); });

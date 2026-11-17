@@ -666,3 +666,19 @@ runTest('134pxカードの実320入力は隣席の唯一の収支空間を塞が
     assert.strictEqual(CardBoardField.ownerReceiptScore(moved, inner, [bounds], competing, prior), -1);
     assert.strictEqual(JSON.stringify({ bounds, owners, obstacles }), before);
 });
+
+runTest('長い所属名は実320入力の左右同距離の浮動誤差で後続の全文領域を消費しない', () => {
+    // Native owner-placement-early-resolved: both were legal; the right
+    // candidate's 1e-8 score advantage consumed the final owner's only pocket.
+    const right = { position: [240.77392578125, 386.6109924316406], score: 4.227891879614342 };
+    const left = { position: [13.226066589355469, 386.6109924316406], score: 4.227891889771511 };
+    const before = JSON.stringify([right, left]);
+    assert.deepStrictEqual([right, left].sort(CardBoardField.compareOwnerPlacementScores), [left, right]);
+    assert.deepStrictEqual([left, right].sort(CardBoardField.compareOwnerPlacementScores), [left, right]);
+    const genuinelyNearer = { position: right.position, score: left.score - 0.000002 };
+    assert.ok(CardBoardField.compareOwnerPlacementScores(genuinelyNearer, left) < 0,
+        'numerically meaningful distance still wins before geometric tie-breaking');
+    const upper = { position: [left.position[0], left.position[1] - 2], score: left.score };
+    assert.ok(CardBoardField.compareOwnerPlacementScores(upper, left) < 0);
+    assert.strictEqual(JSON.stringify([right, left]), before);
+});

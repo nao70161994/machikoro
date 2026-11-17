@@ -250,6 +250,14 @@ const CardBoardField = (() => {
         return candidates;
     }
 
+    // Equivalent transformed edge distances may differ by floating-point noise.
+    // Normalize only that noise, then break ties geometrically; collision and
+    // ownership admission always retain the original unrounded rectangles.
+    function compareOwnerPlacementScores(a, b) {
+        return Math.round(a.score * 1e6) - Math.round(b.score * 1e6) ||
+            a.position[0] - b.position[0] || a.position[1] - b.position[1];
+    }
+
     function updateOwnerLabels() {
         const viewport = node('cardboardTableViewport');
         const layer = node('cardboardOwnerLabels');
@@ -316,8 +324,6 @@ const CardBoardField = (() => {
             ownerLabelMeasure = canvas.getContext('2d');
         }
         if (ownerLabelMeasure) ownerLabelMeasure.font = `800 ${shallow ? 11 : 12}px ${window.getComputedStyle(viewport).fontFamily}`;
-        const ownerDiagnostic = window.__captureOwnerPlacement ? [] : null;
-        if (ownerDiagnostic) window.__ownerPlacementDiagnostic = ownerDiagnostic;
         for (const panel of panels) {
             const heading = panel.querySelector('.cardboard-player-heading');
             if (!heading) continue;
@@ -510,29 +516,9 @@ const CardBoardField = (() => {
                 });
                 // Shorter names must not make a ragged row's tail outrank a free
                 // market-facing heading. Keep collision/owner-distance guards.
-                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(a.crowdedReceipt) - Number(b.crowdedReceipt) || Number(a.adjustedReceipt) - Number(b.adjustedReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
-                if (ownerDiagnostic && ownerDiagnostic.length < 80) {
-                    const reasons = position => {
-                        const [left, top] = position;
-                        return {
-                            bounds: !(left >= innerLeft + gap && left + width <= innerRight - gap && top >= innerTop + gap && top + height <= innerBottom - gap),
-                            obstacle: obstacles.some(rect => intersects(left, top, rect)),
-                            placed: placed.some(rect => intersects(left, top, rect)),
-                            ownership: nearest(left, top, ownCards) > nearest(left, top, otherCards) + 0.5,
-                        };
-                    };
-                    const rejected = candidates.filter(position => !canPlace(position));
-                    ownerDiagnostic.push({ owner: index, labelText, width, height, lines, inset,
-                        bounds: { innerLeft, innerTop, innerRight, innerBottom },
-                        ownCards: ownCards.map(rect => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom })),
-                        placed: placed.map(rect => ({ ...rect })),
-                        candidateCount: candidates.length, availableCount: available.length,
-                        rejectedCounts: Object.fromEntries(['bounds', 'obstacle', 'placed', 'ownership'].map(reason =>
-                            [reason, rejected.filter(position => reasons(position)[reason]).length])),
-                        ranked: ranked.slice(0, 24),
-                        rejected: rejected.slice(0, 16).map(position => ({ position, reasons: reasons(position) })),
-                    });
-                }
+                const stableMultiline = protectReceipts && height > baseHeight;
+                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(a.crowdedReceipt) - Number(b.crowdedReceipt) || Number(a.adjustedReceipt) - Number(b.adjustedReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) ||
+                    (stableMultiline ? compareOwnerPlacementScores(a, b) : a.score - b.score));
                 if (ranked[0]) {
                     placement = { width, height, lines, position: ranked[0].position };
                     break;
@@ -2339,7 +2325,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

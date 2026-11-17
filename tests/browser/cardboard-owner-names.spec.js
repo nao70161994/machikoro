@@ -21,7 +21,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
             try {
                 const page = await context.newPage();
                 await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-                await page.addInitScript(() => { localStorage.setItem('machikoroDesignTheme', 'cardboard'); window.__captureOwnerPlacement = true; });
+                await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
                 await page.goto('/');
                 await page.evaluate(scene => {
                     startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
@@ -78,9 +78,6 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                     }));
                 }
                 async function measure(stage) {
-                    const placementFile = testInfo.outputPath(`owner-placement-${scene}-${stage}.json`);
-                    await fs.writeFile(placementFile, JSON.stringify(await page.evaluate(() => window.__ownerPlacementDiagnostic || []), null, 2));
-                    await testInfo.attach(`owner-placement-${scene}-${stage}`, { path: placementFile, contentType: 'application/json' });
                     const result = await page.evaluate(() => {
                         const game = GameRuntimeState.runtime.snapshot().game;
                         const blockers = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')];
