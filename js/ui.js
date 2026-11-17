@@ -615,6 +615,9 @@ function renderWinnerState(winner) {
             }
         },
     });
+    // renderPlayers above also refreshes the underlying board. End its body-
+    // level transfers and pending feedback after that refresh, before paint.
+    if (typeof CardBoardField !== 'undefined') CardBoardField.clearFeedback?.();
 }
 
 async function shareGameResult() {

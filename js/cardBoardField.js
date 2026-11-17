@@ -252,6 +252,7 @@ const CardBoardField = (() => {
 
     // WebKit stores positioned offsets on a 1/64 CSS-pixel layout grid.
     // Admit and rank the same local offsets which the name will actually use.
+    /** @returns {[number, number]} */
     function snapOwnerPosition(position, origin) {
         return [origin.left + Math.round((position[0] - origin.left) * 64) / 64,
             origin.top + Math.round((position[1] - origin.top) * 64) / 64];
@@ -259,7 +260,8 @@ const CardBoardField = (() => {
 
     // Equivalent transformed edge distances may differ by floating-point noise.
     // Normalize only that noise, then break ties geometrically; collision and
-    // ownership admission always retain the original unrounded rectangles.
+    // ownership admission retain the measured card rectangles and the exact
+    // snapped position which the label will use for rendering.
     function compareOwnerPlacementScores(a, b) {
         return Math.round(a.score * 1e6) - Math.round(b.score * 1e6) ||
             a.position[0] - b.position[0] || a.position[1] - b.position[1];
@@ -2337,7 +2339,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores, snapOwnerPosition });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, clearFeedback, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores, snapOwnerPosition });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;
