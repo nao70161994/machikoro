@@ -90,10 +90,19 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                         const box = effect.getBoundingClientRect();
                         const cardBox = card.getBoundingClientRect();
                         const nameBox = name.getBoundingClientRect();
+                        const count = card.querySelector('.cardboard-count');
+                        const countStyle = getComputedStyle(count);
+                        const countRange = document.createRange();
+                        countRange.selectNodeContents(count.querySelector('.cardboard-count-value'));
+                        const countBox = count.getBoundingClientRect();
                         return { name: card.dataset.cardName, width: card.offsetWidth, height: card.offsetHeight,
                             artHeight: art.offsetHeight, nameHeight: name.offsetHeight,
                             activated: card.classList.contains('cardboard-card-activated'), dormant: Boolean(dormant),
                             count: card.querySelector('.cardboard-count-value').textContent,
+                            cornerOverlay: getComputedStyle(card, '::after').content,
+                            countVisible: countStyle.visibility === 'visible' && Number(countStyle.opacity) > 0.5 &&
+                                contains(cardBox, countBox) && contains(countBox, countRange.getBoundingClientRect()) &&
+                                count.scrollWidth <= count.clientWidth,
                             restText: dormant?.textContent, visible, text, content: pseudo.content, font: pseudo.font,
                             fullText: effect.textContent, title: effect.title, aria: card.getAttribute('aria-label'),
                             expectedFull: getEffectText(createCardByName(card.dataset.cardName)),
@@ -114,6 +123,8 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
                 expect(card.height).toBe(134);
                 expect(card.artHeight).toBe(62);
                 expect(card.nameHeight).toBe(reading ? 20 : 24);
+                expect(card.cornerOverlay, `${stage}/${card.name}: 所有枚数を覆う重複発動ラベルを使わない`).toBe('none');
+                expect(card.countVisible, `${stage}/${card.name}: 発動中も所有枚数の全文を表示`).toBe(true);
                 expect(card.fullText).toBe(card.expectedFull);
                 expect(card.title).toBe(card.expectedFull);
                 expect(card.aria).toContain(card.expectedFull);
