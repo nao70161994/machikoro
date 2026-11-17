@@ -316,6 +316,8 @@ const CardBoardField = (() => {
             ownerLabelMeasure = canvas.getContext('2d');
         }
         if (ownerLabelMeasure) ownerLabelMeasure.font = `800 ${shallow ? 11 : 12}px ${window.getComputedStyle(viewport).fontFamily}`;
+        const ownerDiagnostic = window.__captureOwnerPlacement ? [] : null;
+        if (ownerDiagnostic) window.__ownerPlacementDiagnostic = ownerDiagnostic;
         for (const panel of panels) {
             const heading = panel.querySelector('.cardboard-player-heading');
             if (!heading) continue;
@@ -509,6 +511,28 @@ const CardBoardField = (() => {
                 // Shorter names must not make a ragged row's tail outrank a free
                 // market-facing heading. Keep collision/owner-distance guards.
                 ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(a.crowdedReceipt) - Number(b.crowdedReceipt) || Number(a.adjustedReceipt) - Number(b.adjustedReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
+                if (ownerDiagnostic && ownerDiagnostic.length < 80) {
+                    const reasons = position => {
+                        const [left, top] = position;
+                        return {
+                            bounds: !(left >= innerLeft + gap && left + width <= innerRight - gap && top >= innerTop + gap && top + height <= innerBottom - gap),
+                            obstacle: obstacles.some(rect => intersects(left, top, rect)),
+                            placed: placed.some(rect => intersects(left, top, rect)),
+                            ownership: nearest(left, top, ownCards) > nearest(left, top, otherCards) + 0.5,
+                        };
+                    };
+                    const rejected = candidates.filter(position => !canPlace(position));
+                    ownerDiagnostic.push({ owner: index, labelText, width, height, lines, inset,
+                        bounds: { innerLeft, innerTop, innerRight, innerBottom },
+                        ownCards: ownCards.map(rect => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom })),
+                        placed: placed.map(rect => ({ ...rect })),
+                        candidateCount: candidates.length, availableCount: available.length,
+                        rejectedCounts: Object.fromEntries(['bounds', 'obstacle', 'placed', 'ownership'].map(reason =>
+                            [reason, rejected.filter(position => reasons(position)[reason]).length])),
+                        ranked: ranked.slice(0, 24),
+                        rejected: rejected.slice(0, 16).map(position => ({ position, reasons: reasons(position) })),
+                    });
+                }
                 if (ranked[0]) {
                     placement = { width, height, lines, position: ranked[0].position };
                     break;

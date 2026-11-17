@@ -14,12 +14,12 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    - name: layout-diagnostic
+                    - name: layout-fixes
                       command: npx playwright test cardboard-overview.spec.js --grep '844の四方向卓は中盤ランドマーク|共通カード卓の人数適応 2' --project=mobile-webkit --workers=1 --retries=0
-                    - name: pwa-startup
-                      command: npx playwright test mobile-webkit.spec.js --grep 'mobile WebKitでapp shellとService Workerが実動作する' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3
-                    - name: guide-clicks
-                      command: npx playwright test visual-art-review.spec.js --grep '夕暮れのガイド設定は共通SVGアイコン' --project=mobile-webkit --workers=1 --retries=0 --repeat-each=3
+                    - name: owner-diagnostic
+                      command: npx playwright test cardboard-owner-names.spec.js --grep '正本を維持する 320' --project=mobile-webkit --workers=1 --retries=0
+                    - name: visual-regression
+                      command: npx playwright test theme-visual-regression.spec.js --project=mobile-webkit --workers=1 --retries=0
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f

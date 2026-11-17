@@ -1,29 +1,8 @@
 const { test, expect } = require('@playwright/test');
-const fs = require('node:fs/promises');
 
 // Keep layout fixtures independent of asynchronous SW update prompts.
 // Explicit banner cases below and the PWA suite retain update coverage.
 test.use({ serviceWorkers: 'block' });
-
-// Temporary native optimizer evidence: no geometry or timing is overridden.
-test.beforeEach(async ({ page }, testInfo) => {
-    if (!/中盤ランドマーク|人数適応 2$/.test(testInfo.title)) return;
-    await page.addInitScript(() => {
-        window.__cardTableLayoutSamples = [];
-        window.__cardTableLayoutDiagnostic = value => {
-            if (window.__cardTableLayoutSamples.length === 30) window.__cardTableLayoutSamples.shift();
-            window.__cardTableLayoutSamples.push({ at: performance.now(), ...value });
-        };
-    });
-});
-test.afterEach(async ({ page }, testInfo) => {
-    if (!/中盤ランドマーク|人数適応 2$/.test(testInfo.title)) return;
-    const samples = await page.evaluate(() => window.__cardTableLayoutSamples || []);
-    const path = testInfo.outputPath('layout-optimizer-diagnostic.json');
-    await fs.writeFile(path, JSON.stringify(samples, null, 2));
-    await testInfo.attach('layout-optimizer-diagnostic', { path, contentType: 'application/json' });
-});
-
 
 async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.setViewportSize(viewport);

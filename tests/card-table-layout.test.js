@@ -68,10 +68,10 @@ runTest('密集した対面横卓は134pxカードの18種類を一行で比較�
     assert.deepStrictEqual(endColumnCandidates({ wide: false, denseFour: false, densePortraitOpponents: false,
         denseWideOpponents: false }), [1, 2, 3, 4]);
     const columns = 18;
-    const ownerWidth = columns * 160 + (columns - 1) * 8 + 16;
+    const ownerWidth = columns * 160 + (columns - 1) * 4 + 16;
     const footprintWidth = ownerWidth + 12 * 2;
     assert.strictEqual(Math.ceil(18 / columns), 1);
-    assert.ok(844 / footprintWidth * 160 >= 44, '固定160px幅の施設を横方向44px以上へ収められる候補');
+    assert.ok(824 / footprintWidth * 160 >= 44, '固定160px幅の施設を横方向44px以上へ収められる候補');
     // The optimizer must still measure native header/landmark/134px heights;
     // this width proof alone is not a browser-fit or candidate adoption claim.
 });
@@ -87,4 +87,14 @@ runTest('四席ランドマークrailは施設のみの選択に固定せず有�
     assert.strictEqual(candidates.length, 2, '5施設は4列と5列だけを新しく実測する');
     assert.strictEqual(JSON.stringify(counts), before);
     assert.ok(candidates.every(columns => columns > 0 && columns <= 5));
+});
+
+runTest('所有施設の列間だけを密集対面横卓で詰め正面閲覧と他人数では保つ', () => {
+    const { ownerColumnGap } = require('../js/cardTableLayout');
+    const options = { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 };
+    assert.strictEqual(ownerColumnGap(options), 4);
+    for (const change of [{ playerCount: 4 }, { wide: false }, { reading: true }, { maximumCardCount: 12 }]) {
+        assert.strictEqual(ownerColumnGap({ ...options, ...change }), 8);
+    }
+    assert.deepStrictEqual(options, { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 });
 });
