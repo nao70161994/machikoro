@@ -123,3 +123,16 @@ CPU1500ms、全3条件completed=true・pageErrorsなし。相手正面閲覧→�
 320/844の計8枚も別の独立レビューで、既知の勝利収益札以外に重大な被覆・切れ・所有者混同・操作遮蔽なし。320勝利+4/844勝利+65は修正前の原本であり、この画像自体を修復済みとは扱わない。844序盤の左右余白と俯瞰の細字は残り、初見人間の理解速度・演出テンポの商用同等性は未証明。
 
 [勝利時収益残留の修正前PC原本](assets/card-economy/v370-normal-games/winner-before-cleanup-1440.png)と[同対局summary](assets/card-economy/v370-normal-games/summary-1440.json)も保存。修正後画像はv371主Releaseの勝利4条件のartifactから取得し、対局の乱数・所有構成が異なる画像を画素一致比較とは説明しない。
+
+
+### v371主Releaseと修正後の勝利画像
+
+[Release44004485329](https://github.com/nao70161994/machikoro/actions/runs/44004485329)は全ジョブ成功。静的検査・unit・PWA・オンライン・release・CPU・固定seed2人/4人・4テーマ互換性・勝利4条件を含む。取得した[320](assets/card-economy/v371-winner/cardboard-winner-320.png) / [390](assets/card-economy/v371-winner/cardboard-winner-390.png) / [844](assets/card-economy/v371-winner/cardboard-winner-844.png) / [1440](assets/card-economy/v371-winner/cardboard-winner-1440.png)は実収益発生直後に勝利させた既存テストの原本。修正前自然対局とは施設構成が異なり、同一状態の画素差比較ではない。収益残留はDOMの同期遷移検査と修正後画像の両方で確認する。VisualとNightlyは継続中。
+
+修正後4原寸画像の独立レビューも完了。全幅でbody収益札残留なし、36枚/18種類/目標6/6・全6ランドマーク・再戦/共有/タイトルの重大な被覆や文字切れなし。1440の一覧下段はスクロール領域内の途中表示で、スクロール案内と主要操作を保持する。採用を妨げる重大な退行は見つからなかった。
+
+[Visual44004485367](https://github.com/nao70161994/machikoro/actions/runs/44004485367)も全成功。16画面の既存基準と関連操作を維持し、勝利修正のための基準更新・許容値変更は行っていない。Nightly残り4分割の終了を待つ。
+
+### v371の全体CI最終結果
+
+[通常Release](https://github.com/nao70161994/machikoro/actions/runs/44004485329)・[Visual](https://github.com/nao70161994/machikoro/actions/runs/44004485367)・[Nightly](https://github.com/nao70161994/machikoro/actions/runs/44004494382)が全て成功。Nightlyの[集約原本](assets/card-economy/v371-winner/nightly-browser-coverage.json)を取得し、387一意、WebKit384/Chromium3、386 passed・許可済み任意1 skipped・retry0・stable=trueを確認した。全6分割と欠落/重複/未完了検査が完了した。前述の実行中表記は履歴として扱う。修復対象の既知不具合と回帰については完了を確認し、商用同等の主観評価・実機未確認・密集俯瞰の読み取り等の限界は保持する。

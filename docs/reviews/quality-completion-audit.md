@@ -4,13 +4,17 @@
 
 **Goal未完了・Draft PR #19・マージ保留。** 最新main `1336bf43`を統合済み。
 
+### 最新の全体結果
+
+製品439f82a9 / SW371のRelease・Visual・Nightlyが全成功。Nightlyは387一意、386 passed＋許可済み任意1 skipped、retry0、stable=true。[最終報告](pr19-delivery-summary.md)と[全件原本](assets/card-economy/v371-winner/nightly-browser-coverage.json)を優先する。自然対局16画像と修復後勝利4画像の独立レビューも完了し、既知不具合と回帰修復は確認した。商用同等を完全に立証したとは扱わず、Goalの品質目標に対する細字・演出・実機検証の制約を保持する。
+
 ### v371：最新の確認状態（2026-11-17 JST）
 
 製品 `439f82a9` / SW371をPush済み。直前99fc58ffの通常Release・Visual・Nightlyは全て成功し、同じ実行コード0a版のNightlyと連続2回の全体成功を確認した。最新の集約原本は387件・ID一意387・386 passed＋許可済み任意1 skipped・retry0・stable=true。[原因分類・集約原本・最新画像](card-economy-overview.md#主版nightly集約と最新モバイル実対局の原本)。元318件との対応・仕様変更を含む契約差は[P0監査](p0-current-coverage-audit.md)を参照。
 
 最新の通常速度実対局は320/1440の2人、390/844の4人が全て開始から勝利まで完走。CPU1500ms、人間席のUI操作、PageErrorsなし、相手正面→復帰は2クリックで視点と正本を維持。計16画像を独立レビューした。5/10人は以前の100ms完走と最新の適応配置テストを組み合わせた証拠であり、最新通常速度の全幅×全人数完走ではない。
 
-その実対局の勝利画像でbody上の収益札が残る不具合を発見。v371で最終プレイヤー再描画後に既存の演出解除を呼ぶ修正を採用した。実収益発生→勝利の同一同期処理で収益レイヤーが消えることを既存4幅nativeケースで確認、Node UI・構文・全checkJs・対象lintも成功。新製品全体は[Release44004485329](https://github.com/nao70161994/machikoro/actions/runs/44004485329)・[Visual44004485367](https://github.com/nao70161994/machikoro/actions/runs/44004485367)・[Nightly44004494382](https://github.com/nao70161994/machikoro/actions/runs/44004494382)の結果と勝利画像を確認中。旧版の全体成功を新製品の結果と混同しない。
+その実対局の勝利画像でbody上の収益札が残る不具合を発見。v371で最終プレイヤー再描画後に既存の演出解除を呼ぶ修正を採用した。実収益発生→勝利の同一同期処理で収益レイヤーが消えることを既存4幅nativeケースで確認、Node UI・構文・全checkJs・対象lintも成功。新製品のReleaseとVisualは成功。全体確認は[Release44004485329](https://github.com/nao70161994/machikoro/actions/runs/44004485329)・[Visual44004485367](https://github.com/nao70161994/machikoro/actions/runs/44004485367)・[Nightly44004494382](https://github.com/nao70161994/machikoro/actions/runs/44004494382)のうちNightlyの結果を確認中。勝利4幅画像も独立レビューで収益残留なし・重大な被覆や文字切れなし。旧版の全体成功を新製品の結果と混同しない。
 
 独立レビューでは既知の勝利収益札以外に重大な切れ・所有者混同・主要操作被覆は見つからなかった。残る差は密集俯瞰の細字、844序盤の左右余白、公式に比べ控えめな立体感／プレイヤー反応と演出の読み取り速度である。正面閲覧への移動を含めた設計上の交換条件を記録し、商用同等と断定しない。物理端末・初見人間の理解速度・実機音響の確認は未実施。以下は履歴であり、古い実行中・未Pushの記述を現在の結果とは扱わない。
 
