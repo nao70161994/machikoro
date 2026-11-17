@@ -601,26 +601,81 @@ test('夕暮れのガイド設定は共通SVGアイコンでスマホとデス�
     await expect(page.locator('#gameScreen')).toBeVisible();
     await page.locator('.game-guide-settings').evaluate(element => { element.open = true; });
 
-    for (const width of [390, 1440]) {
-        await page.setViewportSize({ width, height: 844 });
-        const settings = page.locator('.game-guide-settings');
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-icon use'))
-            .toHaveAttribute('href', 'icons/interface-ui.svg#book');
-        await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-icon use'))
-            .toHaveAttribute('href', 'icons/interface-ui.svg#target');
-        await expect(settings.locator('.tutorial-toggle-emoji')).toHaveCount(2);
-        await expect(settings.locator('.tutorial-toggle-emoji').first()).toBeHidden();
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
-        await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-label')).toHaveText('初心者');
-        await settings.locator('#btnTutorialToggle').click();
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド OFF');
-        await settings.locator('#btnTutorialToggle').click();
-        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
-        const screenshot = testInfo.outputPath(`sunset-guide-controls-${width}.png`);
-        await settings.screenshot({ path: screenshot, animations: 'disabled' });
-        await testInfo.attach(`sunset-guide-controls-${width}.png`, {
-            path: screenshot,
-            contentType: 'image/png',
+    await page.evaluate(() => {
+        const entries = [];
+        const describe = element => element ? {
+            tag: element.tagName, id: element.id || '',
+            action: element.closest?.('[data-ui-action]')?.getAttribute('data-ui-action') || null,
+        } : null;
+        const state = () => ({
+            runtime: typeof UiTutorialSettings !== 'undefined' ? UiTutorialSettings.runtime.snapshot() : null,
+            label: document.querySelector('#btnTutorialToggle .tutorial-toggle-label')?.textContent,
+            pressed: document.getElementById('btnTutorialToggle')?.getAttribute('aria-pressed'),
+            open: document.querySelector('.game-guide-settings')?.open,
+        });
+        const record = entry => { if (entries.length < 100) entries.push({ at: performance.now(), ...entry }); };
+        const capture = event => {
+            if (!event.target?.closest?.('.game-guide-settings')) return;
+            record({ kind: event.type, target: describe(event.target), detail: event.detail,
+                defaultPrevented: event.defaultPrevented, state: state() });
+        };
+        for (const name of ['pointerdown', 'pointerup', 'click']) document.addEventListener(name, capture, true);
+        const original = window.toggleTutorial;
+        window.toggleTutorial = function (...args) {
+            record({ kind: 'toggle-before', state: state() });
+            try { return original.apply(this, args); }
+            finally { record({ kind: 'toggle-after', state: state() }); }
+        };
+        window.__guideClickDiagnostics = { entries, sample(label) {
+            const button = document.getElementById('btnTutorialToggle');
+            const rect = button?.getBoundingClientRect();
+            record({ kind: 'sample', label, state: state(), rect: rect ? {
+                x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+            } : null, hit: rect ? describe(document.elementFromPoint(rect.x + rect.width / 2,
+                rect.y + rect.height / 2)) : null });
+        }, cleanup() {
+            for (const name of ['pointerdown', 'pointerup', 'click']) document.removeEventListener(name, capture, true);
+            window.toggleTutorial = original;
+        } };
+    });
+    const sample = label => page.evaluate(value => window.__guideClickDiagnostics.sample(value), label);
+    try {
+        for (const width of [390, 1440]) {
+            await page.setViewportSize({ width, height: 844 });
+            const settings = page.locator('.game-guide-settings');
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-icon use'))
+                .toHaveAttribute('href', 'icons/interface-ui.svg#book');
+            await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-icon use'))
+                .toHaveAttribute('href', 'icons/interface-ui.svg#target');
+            await expect(settings.locator('.tutorial-toggle-emoji')).toHaveCount(2);
+            await expect(settings.locator('.tutorial-toggle-emoji').first()).toBeHidden();
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
+            await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-label')).toHaveText('初心者');
+            await sample(`${width}-before-off`);
+            await settings.locator('#btnTutorialToggle').click();
+            await sample(`${width}-after-off-click`);
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド OFF');
+            await sample(`${width}-before-on`);
+            await settings.locator('#btnTutorialToggle').click();
+            await sample(`${width}-after-on-click`);
+            await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
+            const screenshot = testInfo.outputPath(`sunset-guide-controls-${width}.png`);
+            await settings.screenshot({ path: screenshot, animations: 'disabled' });
+            await testInfo.attach(`sunset-guide-controls-${width}.png`, {
+                path: screenshot,
+                contentType: 'image/png',
+            });
+        }
+    } finally {
+        const diagnostics = await page.evaluate(() => {
+            const diagnostics = window.__guideClickDiagnostics;
+            diagnostics?.sample('finally');
+            const entries = diagnostics?.entries || [];
+            diagnostics?.cleanup();
+            return entries;
+        }).catch(error => ({ unavailable: error.name }));
+        await testInfo.attach('guide-click-diagnostics', {
+            body: Buffer.from(JSON.stringify(diagnostics, null, 2)), contentType: 'application/json',
         });
     }
 });

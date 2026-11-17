@@ -56,3 +56,35 @@ runTest('市場の拡大は既存の中央空間内だけで行い余白不足�
     assert.strictEqual(marketScaleWithinHole(market, { width: NaN, height: 380 }), 1);
     assert.deepStrictEqual(market, { width: 344, height: 380 });
 });
+
+runTest('密集した対面横卓は134pxカードの18種類を一行で比較する候補を持つ', () => {
+    const { endColumnCandidates } = require('../js/cardTableLayout');
+    assert.deepStrictEqual(endColumnCandidates({ wide: true, denseFour: false, densePortraitOpponents: false,
+        denseWideOpponents: true }), [4, 6, 8, 12, 18]);
+    assert.deepStrictEqual(endColumnCandidates({ wide: true, denseFour: false, densePortraitOpponents: false,
+        denseWideOpponents: false }), [4, 6, 8, 12]);
+    assert.deepStrictEqual(endColumnCandidates({ wide: false, denseFour: false, densePortraitOpponents: true,
+        denseWideOpponents: false }), [1, 2, 3, 4, 6, 8]);
+    assert.deepStrictEqual(endColumnCandidates({ wide: false, denseFour: false, densePortraitOpponents: false,
+        denseWideOpponents: false }), [1, 2, 3, 4]);
+    const columns = 18;
+    const ownerWidth = columns * 160 + (columns - 1) * 8 + 16;
+    const footprintWidth = ownerWidth + 12 * 2;
+    assert.strictEqual(Math.ceil(18 / columns), 1);
+    assert.ok(844 / footprintWidth * 160 >= 44, '固定160px幅の施設を横方向44px以上へ収められる候補');
+    // The optimizer must still measure native header/landmark/134px heights;
+    // this width proof alone is not a browser-fit or candidate adoption claim.
+});
+
+runTest('四席ランドマークrailは施設のみの選択に固定せず有界な実列数を比較する', () => {
+    const { railColumnCandidates } = require('../js/cardTableLayout');
+    assert.deepStrictEqual(railColumnCandidates(6, [5, 5]), [5, 4]);
+    assert.deepStrictEqual(railColumnCandidates(4, [5, 5]), [4, 5]);
+    assert.deepStrictEqual(railColumnCandidates(8, [18, 17]), [8, 4, 6, 12, 18]);
+    const counts = [5, 5];
+    const before = JSON.stringify(counts);
+    const candidates = railColumnCandidates(6, counts);
+    assert.strictEqual(candidates.length, 2, '5施設は4列と5列だけを新しく実測する');
+    assert.strictEqual(JSON.stringify(counts), before);
+    assert.ok(candidates.every(columns => columns > 0 && columns <= 5));
+});
