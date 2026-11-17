@@ -421,6 +421,10 @@ const CardBoardField = (() => {
                 }
             }
             for (const { width, inset, height, lines } of layouts) {
+                // The extra receipt ranking reserves a single-line name pocket.
+                // A complete multiline name can need the opposite spare edge;
+                // keep its established placement before optimizing receipt space.
+                const protectLayoutReceipts = protectReceipts && height === baseHeight;
                 const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
                     top < rect.bottom + clearance && top + height > rect.top - clearance;
                 /** @type {[number, number][]} */
@@ -454,7 +458,7 @@ const CardBoardField = (() => {
                 // A side name may need the adjacent receipt's height above
                 // or below its usual position. Clamp only these additional
                 // candidates to the same viewport margins, then apply canPlace.
-                const receiptCandidates = new Set(protectReceipts ? ownerReceiptSideCandidates(ownCards, width, height,
+                const receiptCandidates = new Set(protectLayoutReceipts ? ownerReceiptSideCandidates(ownCards, width, height,
                     { left: innerLeft, top: innerTop, right: innerRight, bottom: innerBottom }, gap) : []);
                 candidates.push(...receiptCandidates);
                 const distance = (left, top, rect) => Math.hypot(
@@ -493,10 +497,10 @@ const CardBoardField = (() => {
                 const ranked = available.map(position => {
                     const nameRect = { left: position[0], top: position[1], right: position[0] + width, bottom: position[1] + height };
                     return { position, score: score(position), adjustedReceipt: receiptCandidates.has(position),
-                        crowdedReceipt: protectReceipts && !ownerReceiptCandidateClear(nameRect,
+                        crowdedReceipt: protectLayoutReceipts && !ownerReceiptCandidateClear(nameRect,
                             { left: innerLeft + gap, top: innerTop + gap, right: innerRight - gap, bottom: innerBottom - gap },
                             [...obstacles, ...placed, nameRect, ...receiptSpaces], otherCards, placed, clearance),
-                        blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect) || protectReceipts &&
+                        blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect) || protectLayoutReceipts &&
                             Math.hypot((rect.left + rect.right - nameRect.left - nameRect.right) / 2,
                                 (rect.top + rect.bottom - nameRect.top - nameRect.bottom) / 2) <
                             Math.hypot((rect.left + rect.right - rect.anchor.left - rect.anchor.right) / 2,
