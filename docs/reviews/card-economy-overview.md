@@ -104,3 +104,20 @@ PC実対局画像の独立レビューで、勝利コレクション上に直前
 [対象native検証44003739457](https://github.com/nao70161994/machikoro/actions/runs/44003739457)で320/390/844/1440pxの既存勝利4ケースが初回成功。実際の出目3で自動収益を発生させ、遷移直前に存在したレイヤーが同じ同期処理内で0になることを検査し、通常の消滅timeoutでは通らない構成にした。既存36施設・18種類・6ランドマーク・フォーカス・詳細閲覧の検査も維持。Node UI検証は最終再描画後の解除順序を確認した。新実行コードの全体CI・勝利画像は主版Push後に確認する。
 
 全体検証では[99fc58ff Release](https://github.com/nao70161994/machikoro/actions/runs/44001881184)と[Visual](https://github.com/nao70161994/machikoro/actions/runs/44001881187)が成功。[同実行コード0a5ce5efのNightly](https://github.com/nao70161994/machikoro/actions/runs/44000681109)も全6分割・集約を成功した。これらはv371の勝利遷移修正前の結果として区別する。商用作品と同等の体感性能や物理スマートフォンでの動作を保証する結果ではない。
+
+
+### 主版Nightly集約と最新モバイル実対局の原本
+
+[99fc58ff Nightly](https://github.com/nao70161994/machikoro/actions/runs/44001883898)も成功。集約JSONを取得して387 IDが全て一意、386 passed、許可済み任意UI完走1 skipped、retry0、stable=trueを確認した（WebKit384 / Chromium3）。0a版と合わせて連続2回の全体成功である。v371は別実行として追跡する。[集約原本](assets/card-economy/v370-normal-games/nightly-99fc58ff-coverage.json)。
+
+| 幅 | 人数 | 最終手番 | 人間席UI行動 | click | 経過 |
+|---|---|---|---|---|---|
+| 320 | 2 | 85 | 221 | 349 | 603.5秒 |
+| 390 | 4 | 84 | 119 | 188 | 564.2秒 |
+| 844 | 4 | 78 | 84 | 139 | 508.7秒 |
+
+CPU1500ms、全3条件completed=true・pageErrorsなし。相手正面閲覧→復帰は各2クリック、視点復元・正本不変。iPhone相当DPR3の自動ブラウザで、物理スマホではない。出目画像の撮影間隔は予定時刻より遅いため、滑らかさの定量証明には使用しない。
+
+[320終盤](assets/card-economy/v370-normal-games/late-320.png) / [390終盤](assets/card-economy/v370-normal-games/late-390.png) / [844終盤](assets/card-economy/v370-normal-games/late-844.png)。各summaryも同フォルダへ保存した。390の4状態は独立レビューで重大な新しい切れ・所有者対応崩れ・主要操作被覆なし。勝利時+2残留は既知のv371修復対象。終盤俯瞰の細字、建設通知による一時被覆の体感評価は残る。
+
+320/844の計8枚も別の独立レビューで、既知の勝利収益札以外に重大な被覆・切れ・所有者混同・操作遮蔽なし。320勝利+4/844勝利+65は修正前の原本であり、この画像自体を修復済みとは扱わない。844序盤の左右余白と俯瞰の細字は残り、初見人間の理解速度・演出テンポの商用同等性は未証明。
