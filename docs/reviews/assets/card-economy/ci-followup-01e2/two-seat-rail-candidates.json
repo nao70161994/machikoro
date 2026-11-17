@@ -1,0 +1,3365 @@
+[
+  {
+    "viewportWidth": 824,
+    "viewportHeight": 250,
+    "chosen": {
+      "market": 6,
+      "rows": 1,
+      "side": 1,
+      "end": 18
+    },
+    "count": [
+      18,
+      18
+    ],
+    "landmarks": [
+      5,
+      5
+    ],
+    "baseline": 0.2757697456492637,
+    "candidates": [
+      {
+        "marketColumns": 4,
+        "columns": 4,
+        "rail": false,
+        "width": 704,
+        "height": 2170,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1152073732718894
+      },
+      {
+        "marketColumns": 4,
+        "columns": 4,
+        "rail": true,
+        "width": 1142,
+        "height": 1978,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1263902932254803
+      },
+      {
+        "marketColumns": 4,
+        "columns": 6,
+        "rail": false,
+        "width": 1020,
+        "height": 1602,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1560549313358302
+      },
+      {
+        "marketColumns": 4,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1410,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1773049645390071
+      },
+      {
+        "marketColumns": 4,
+        "columns": 8,
+        "rail": false,
+        "width": 1348,
+        "height": 1602,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1560549313358302
+      },
+      {
+        "marketColumns": 4,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1410,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1773049645390071
+      },
+      {
+        "marketColumns": 4,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1318,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.18968133535660092
+      },
+      {
+        "marketColumns": 4,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 1126,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.22202486678507993
+      },
+      {
+        "marketColumns": 4,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 1034,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.24177949709864605
+      },
+      {
+        "marketColumns": 4,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 842,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 6,
+        "columns": 4,
+        "rail": false,
+        "width": 1040,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 6,
+        "columns": 4,
+        "rail": true,
+        "width": 1142,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 6,
+        "columns": 6,
+        "rail": false,
+        "width": 1040,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 6,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 6,
+        "columns": 8,
+        "rail": false,
+        "width": 1348,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 6,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 6,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 6,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 6,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 6,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 8,
+        "columns": 4,
+        "rail": false,
+        "width": 1376,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 8,
+        "columns": 4,
+        "rail": true,
+        "width": 1376,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 8,
+        "columns": 6,
+        "rail": false,
+        "width": 1376,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 8,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 8,
+        "columns": 8,
+        "rail": false,
+        "width": 1376,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 8,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 8,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 8,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 8,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 8,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 12,
+        "columns": 4,
+        "rail": false,
+        "width": 2048,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 12,
+        "columns": 4,
+        "rail": true,
+        "width": 2048,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 12,
+        "columns": 6,
+        "rail": false,
+        "width": 2048,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 12,
+        "columns": 6,
+        "rail": true,
+        "width": 2048,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 12,
+        "columns": 8,
+        "rail": false,
+        "width": 2048,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 12,
+        "columns": 8,
+        "rail": true,
+        "width": 2048,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 12,
+        "columns": 12,
+        "rail": false,
+        "width": 2048,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 12,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 12,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 12,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 18,
+        "columns": 4,
+        "rail": false,
+        "width": 3056,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 18,
+        "columns": 4,
+        "rail": true,
+        "width": 3056,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 18,
+        "columns": 6,
+        "rail": false,
+        "width": 3056,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 18,
+        "columns": 6,
+        "rail": true,
+        "width": 3056,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 18,
+        "columns": 8,
+        "rail": false,
+        "width": 3056,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 18,
+        "columns": 8,
+        "rail": true,
+        "width": 3056,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 18,
+        "columns": 12,
+        "rail": false,
+        "width": 3056,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 18,
+        "columns": 12,
+        "rail": true,
+        "width": 3056,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 18,
+        "columns": 18,
+        "rail": false,
+        "width": 3056,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.2696335078534031
+      },
+      {
+        "marketColumns": 18,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      }
+    ]
+  },
+  {
+    "viewportWidth": 824,
+    "viewportHeight": 250,
+    "chosen": {
+      "market": 6,
+      "rows": 1,
+      "side": 1,
+      "end": 18
+    },
+    "count": [
+      18,
+      18
+    ],
+    "landmarks": [
+      5,
+      5
+    ],
+    "baseline": 0.2757697456492637,
+    "candidates": [
+      {
+        "marketColumns": 4,
+        "columns": 4,
+        "rail": false,
+        "width": 704,
+        "height": 2170,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1152073732718894
+      },
+      {
+        "marketColumns": 4,
+        "columns": 4,
+        "rail": true,
+        "width": 1142,
+        "height": 1978,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1263902932254803
+      },
+      {
+        "marketColumns": 4,
+        "columns": 6,
+        "rail": false,
+        "width": 1020,
+        "height": 1602,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1560549313358302
+      },
+      {
+        "marketColumns": 4,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1410,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1773049645390071
+      },
+      {
+        "marketColumns": 4,
+        "columns": 8,
+        "rail": false,
+        "width": 1348,
+        "height": 1602,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1560549313358302
+      },
+      {
+        "marketColumns": 4,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1410,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1773049645390071
+      },
+      {
+        "marketColumns": 4,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1318,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.18968133535660092
+      },
+      {
+        "marketColumns": 4,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 1126,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.22202486678507993
+      },
+      {
+        "marketColumns": 4,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 1034,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.24177949709864605
+      },
+      {
+        "marketColumns": 4,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 842,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 6,
+        "columns": 4,
+        "rail": false,
+        "width": 1040,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 6,
+        "columns": 4,
+        "rail": true,
+        "width": 1142,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 6,
+        "columns": 6,
+        "rail": false,
+        "width": 1040,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 6,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 6,
+        "columns": 8,
+        "rail": false,
+        "width": 1348,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 6,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 6,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 6,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 6,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 6,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 8,
+        "columns": 4,
+        "rail": false,
+        "width": 1376,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 8,
+        "columns": 4,
+        "rail": true,
+        "width": 1376,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 8,
+        "columns": 6,
+        "rail": false,
+        "width": 1376,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 8,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 8,
+        "columns": 8,
+        "rail": false,
+        "width": 1376,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 8,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 8,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 8,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 8,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 8,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 12,
+        "columns": 4,
+        "rail": false,
+        "width": 2048,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 12,
+        "columns": 4,
+        "rail": true,
+        "width": 2048,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 12,
+        "columns": 6,
+        "rail": false,
+        "width": 2048,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 12,
+        "columns": 6,
+        "rail": true,
+        "width": 2048,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 12,
+        "columns": 8,
+        "rail": false,
+        "width": 2048,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 12,
+        "columns": 8,
+        "rail": true,
+        "width": 2048,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 12,
+        "columns": 12,
+        "rail": false,
+        "width": 2048,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 12,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 12,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 12,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 18,
+        "columns": 4,
+        "rail": false,
+        "width": 3056,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 18,
+        "columns": 4,
+        "rail": true,
+        "width": 3056,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 18,
+        "columns": 6,
+        "rail": false,
+        "width": 3056,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 18,
+        "columns": 6,
+        "rail": true,
+        "width": 3056,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 18,
+        "columns": 8,
+        "rail": false,
+        "width": 3056,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 18,
+        "columns": 8,
+        "rail": true,
+        "width": 3056,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 18,
+        "columns": 12,
+        "rail": false,
+        "width": 3056,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 18,
+        "columns": 12,
+        "rail": true,
+        "width": 3056,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 18,
+        "columns": 18,
+        "rail": false,
+        "width": 3056,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.2696335078534031
+      },
+      {
+        "marketColumns": 18,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      }
+    ]
+  },
+  {
+    "viewportWidth": 824,
+    "viewportHeight": 250,
+    "chosen": {
+      "market": 6,
+      "rows": 1,
+      "side": 1,
+      "end": 18
+    },
+    "count": [
+      18,
+      18
+    ],
+    "landmarks": [
+      5,
+      5
+    ],
+    "baseline": 0.2757697456492637,
+    "candidates": [
+      {
+        "marketColumns": 4,
+        "columns": 4,
+        "rail": false,
+        "width": 704,
+        "height": 2170,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1152073732718894
+      },
+      {
+        "marketColumns": 4,
+        "columns": 4,
+        "rail": true,
+        "width": 1142,
+        "height": 1978,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1263902932254803
+      },
+      {
+        "marketColumns": 4,
+        "columns": 6,
+        "rail": false,
+        "width": 1020,
+        "height": 1602,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1560549313358302
+      },
+      {
+        "marketColumns": 4,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1410,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1773049645390071
+      },
+      {
+        "marketColumns": 4,
+        "columns": 8,
+        "rail": false,
+        "width": 1348,
+        "height": 1602,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1560549313358302
+      },
+      {
+        "marketColumns": 4,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1410,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.1773049645390071
+      },
+      {
+        "marketColumns": 4,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1318,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.18968133535660092
+      },
+      {
+        "marketColumns": 4,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 1126,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.22202486678507993
+      },
+      {
+        "marketColumns": 4,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 1034,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.24177949709864605
+      },
+      {
+        "marketColumns": 4,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 842,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 680,
+          "height": 348
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 6,
+        "columns": 4,
+        "rail": false,
+        "width": 1040,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 6,
+        "columns": 4,
+        "rail": true,
+        "width": 1142,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 6,
+        "columns": 6,
+        "rail": false,
+        "width": 1040,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 6,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 6,
+        "columns": 8,
+        "rail": false,
+        "width": 1348,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 6,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 6,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 6,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 6,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 6,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 1016,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 8,
+        "columns": 4,
+        "rail": false,
+        "width": 1376,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 8,
+        "columns": 4,
+        "rail": true,
+        "width": 1376,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 8,
+        "columns": 6,
+        "rail": false,
+        "width": 1376,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 8,
+        "columns": 6,
+        "rail": true,
+        "width": 1470,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 8,
+        "columns": 8,
+        "rail": false,
+        "width": 1376,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 8,
+        "columns": 8,
+        "rail": true,
+        "width": 1798,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 8,
+        "columns": 12,
+        "rail": false,
+        "width": 2004,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 8,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 8,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 8,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 1352,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 12,
+        "columns": 4,
+        "rail": false,
+        "width": 2048,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 12,
+        "columns": 4,
+        "rail": true,
+        "width": 2048,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 12,
+        "columns": 6,
+        "rail": false,
+        "width": 2048,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 12,
+        "columns": 6,
+        "rail": true,
+        "width": 2048,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 12,
+        "columns": 8,
+        "rail": false,
+        "width": 2048,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 12,
+        "columns": 8,
+        "rail": true,
+        "width": 2048,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 12,
+        "columns": 12,
+        "rail": false,
+        "width": 2048,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 12,
+        "columns": 12,
+        "rail": true,
+        "width": 2454,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 12,
+        "columns": 18,
+        "rail": false,
+        "width": 2988,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.2757697456492637
+      },
+      {
+        "marketColumns": 12,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 2024,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      },
+      {
+        "marketColumns": 18,
+        "columns": 4,
+        "rail": false,
+        "width": 3056,
+        "height": 2030,
+        "boxes": [
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          },
+          {
+            "nativeWidth": 668,
+            "nativeHeight": 883
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.12315270935960591
+      },
+      {
+        "marketColumns": 18,
+        "columns": 4,
+        "rail": true,
+        "width": 3056,
+        "height": 1838,
+        "boxes": [
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          },
+          {
+            "nativeWidth": 1118,
+            "nativeHeight": 787
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.13601741022850924
+      },
+      {
+        "marketColumns": 18,
+        "columns": 6,
+        "rail": false,
+        "width": 3056,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 996,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 18,
+        "columns": 6,
+        "rail": true,
+        "width": 3056,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1446,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 18,
+        "columns": 8,
+        "rail": false,
+        "width": 3056,
+        "height": 1462,
+        "boxes": [
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          },
+          {
+            "nativeWidth": 1324,
+            "nativeHeight": 599
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.17099863201094392
+      },
+      {
+        "marketColumns": 18,
+        "columns": 8,
+        "rail": true,
+        "width": 3056,
+        "height": 1270,
+        "boxes": [
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          },
+          {
+            "nativeWidth": 1774,
+            "nativeHeight": 503
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.1968503937007874
+      },
+      {
+        "marketColumns": 18,
+        "columns": 12,
+        "rail": false,
+        "width": 3056,
+        "height": 1178,
+        "boxes": [
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          },
+          {
+            "nativeWidth": 1980,
+            "nativeHeight": 457
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.21222410865874364
+      },
+      {
+        "marketColumns": 18,
+        "columns": 12,
+        "rail": true,
+        "width": 3056,
+        "height": 986,
+        "boxes": [
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          },
+          {
+            "nativeWidth": 2430,
+            "nativeHeight": 361
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.2535496957403651
+      },
+      {
+        "marketColumns": 18,
+        "columns": 18,
+        "rail": false,
+        "width": 3056,
+        "height": 894,
+        "boxes": [
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          },
+          {
+            "nativeWidth": 2964,
+            "nativeHeight": 315
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.2696335078534031
+      },
+      {
+        "marketColumns": 18,
+        "columns": 18,
+        "rail": true,
+        "width": 3438,
+        "height": 702,
+        "boxes": [
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          },
+          {
+            "nativeWidth": 3414,
+            "nativeHeight": 219
+          }
+        ],
+        "measuredMarket": {
+          "width": 3032,
+          "height": 208
+        },
+        "scale": 0.239674229203025
+      }
+    ]
+  }
+]

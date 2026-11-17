@@ -1,0 +1,571 @@
+[
+  {
+    "at": 2586,
+    "kind": "sample",
+    "label": "390-before-off",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    },
+    "rect": {
+      "x": 185.734375,
+      "y": 723,
+      "width": 100.265625,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 3063,
+    "kind": "pointerdown",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 3065,
+    "kind": "pointerup",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 3065,
+    "kind": "click",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 3065,
+    "kind": "toggle-before",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 3069,
+    "kind": "toggle-after",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 3079,
+    "kind": "sample",
+    "label": "390-after-off-click",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    },
+    "rect": {
+      "x": 182.140625,
+      "y": 723,
+      "width": 103.859375,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 3090,
+    "kind": "sample",
+    "label": "390-before-on",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    },
+    "rect": {
+      "x": 182.140625,
+      "y": 723,
+      "width": 103.859375,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 3668,
+    "kind": "pointerdown",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 3671,
+    "kind": "pointerup",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 3671,
+    "kind": "click",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 3671,
+    "kind": "toggle-before",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 3674,
+    "kind": "toggle-after",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 3686,
+    "kind": "sample",
+    "label": "390-after-on-click",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    },
+    "rect": {
+      "x": 185.734375,
+      "y": 723,
+      "width": 100.265625,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 4481,
+    "kind": "sample",
+    "label": "1440-before-off",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    },
+    "rect": {
+      "x": 1200.734375,
+      "y": 246,
+      "width": 100.265625,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 5372,
+    "kind": "pointerdown",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 5374,
+    "kind": "pointerup",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 5375,
+    "kind": "click",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 5375,
+    "kind": "toggle-before",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 5378,
+    "kind": "toggle-after",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 5389,
+    "kind": "sample",
+    "label": "1440-after-off-click",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    },
+    "rect": {
+      "x": 1197.140625,
+      "y": 246,
+      "width": 103.859375,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 5404,
+    "kind": "sample",
+    "label": "1440-before-on",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    },
+    "rect": {
+      "x": 1197.140625,
+      "y": 246,
+      "width": 103.859375,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 7004,
+    "kind": "pointerdown",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 7004,
+    "kind": "pointerup",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 7004,
+    "kind": "click",
+    "target": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    },
+    "detail": 1,
+    "defaultPrevented": false,
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 7004,
+    "kind": "toggle-before",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": false,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド OFF",
+      "pressed": "false",
+      "open": true
+    }
+  },
+  {
+    "at": 7008,
+    "kind": "toggle-after",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    }
+  },
+  {
+    "at": 7018,
+    "kind": "sample",
+    "label": "1440-after-on-click",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    },
+    "rect": {
+      "x": 1200.734375,
+      "y": 246,
+      "width": 100.265625,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  },
+  {
+    "at": 9077,
+    "kind": "sample",
+    "label": "finally",
+    "state": {
+      "runtime": {
+        "tutorialEnabled": true,
+        "tutorialLevel": "beginner"
+      },
+      "label": "ガイド ON",
+      "pressed": "true",
+      "open": true
+    },
+    "rect": {
+      "x": 1200.734375,
+      "y": 246,
+      "width": 100.265625,
+      "height": 36
+    },
+    "hit": {
+      "tag": "SPAN",
+      "id": "",
+      "action": "toggleTutorial"
+    }
+  }
+]
