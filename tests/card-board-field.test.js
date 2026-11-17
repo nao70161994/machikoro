@@ -666,3 +666,44 @@ runTest('134pxカードの実320入力は隣席の唯一の収支空間を塞が
     assert.strictEqual(CardBoardField.ownerReceiptScore(moved, inner, [bounds], competing, prior), -1);
     assert.strictEqual(JSON.stringify({ bounds, owners, obstacles }), before);
 });
+
+runTest('長い所属名は実320入力の左右同距離の浮動誤差で後続の全文領域を消費しない', () => {
+    // Native owner-placement-early-resolved: both were legal; the right
+    // candidate's 1e-8 score advantage consumed the final owner's only pocket.
+    const right = { position: [240.77392578125, 386.6109924316406], score: 4.227891879614342 };
+    const left = { position: [13.226066589355469, 386.6109924316406], score: 4.227891889771511 };
+    const before = JSON.stringify([right, left]);
+    assert.deepStrictEqual([right, left].sort(CardBoardField.compareOwnerPlacementScores), [left, right]);
+    assert.deepStrictEqual([left, right].sort(CardBoardField.compareOwnerPlacementScores), [left, right]);
+    const genuinelyNearer = { position: right.position, score: left.score - 0.000002 };
+    assert.ok(CardBoardField.compareOwnerPlacementScores(genuinelyNearer, left) < 0,
+        'numerically meaningful distance still wins before geometric tie-breaking');
+    const upper = { position: [left.position[0], left.position[1] - 2], score: left.score };
+    assert.ok(CardBoardField.compareOwnerPlacementScores(upper, left) < 0);
+    assert.strictEqual(JSON.stringify([right, left]), before);
+});
+
+runTest('所属名はlocal layout gridで確定してから同じ描画座標を所属判定に使う', () => {
+    const origin = { left: 4.125, top: 116.25 };
+    const input = [13.226066589355469, 386.6109924316406];
+    const before = JSON.stringify({ origin, input });
+    const actual = CardBoardField.snapOwnerPosition(input, origin);
+    assert.deepStrictEqual(actual, [13.21875, 386.609375]);
+    assert.deepStrictEqual(CardBoardField.snapOwnerPosition(actual, origin), actual);
+    for (let axis = 0; axis < 2; axis++) {
+        const offset = actual[axis] - (axis ? origin.top : origin.left);
+        assert.strictEqual(offset * 64, Math.round(offset * 64));
+        assert.ok(Math.abs(actual[axis] - input[axis]) <= 1 / 128);
+    }
+    // A float candidate can pass the unchanged +0.5 nearest-owner test but
+    // cross it after style layout. Test the rendered coordinate, not the float.
+    const candidate = [12, 215.8667];
+    const snapped = CardBoardField.snapOwnerPosition(candidate, { left: 4, top: 116 });
+    assert.deepStrictEqual(snapped, [12, 215.859375]);
+    const ownTop = 257.87066650390625;
+    const otherBottom = 212.3521270751953;
+    const nearest = ([, top]) => ownTop - (top + 38) <= top - otherBottom + 0.5;
+    assert.strictEqual(nearest(candidate), true);
+    assert.strictEqual(nearest(snapped), false, 'reject a position whose actual DOM rectangle changes ownership');
+    assert.strictEqual(JSON.stringify({ origin, input }), before);
+});

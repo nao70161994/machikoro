@@ -250,6 +250,22 @@ const CardBoardField = (() => {
         return candidates;
     }
 
+    // WebKit stores positioned offsets on a 1/64 CSS-pixel layout grid.
+    // Admit and rank the same local offsets which the name will actually use.
+    function snapOwnerPosition(position, origin) {
+        return [origin.left + Math.round((position[0] - origin.left) * 64) / 64,
+            origin.top + Math.round((position[1] - origin.top) * 64) / 64];
+    }
+
+    // Equivalent transformed edge distances may differ by floating-point noise.
+    // Normalize only that noise, then break ties geometrically; collision and
+    // ownership admission retain the measured card rectangles and the exact
+    // snapped position which the label will use for rendering.
+    function compareOwnerPlacementScores(a, b) {
+        return Math.round(a.score * 1e6) - Math.round(b.score * 1e6) ||
+            a.position[0] - b.position[0] || a.position[1] - b.position[1];
+    }
+
     function updateOwnerLabels() {
         const viewport = node('cardboardTableViewport');
         const layer = node('cardboardOwnerLabels');
@@ -421,6 +437,10 @@ const CardBoardField = (() => {
                 }
             }
             for (const { width, inset, height, lines } of layouts) {
+                // The extra receipt ranking reserves a single-line name pocket.
+                // A complete multiline name can need the opposite spare edge;
+                // keep its established placement before optimizing receipt space.
+                const protectLayoutReceipts = protectReceipts && height === baseHeight;
                 const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
                     top < rect.bottom + clearance && top + height > rect.top - clearance;
                 /** @type {[number, number][]} */
@@ -454,9 +474,14 @@ const CardBoardField = (() => {
                 // A side name may need the adjacent receipt's height above
                 // or below its usual position. Clamp only these additional
                 // candidates to the same viewport margins, then apply canPlace.
-                const receiptCandidates = new Set(protectReceipts ? ownerReceiptSideCandidates(ownCards, width, height,
+                const receiptCandidates = new Set(protectLayoutReceipts ? ownerReceiptSideCandidates(ownCards, width, height,
                     { left: innerLeft, top: innerTop, right: innerRight, bottom: innerBottom }, gap) : []);
                 candidates.push(...receiptCandidates);
+                for (const position of candidates) {
+                    const snapped = snapOwnerPosition(position, { left: innerLeft, top: innerTop });
+                    position[0] = snapped[0];
+                    position[1] = snapped[1];
+                }
                 const distance = (left, top, rect) => Math.hypot(
                     Math.max(rect.left - left - width, left - rect.right, 0),
                     Math.max(rect.top - top - height, top - rect.bottom, 0));
@@ -474,10 +499,10 @@ const CardBoardField = (() => {
                     // Preserve existing placements. Only a missing label tries
                     // the viewport's spare edge, with identical collision guards.
                     /** @type {[number, number][]} */
-                    const insetCandidates = candidates.map(([left, top]) => [
+                    const insetCandidates = candidates.map(([left, top]) => snapOwnerPosition([
                         Math.max(innerLeft + gap, Math.min(left, innerRight - gap - width)),
                         Math.max(innerTop + gap, Math.min(top, innerBottom - gap - height)),
-                    ]);
+                    ], { left: innerLeft, top: innerTop }));
                     available.push(...insetCandidates.filter(canPlace));
                 }
                 const score = ([left, top]) => nearest(left, top, ownCards) +
@@ -493,10 +518,10 @@ const CardBoardField = (() => {
                 const ranked = available.map(position => {
                     const nameRect = { left: position[0], top: position[1], right: position[0] + width, bottom: position[1] + height };
                     return { position, score: score(position), adjustedReceipt: receiptCandidates.has(position),
-                        crowdedReceipt: protectReceipts && !ownerReceiptCandidateClear(nameRect,
+                        crowdedReceipt: protectLayoutReceipts && !ownerReceiptCandidateClear(nameRect,
                             { left: innerLeft + gap, top: innerTop + gap, right: innerRight - gap, bottom: innerBottom - gap },
                             [...obstacles, ...placed, nameRect, ...receiptSpaces], otherCards, placed, clearance),
-                        blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect) || protectReceipts &&
+                        blocksReceipt: receiptSpaces.some(rect => intersects(position[0], position[1], rect) || protectLayoutReceipts &&
                             Math.hypot((rect.left + rect.right - nameRect.left - nameRect.right) / 2,
                                 (rect.top + rect.bottom - nameRect.top - nameRect.bottom) / 2) <
                             Math.hypot((rect.left + rect.right - rect.anchor.left - rect.anchor.right) / 2,
@@ -504,7 +529,9 @@ const CardBoardField = (() => {
                 });
                 // Shorter names must not make a ragged row's tail outrank a free
                 // market-facing heading. Keep collision/owner-distance guards.
-                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(a.crowdedReceipt) - Number(b.crowdedReceipt) || Number(a.adjustedReceipt) - Number(b.adjustedReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
+                const stableMultiline = protectReceipts && height > baseHeight;
+                ranked.sort((a, b) => Number(a.blocksReceipt) - Number(b.blocksReceipt) || Number(a.crowdedReceipt) - Number(b.crowdedReceipt) || Number(a.adjustedReceipt) - Number(b.adjustedReceipt) || Number(marketFacing(b.position)) - Number(marketFacing(a.position)) ||
+                    (stableMultiline ? compareOwnerPlacementScores(a, b) : a.score - b.score));
                 if (ranked[0]) {
                     placement = { width, height, lines, position: ranked[0].position };
                     break;
@@ -2311,7 +2338,7 @@ const CardBoardField = (() => {
         if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
         return tableCamera?.syncViewport() === true;
     }
-    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates });
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory, ownerReceiptSpace, ownerReceiptScore, ownerReceiptCandidateClear, ownerReceiptSideCandidates, compareOwnerPlacementScores, snapOwnerPosition });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;
