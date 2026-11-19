@@ -6,6 +6,9 @@ const path = require('node:path');
 // cases across workers instead of assigning this entire long file to one job.
 test.describe.configure({ mode: 'parallel' });
 
+// Diagnostic only: use the actual desktop profile at the PC viewport.
+test.use({ deviceScaleFactor: 2, isMobile: false, hasTouch: false, userAgent: devices['Desktop Safari'].userAgent });
+
 // Video and per-action trace snapshots can stall WebKit's rendering frames
 // beyond these real 480ms animations. Keep source traces, failure screenshots,
 // and explicit frame/geometry diagnostics without recording every repaint.
