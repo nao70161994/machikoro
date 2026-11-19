@@ -1,0 +1,87 @@
+[
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit",
+    "frames": [
+      82,
+      787,
+      849
+    ],
+    "largestGap": 705,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 65,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit-repeat1",
+    "frames": [
+      84,
+      631,
+      693
+    ],
+    "largestGap": 547,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 62,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit-repeat2",
+    "frames": [
+      97,
+      653,
+      713
+    ],
+    "largestGap": 556,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 62,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit-repeat3",
+    "frames": [
+      124,
+      639,
+      701
+    ],
+    "largestGap": 515,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 62,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-mobile-webkit-repeat4",
+    "frames": [
+      83,
+      579,
+      639
+    ],
+    "largestGap": 496,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 60,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  }
+]
