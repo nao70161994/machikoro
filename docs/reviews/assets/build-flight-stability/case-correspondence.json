@@ -1,0 +1,38 @@
+{
+  "baselineTotal": 387,
+  "candidateTotal": 387,
+  "unchangedIds": 386,
+  "renamed": [
+    {
+      "before": {
+        "id": "mobile-webkit:6d62443100e0db56030a-cf3d2a0b8737c4ec211a",
+        "project": "mobile-webkit",
+        "file": "cardboard-view.spec.js",
+        "title": "実ロール後の新規建設通知は4画面で読めて正本を変更しない 1440px",
+        "expectedStatus": "passed",
+        "optInSkipAllowed": false,
+        "annotations": [],
+        "outcomes": [
+          "passed"
+        ]
+      },
+      "after": {
+        "id": "mobile-webkit:6d62443100e0db56030a-ca9d0df9fbc0cceba90e",
+        "project": "mobile-webkit",
+        "file": "cardboard-view.spec.js",
+        "title": "実ロール後の新規建設通知は4画面で読めて正本を変更しない 1440px PC",
+        "expectedStatus": "passed",
+        "optInSkipAllowed": false,
+        "annotations": [],
+        "outcomes": []
+      }
+    }
+  ],
+  "environment": {
+    "revision": "10f58762ccd5a651faedb7847e32711b87d25aea",
+    "node": "v20.20.2",
+    "playwright": "1.61.1",
+    "configSha256": "12c725b7c1307b973b91e6919631c19d0881947f52c92b38c97f94b40eea3957",
+    "uiPlaythrough": false
+  }
+}
