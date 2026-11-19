@@ -1,0 +1,447 @@
+[
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-PC-mobile-webkit",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "deviceScaleFactor": 2,
+      "viewport": {
+        "width": 1440,
+        "height": 936
+      },
+      "reducedMotion": false,
+      "isMobile": false,
+      "hasTouch": false
+    },
+    "frames": [
+      104,
+      592,
+      629,
+      659
+    ],
+    "largestGap": 488,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 67,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-PC-mobile-webkit-repeat1",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "deviceScaleFactor": 2,
+      "viewport": {
+        "width": 1440,
+        "height": 936
+      },
+      "reducedMotion": false,
+      "isMobile": false,
+      "hasTouch": false
+    },
+    "frames": [
+      125,
+      685,
+      727,
+      763
+    ],
+    "largestGap": 560,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 77,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-1440px-PC-mobile-webkit-repeat2",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "deviceScaleFactor": 2,
+      "viewport": {
+        "width": 1440,
+        "height": 936
+      },
+      "reducedMotion": false,
+      "isMobile": false,
+      "hasTouch": false
+    },
+    "frames": [
+      125,
+      698,
+      745,
+      779
+    ],
+    "largestGap": 573,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 81,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-mobile-webkit",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      111,
+      820,
+      867,
+      882
+    ],
+    "largestGap": 709,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 68,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-mobile-webkit-repeat1",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      104,
+      386,
+      421,
+      440,
+      456
+    ],
+    "largestGap": 282,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 72,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-mobile-webkit-repeat2",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      105,
+      379,
+      411,
+      428,
+      442
+    ],
+    "largestGap": 274,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 65,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-更新通知あり-mobile-webkit",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      119,
+      484,
+      512,
+      531,
+      549
+    ],
+    "largestGap": 365,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 66,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-更新通知あり-mobile-webkit-repeat1",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      118,
+      408,
+      441,
+      460,
+      478
+    ],
+    "largestGap": 290,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 72,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-320px-更新通知あり-mobile-webkit-repeat2",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      131,
+      437,
+      473,
+      490,
+      508
+    ],
+    "largestGap": 306,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 73,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-390px-mobile-webkit",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      115,
+      1065,
+      1094,
+      1116,
+      1134
+    ],
+    "largestGap": 950,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 71,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-390px-mobile-webkit-repeat1",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      113,
+      502,
+      536,
+      562,
+      582
+    ],
+    "largestGap": 389,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 81,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-390px-mobile-webkit-repeat2",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      129,
+      520,
+      553,
+      573,
+      592
+    ],
+    "largestGap": 391,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 74,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-844px-mobile-webkit",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      172,
+      785,
+      827,
+      845
+    ],
+    "largestGap": 613,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 60,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-844px-mobile-webkit-repeat1",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      97,
+      377,
+      407,
+      424,
+      442
+    ],
+    "largestGap": 280,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 67,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  },
+  {
+    "case": "cardboard-view-実ロール後の新規建設通知は4画面で読めて正本を変更しない-844px-mobile-webkit-repeat2",
+    "profile": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      "deviceScaleFactor": 3,
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "reducedMotion": false,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    "frames": [
+      105,
+      384,
+      416,
+      433,
+      450
+    ],
+    "largestGap": 279,
+    "moving": {
+      "name": "麦畑",
+      "elapsed": 68,
+      "duration": 480,
+      "arrivalStarted": false,
+      "pointerEvents": "none",
+      "insideScreen": true
+    }
+  }
+]

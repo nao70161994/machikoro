@@ -1910,10 +1910,32 @@ test('中央市場の長い施設名をカード枠内で省略せず読める',
 });
 
 
+// The PC case must not inherit the project's iPhone 13 context at 1440px.
+// Context-only overrides retain the same headless WebKit and animation clocks.
+const desktopConstructionTest = test.extend({
+    deviceScaleFactor: devices['Desktop Safari'].deviceScaleFactor,
+    isMobile: devices['Desktop Safari'].isMobile,
+    hasTouch: devices['Desktop Safari'].hasTouch,
+    userAgent: devices['Desktop Safari'].userAgent,
+});
+
 for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936},
     {width:320,height:844,updateBanner:true}]) {
-    test(`実ロール後の新規建設通知は4画面で読めて正本を変更しない ${viewport.width}px${viewport.updateBanner ? ' 更新通知あり' : ''}`, async ({ page }, testInfo) => {
+    const constructionTest = viewport.width === 1440 ? desktopConstructionTest : test;
+    constructionTest(`実ロール後の新規建設通知は4画面で読めて正本を変更しない ${viewport.width}px${viewport.width === 1440 ? ' PC' : ''}${viewport.updateBanner ? ' 更新通知あり' : ''}`, async ({ page, isMobile, hasTouch }, testInfo) => {
         await prepare(page, viewport, 2, false);
+        const device = devices[viewport.width === 1440 ? 'Desktop Safari' : 'iPhone 13'];
+        const profile = await page.evaluate(() => ({
+            userAgent: navigator.userAgent, deviceScaleFactor: devicePixelRatio,
+            viewport: { width: innerWidth, height: innerHeight },
+            reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        }));
+        const expectedProfile = { userAgent: device.userAgent, deviceScaleFactor: device.deviceScaleFactor,
+            viewport: { width: viewport.width, height: viewport.height }, reducedMotion: false };
+        await testInfo.attach('construction-browser-profile', { body: JSON.stringify({ ...profile, isMobile, hasTouch }), contentType: 'application/json' });
+        expect(profile).toEqual(expectedProfile);
+        expect(isMobile).toBe(device.isMobile);
+        expect(hasTouch).toBe(device.hasTouch);
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             game.players[0].cards = ['麦畑','牧場','パン屋','森林','花畑','フラワーショップ'].map(createCardByName);
@@ -2077,10 +2099,11 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         await page.locator('#cardboardMarketClose').click();
         const moving = await page.evaluate(() => window.constructionMovingFrame);
         const flightDiagnostic = await page.evaluate(() => ({ ...window.constructionTrace, current:window.constructionGuardSnapshot() }));
-        await fs.writeFile(testInfo.outputPath(`facility-flight-diagnostic-${viewport.width}.json`), JSON.stringify({moving,flightDiagnostic}, null, 2));
+        await fs.writeFile(testInfo.outputPath(`facility-flight-diagnostic-${viewport.width}.json`), JSON.stringify({ profile: { ...profile, isMobile, hasTouch }, moving, flightDiagnostic }, null, 2));
         expect(moving.name, JSON.stringify({moving,flightDiagnostic})).toBe('麦畑');
-        expect(flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight')
-            .every(change => change.sameScrollRetained === true)).toBe(true);
+        const createdFlights = flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight');
+        expect(createdFlights, '実際の飛行追加を観測し空配列のeveryで成功扱いにしない').toHaveLength(1);
+        expect(createdFlights.every(change => change.sameScrollRetained === true)).toBe(true);
         expect(moving.duration).toBe(480);
         expect(moving.arrivalStarted, '到着先の祝福はカードの飛行完了後に始まる').toBe(false);
         expect(moving.pointerEvents).toBe('none');
