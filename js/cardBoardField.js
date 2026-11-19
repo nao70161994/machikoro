@@ -991,7 +991,7 @@ const CardBoardField = (() => {
         ghost.dataset.turn = String(context.turn);
         ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
         ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
-        node('cardboardBoard').appendChild(ghost);
+        document.body.appendChild(ghost);
         buildFlight = ghost;
         buildFlightScroll = { left: viewport.scrollLeft, top: viewport.scrollTop };
         if (typeof ghost.animate !== 'function') { clearBuildFlight(); return false; }

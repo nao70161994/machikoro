@@ -6,9 +6,6 @@ const path = require('node:path');
 // cases across workers instead of assigning this entire long file to one job.
 test.describe.configure({ mode: 'parallel' });
 
-// Diagnostic only: use the actual desktop profile at the PC viewport.
-test.use({ deviceScaleFactor: 2, isMobile: false, hasTouch: false, userAgent: devices['Desktop Safari'].userAgent });
-
 // Video and per-action trace snapshots can stall WebKit's rendering frames
 // beyond these real 480ms animations. Keep source traces, failure screenshots,
 // and explicit frame/geometry diagnostics without recording every repaint.
@@ -2007,6 +2004,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 }
             });
             window.constructionTraceObserver.observe(document.getElementById('cardboardBoard'), {childList:true});
+            window.constructionTraceObserver.observe(document.body, {childList:true});
             document.getElementById('cardboardMarketClose').addEventListener('click', () => {
                 closedAt = performance.now();
                 window.constructionTrace.beforeClose = window.constructionGuardSnapshot();
