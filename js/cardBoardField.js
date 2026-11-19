@@ -991,6 +991,8 @@ const CardBoardField = (() => {
         ghost.dataset.turn = String(context.turn);
         ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
         ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
+        // Screen coordinates belong to a screen overlay, independent of the
+        // table's layout/paint subtree. Lifetime remains owned by this field.
         document.body.appendChild(ghost);
         buildFlight = ghost;
         buildFlightScroll = { left: viewport.scrollLeft, top: viewport.scrollTop };

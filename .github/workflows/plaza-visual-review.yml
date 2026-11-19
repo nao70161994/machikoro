@@ -16,7 +16,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                mode: [body-abba]
+                mode: [all-widths]
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
@@ -25,29 +25,9 @@ jobs:
                   cache: npm
             - run: npm ci
             - run: node scripts/check-playwright-container.js
-            - name: Compare baseline and independent flight in ABBA order
-              env:
-                  GIT_CONFIG_COUNT: '1'
-                  GIT_CONFIG_KEY_0: safe.directory
-                  GIT_CONFIG_VALUE_0: ${{ github.workspace }}
+            - name: Repeat all original construction cases without retries
               run: |
-                  git fetch --depth=1 origin d5882c176b326debcb5035f2aaa0b538b85b3288
-                  mkdir -p /tmp/flight-baseline /tmp/flight-candidate
-                  git show d5882c176b326debcb5035f2aaa0b538b85b3288:js/cardBoardField.js > /tmp/flight-baseline/cardBoardField.js
-                  git show d5882c176b326debcb5035f2aaa0b538b85b3288:style.css > /tmp/flight-baseline/style.css
-                  cp js/cardBoardField.js /tmp/flight-candidate/cardBoardField.js
-                  cp style.css /tmp/flight-candidate/style.css
-                  profile_status=0
-                  round=0
-                  for variant in baseline candidate candidate baseline; do
-                      round=$((round + 1))
-                      cp "/tmp/flight-$variant/cardBoardField.js" js/cardBoardField.js
-                      cp "/tmp/flight-$variant/style.css" style.css
-                      if ! xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知.*1440px' --project=mobile-webkit --workers=1 --repeat-each=3 --retries=0 --output="test-results/round-$round-$variant"; then
-                          profile_status=1
-                      fi
-                  done
-                  exit "$profile_status"
+                  xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知' --project=mobile-webkit --workers=1 --repeat-each=3 --retries=0 --output=test-results/flight-repeats
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               if: always()
               with:

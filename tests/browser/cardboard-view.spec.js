@@ -2004,6 +2004,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 }
             });
             window.constructionTraceObserver.observe(document.getElementById('cardboardBoard'), {childList:true});
+            // Keep notice observation on the board and observe the actual
+            // screen-space flight separately; neither layer is synthetic.
             window.constructionTraceObserver.observe(document.body, {childList:true});
             document.getElementById('cardboardMarketClose').addEventListener('click', () => {
                 closedAt = performance.now();
@@ -2080,8 +2082,9 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         const flightDiagnostic = await page.evaluate(() => ({ ...window.constructionTrace, current:window.constructionGuardSnapshot() }));
         await fs.writeFile(testInfo.outputPath(`facility-flight-diagnostic-${viewport.width}.json`), JSON.stringify({moving,flightDiagnostic}, null, 2));
         expect(moving.name, JSON.stringify({moving,flightDiagnostic})).toBe('麦畑');
-        expect(flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight')
-            .every(change => change.sameScrollRetained === true)).toBe(true);
+        const createdFlights = flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight');
+        expect(createdFlights, '実際の飛行追加を観測し空配列のeveryで成功扱いにしない').toHaveLength(1);
+        expect(createdFlights.every(change => change.sameScrollRetained === true)).toBe(true);
         expect(moving.duration).toBe(480);
         expect(moving.arrivalStarted, '到着先の祝福はカードの飛行完了後に始まる').toBe(false);
         expect(moving.pointerEvents).toBe('none');
