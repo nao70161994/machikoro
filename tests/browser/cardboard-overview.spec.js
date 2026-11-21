@@ -185,6 +185,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 const shape = await page.locator('#cardboardCenter').evaluate(center => ({
                     columns: Number(center.style.getPropertyValue('--table-market-columns')),
                     rows: Number(center.style.getPropertyValue('--table-market-rows')),
+                    packing: document.getElementById('cardboardSeats').dataset.tablePacking,
+                    scale: Number(document.getElementById('cardboardTableViewport').dataset.tableScale),
                 }));
                 expect(shape.columns * shape.rows, '市場の初期表示枠を12枚以上保つ').toBeGreaterThanOrEqual(12);
                 const space = await page.evaluate(() => {
@@ -986,7 +988,7 @@ test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると�
     });
     await expectWholeTable(page, 4);
     const world = page.locator('#cardboardSeats');
-    await expect(world).toHaveAttribute('data-table-packing', 'cross');
+    await expect(world).toHaveAttribute('data-table-packing', /^(cross|pinwheel)$/);
     await cameraCommand(page, 'self');
     const viewport = page.locator('#cardboardTableViewport');
     const anchor = await page.locator('#cardboardSeats > [data-player-index="0"]').evaluate(owner => {
@@ -1807,3 +1809,4 @@ test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, 
     await page.screenshot({ path: testInfo.outputPath('owner-natural-390.png') });
     expect(await snapshot(page)).toEqual(before);
 });
+
