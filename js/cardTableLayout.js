@@ -47,6 +47,16 @@ const CardTableLayout = (() => {
             Number.isFinite(bestScore) && bestScore > 0 && previousScore >= bestScore * 0.97;
     }
 
+    // On shallow four-seat tables the market may use one wide row.
+    // Keep the same number of visible facilities and leave dense/reading views alone.
+    function marketColumnCandidates({ wide, shallow, playerCount, reading, maximumCardCount, visibleMarketCards }) {
+        if (!wide) return [2, 3, 1];
+        if (shallow && playerCount === 4 && !reading && maximumCardCount <= 6 && visibleMarketCards > 6) {
+            return [6, 4, Math.min(12, visibleMarketCards)];
+        }
+        return [6, 4];
+    }
+
     function ownerColumnGap({ playerCount, wide, reading, maximumCardCount }) {
         if (reading || maximumCardCount < 13) return 8;
         // Dense overview: reclaim spacing inside each owner instead of
@@ -246,7 +256,8 @@ const CardTableLayout = (() => {
                     panels.some(panel => countFor(panel) >= 13);
                 const endCandidates = endColumnCandidates({ wide, denseFour, densePortraitOpponents,
                     denseWideOpponents: oppositeOnly && !readingSeat && panels.some(panel => countFor(panel) >= 13) });
-                const marketCandidates = wide ? [6, 4] : [2, 3, 1];
+                const marketCandidates = marketColumnCandidates({ wide, shallow, playerCount: panels.length,
+                    reading: !!readingSeat, maximumCardCount: Math.max(...panels.map(countFor)), visibleMarketCards });
                 let bestScore = -1;
                 const overviewContext = JSON.stringify([viewportWidth, viewportHeight, state.selfIndex,
                     panels.length, displayedMarketCards, marketRows]);
@@ -288,6 +299,16 @@ const CardTableLayout = (() => {
                         }
                     }
                 }
+                // Avoid a wide single-row market unless its measured native
+                // footprint materially enlarges the entire table.
+                if (chosen.market > 6) {
+                    const regular = [marketPlans.get(6), marketPlans.get(4)].filter(Boolean)
+                        .sort((left, right) => right.score - left.score)[0];
+                    if (regular && bestScore < regular.score * 1.05) {
+                        chosen = regular.plan;
+                        bestScore = regular.score;
+                    }
+                }
                 // A single market column sacrifices side-by-side comparison.
                 // Adopt it only when cards become materially larger than the
                 // best two-column layout, rather than winning a numerical tie.
@@ -304,7 +325,8 @@ const CardTableLayout = (() => {
                 }
                 // Preserve a valid prior arrangement when its current fit is
                 // close enough. Do not undo the two-column market preference.
-                if (previousCandidate && (previousCandidate.plan.market !== 1 || chosen.market === 1) &&
+                if (previousCandidate && ((previousCandidate.plan.market !== 1 || chosen.market === 1) &&
+                    (previousCandidate.plan.market <= 6 || chosen.market > 6)) &&
                     retainLayoutScore(previousCandidate.score, bestScore)) {
                     chosen = previousCandidate.plan;
                 }
@@ -600,7 +622,7 @@ const CardTableLayout = (() => {
         observe(market);
         return Object.freeze({ refresh, syncLayout, setReadingSeat, destroy });
     }
-    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap, retainLayoutScore });
+    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap, retainLayoutScore, marketColumnCandidates });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableLayout;
