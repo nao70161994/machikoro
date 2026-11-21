@@ -1,4 +1,39 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+
+// The release shard runs multiple Playwright invocations; later invocations
+// clear test-results. Persist the reviewed captures in the existing CI artifact.
+async function persistCardTableReview(page, viewport, stage, imagePath) {
+    if (!process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) return;
+    const directory = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+    await fs.mkdir(directory, { recursive: true });
+    const name = `card-table-${viewport.width}-${stage}`;
+    const geometry = await page.evaluate(() => {
+        const table = document.getElementById('cardboardTableViewport');
+        const world = document.getElementById('cardboardSeats');
+        const market = document.getElementById('cardboardCenter');
+        const owners = [...world.querySelectorAll(':scope > .cardboard-player')].map(owner => ({
+            index: Number(owner.dataset.playerIndex),
+            cards: [...owner.querySelectorAll('.cardboard-card')].map(card => {
+                const rect = card.getBoundingClientRect();
+                return Math.max(rect.width, rect.height);
+            }),
+        }));
+        return {
+            packing: world.dataset.tablePacking,
+            scale: Number(table.dataset.tableScale),
+            tableWidth: table.clientWidth,
+            tableHeight: table.clientHeight,
+            marketColumns: Number(market.style.getPropertyValue('--table-market-columns')),
+            marketRows: Number(market.style.getPropertyValue('--table-market-rows')),
+            owners,
+        };
+    });
+    await fs.copyFile(imagePath, path.join(directory, `${name}.png`));
+    await fs.writeFile(path.join(directory, `${name}.json`), JSON.stringify(geometry, null, 2));
+}
+
 
 // Keep layout fixtures independent of asynchronous SW update prompts.
 // Explicit banner cases below and the PWA suite retain update coverage.
@@ -180,6 +215,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await page.screenshot({ path: overviewImage });
             if (viewport.width === 390 || viewport.width === 844) {
                 await testInfo.attach('card-table-overview', { path: overviewImage, contentType: 'image/png' });
+                await persistCardTableReview(page, viewport, 'overview', overviewImage);
             }
             if (viewport.width === 844) {
                 const shape = await page.locator('#cardboardCenter').evaluate(center => ({
@@ -285,6 +321,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await page.screenshot({ path: grownImage });
             if (viewport.width === 390 || viewport.width === 844) {
                 await testInfo.attach('card-table-grown', { path: grownImage, contentType: 'image/png' });
+                await persistCardTableReview(page, viewport, 'grown', grownImage);
             }
             const grown = await snapshot(page);
             for (const theme of ['classic','sunset','plaza','cardboard']) {
@@ -354,6 +391,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await page.screenshot({ path: lateImage });
             if (viewport.width === 390 || viewport.width === 844) {
                 await testInfo.attach('card-table-late', { path: lateImage, contentType: 'image/png' });
+                await persistCardTableReview(page, viewport, 'late', lateImage);
             }
             const lateGeometry = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(owners =>
                 owners.map(owner => ({ width: owner.offsetWidth, height: owner.offsetHeight })));
