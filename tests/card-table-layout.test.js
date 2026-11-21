@@ -113,3 +113,16 @@ runTest('四席の配置は再計測した倍率差が3%以内なら維持し大
     assert.strictEqual(retainLayoutScore(NaN, 0.50), false);
     assert.strictEqual(retainLayoutScore(0.5, Infinity), false);
 });
+
+
+runTest('横長四席の序中盤だけ市場の表示数を保つ1段候補を比較する', () => {
+    const { marketColumnCandidates } = require('../js/cardTableLayout');
+    const options = { wide: true, shallow: true, playerCount: 4, reading: false, maximumCardCount: 6, visibleMarketCards: 12 };
+    assert.deepStrictEqual(marketColumnCandidates(options), [6, 4, 12]);
+    assert.deepStrictEqual(marketColumnCandidates({ ...options, visibleMarketCards: 9 }), [6, 4, 9]);
+    for (const change of [{ shallow: false }, { playerCount: 2 }, { playerCount: 3 }, { reading: true },
+        { maximumCardCount: 7 }, { visibleMarketCards: 6 }]) {
+        assert.deepStrictEqual(marketColumnCandidates({ ...options, ...change }), [6, 4]);
+    }
+    assert.deepStrictEqual(marketColumnCandidates({ ...options, wide: false }), [2, 3, 1]);
+});
