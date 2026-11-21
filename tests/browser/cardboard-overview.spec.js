@@ -430,7 +430,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
     });
 }
 
-test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も全景へ戻る', async ({ page }, testInfo) => {
+test('844の四方向卓は中盤ランドマークを収め風車または横配置を閲覧後も復元する', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
@@ -446,8 +446,12 @@ test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も�
         render();
     });
     const rails = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
-    await expect(rails).toHaveCount(2);
     await expectWholeTable(page, 4);
+    const world = page.locator('#cardboardSeats');
+    const packing = await world.getAttribute('data-table-packing');
+    expect(['cross', 'pinwheel']).toContain(packing);
+    const expectedRailCount = packing === 'pinwheel' ? 0 : 2;
+    await expect(rails).toHaveCount(expectedRailCount);
     await expectOwnedCards(page);
     await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(8);
     await expect.poll(() => page.locator('#cardboardTableViewport').evaluate(viewport => {
@@ -464,22 +468,24 @@ test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も�
             });
         });
     })).toBe(true);
-    expect(await rails.evaluateAll(owners => owners.map(owner => Number(owner.dataset.tableAngle)).sort((a, b) => a - b))).toEqual([0, 180]);
+    expect(await rails.evaluateAll(owners => owners.map(owner => Number(owner.dataset.tableAngle)).sort((a, b) => a - b))).toEqual(expectedRailCount ? [0, 180] : []);
     await expect.poll(() => page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
         Math.min(...cards.map(card => Math.max(card.getBoundingClientRect().width, card.getBoundingClientRect().height))))).toBeGreaterThanOrEqual(40);
     const before = await snapshot(page);
     const table = page.locator('#cardboardTableViewport');
     const scale = await table.getAttribute('data-table-scale');
     const layout = await page.locator('#cardboardSeats').getAttribute('data-table-layout-key');
-    await page.screenshot({ path: testInfo.outputPath('four-seat-middle-landmarks-beside.png') });
+    const middleImage = testInfo.outputPath('four-seat-middle-landmarks-beside.png');
+    await page.screenshot({ path: middleImage });
+    await persistCardTableReview(page, { width: 844 }, 'middle-landmarks', middleImage);
     await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
     await expect(rails).toHaveCount(0);
     await page.locator('[data-cardboard-camera="back"]').click();
-    await expect(rails).toHaveCount(2);
+    await expect(rails).toHaveCount(expectedRailCount);
     await page.locator('[data-cardboard-camera="market"]').click();
     await page.locator('#cardboardMarket .compact-market-expand').click();
     await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
-    await expect(rails).toHaveCount(2);
+    await expect(rails).toHaveCount(expectedRailCount);
     await page.locator('#cardboardMarketClose').click();
     await page.locator('[data-cardboard-camera="back"]').click();
     await expectWholeTable(page, 4);
