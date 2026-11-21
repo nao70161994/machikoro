@@ -40,6 +40,13 @@ const CardTableLayout = (() => {
         return densePortraitOpponents ? [1, 2, 3, 4, 6, 8] : [1, 2, 3, 4];
     }
 
+    // A small improvement in fit is not worth rearranging the entire table.
+    // Compare scores measured for the current board, never a stale score.
+    function retainLayoutScore(previousScore, bestScore) {
+        return Number.isFinite(previousScore) && previousScore > 0 &&
+            Number.isFinite(bestScore) && bestScore > 0 && previousScore >= bestScore * 0.97;
+    }
+
     function ownerColumnGap({ playerCount, wide, reading, maximumCardCount }) {
         return playerCount === 2 && wide && !reading && maximumCardCount >= 13 ? 4 : 8;
     }
@@ -59,6 +66,7 @@ const CardTableLayout = (() => {
         let marketMeasurements = null;
         /** @type {CardTablePlan | null} */
         let lastSelection = null;
+        let lastOverviewContext = '';
         /** @type {{playerIndex: number, minScale: number, columns?: number} | null} */
         let readingSeat = null;
         const view = world.ownerDocument.defaultView;
@@ -234,6 +242,12 @@ const CardTableLayout = (() => {
                     denseWideOpponents: oppositeOnly && !readingSeat && panels.some(panel => countFor(panel) >= 13) });
                 const marketCandidates = wide ? [6, 4] : [2, 3, 1];
                 let bestScore = -1;
+                const overviewContext = JSON.stringify([viewportWidth, viewportHeight, state.selfIndex,
+                    panels.length, displayedMarketCards, marketRows]);
+                const previous = panels.length === 4 && !readingSeat &&
+                    overviewContext === lastOverviewContext && lastSelection &&
+                    !lastSelection.landmarkRail && lastSelection.packing !== 'pinwheel' ? lastSelection : null;
+                let previousCandidate = null;
                 const marketPlans = new Map();
                 for (const marketColumns of marketCandidates) {
                     const marketBox = marketSize(marketColumns);
@@ -256,6 +270,10 @@ const CardTableLayout = (() => {
                             (strips.top.depth ? strips.top.depth + gap : 0) + (strips.bottom.depth ? strips.bottom.depth + gap : 0);
                         const score = Math.min(viewportWidth / width, viewportHeight / height);
                         const plan = { market: marketColumns, rows: rowsFor(marketColumns), side: sideColumns, end: endColumns };
+                        if (previous && previous.market === plan.market && previous.rows === plan.rows &&
+                            previous.side === plan.side && previous.end === plan.end) {
+                            previousCandidate = { score, plan };
+                        }
                         const previousPlan = marketPlans.get(marketColumns);
                         if (!previousPlan || score > previousPlan.score + 0.0001) marketPlans.set(marketColumns, { score, plan });
                         if (score > bestScore + 0.0001) {
@@ -276,7 +294,15 @@ const CardTableLayout = (() => {
                         if (candidate.score > preferred.score + 0.0001) preferred = candidate;
                     }
                     chosen = preferred.plan;
+                    bestScore = preferred.score;
                 }
+                // Preserve a valid prior arrangement when its current fit is
+                // close enough. Do not undo the two-column market preference.
+                if (previousCandidate && (previousCandidate.plan.market !== 1 || chosen.market === 1) &&
+                    retainLayoutScore(previousCandidate.score, bestScore)) {
+                    chosen = previousCandidate.plan;
+                }
+                lastOverviewContext = readingSeat ? '' : overviewContext;
             }
             // Two opposite seats can spend their unused horizontal space on
             // completed landmarks. Compare measured boxes, never shrink art.
@@ -535,6 +561,7 @@ const CardTableLayout = (() => {
             if (destroyed) return;
             if ('session' in nextState && nextState.session !== state.session) {
                 lastSelection = null;
+                lastOverviewContext = '';
                 readingSeat = null;
                 marketMeasurements = null;
                 retainedMarketHeight = 0;
@@ -563,7 +590,7 @@ const CardTableLayout = (() => {
         observe(market);
         return Object.freeze({ refresh, syncLayout, setReadingSeat, destroy });
     }
-    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap });
+    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap, retainLayoutScore });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableLayout;
