@@ -47,6 +47,13 @@ const CardTableLayout = (() => {
             Number.isFinite(bestScore) && bestScore > 0 && previousScore >= bestScore * 0.97;
     }
 
+    function preferPinwheelScore(crossScore, pinwheelScore, alreadyPinwheel, dense) {
+        if (!Number.isFinite(crossScore) || crossScore <= 0 ||
+            !Number.isFinite(pinwheelScore) || pinwheelScore <= 0) return false;
+        return alreadyPinwheel ? retainLayoutScore(pinwheelScore, crossScore) :
+            pinwheelScore / crossScore + 1e-9 >= (dense ? 1.08 : 1.05);
+    }
+
     // On shallow four-seat tables the market may use one wide row.
     // Keep the same number of visible facilities and leave dense/reading views alone.
     function marketColumnCandidates({ wide, shallow, playerCount, reading, maximumCardCount, visibleMarketCards }) {
@@ -240,14 +247,19 @@ const CardTableLayout = (() => {
             let chosen = !marketAtHome && lastSelection ? lastSelection
                 : { market: wide ? 6 : 2, rows: rowsFor(wide ? 6 : 2), side: null, end: null };
             const denseFour = wide && panels.length === 4 && panels.some(panel => countFor(panel) >= 13);
-            // Diagnostic portrait candidate: keep the existing cross search and
-            // reading layout intact; compare only dense four-seat overviews.
+            // Dense portrait overviews retain the established candidate widths
+            // and stricter packing threshold.
             const densePortraitFour = !wide && panels.length === 4 && !readingSeat &&
                 panels.some(panel => countFor(panel) >= 13);
             // Evaluate only a small, shared set of edge shapes for 2–4 owners.
             // Measuring native boxes includes header and landmark wrapping, so
             // the score reflects the actual rotated footprint rather than rows
             // of cards alone. Multi-player seating keeps its established shape.
+            const overviewContext = JSON.stringify([viewportWidth, viewportHeight, state.selfIndex,
+                panels.length, displayedMarketCards, marketRows]);
+            const previousPinwheel = !readingSeat && overviewContext === lastOverviewContext &&
+                lastOverviewSelection?.packing === 'pinwheel' && !lastOverviewSelection.landmarkRail
+                ? lastOverviewSelection : null;
             if (panels.length <= 4 && marketAtHome) {
                 const sideCandidates = denseFour ? [1, 2, 3, 4, 6, 8] : wide ? shallow ? [1, 2, 3] : [2, 3, 4, 6] : [3, 4, 6];
                 // Dense opposite portrait towns may spend unused horizontal
@@ -259,8 +271,6 @@ const CardTableLayout = (() => {
                 const marketCandidates = marketColumnCandidates({ wide, shallow, playerCount: panels.length,
                     reading: !!readingSeat, maximumCardCount: Math.max(...panels.map(countFor)), visibleMarketCards });
                 let bestScore = -1;
-                const overviewContext = JSON.stringify([viewportWidth, viewportHeight, state.selfIndex,
-                    panels.length, displayedMarketCards, marketRows]);
                 const previous = panels.length === 4 && !readingSeat &&
                     overviewContext === lastOverviewContext && lastOverviewSelection &&
                     !lastOverviewSelection.landmarkRail && lastOverviewSelection.packing !== 'pinwheel' ? lastOverviewSelection : null;
@@ -363,8 +373,12 @@ const CardTableLayout = (() => {
             }
             // Candidate measurements must not leak presentation into reading.
             panels.forEach(panel => delete panel.dataset.tableLandmarkRail);
-            if ((denseFour || densePortraitFour) && marketAtHome) {
+            // The four corners can be useful even with only a few facilities.
+            // Compare the two packings throughout the game, while preserving
+            // the established dense-table reading behaviour.
+            if (panels.length === 4 && marketAtHome && (!readingSeat || denseFour)) {
                 let pinwheel = null;
+                let previousPinwheelCandidate = null;
                 const crossMarket = marketSize(chosen.market, chosen.rows);
                 const crossStrips = {};
                 for (const [side, owners] of Object.entries(sides)) {
@@ -380,9 +394,10 @@ const CardTableLayout = (() => {
                 const crossHeight = padding * 2 + Math.max(crossMarket.height, crossStrips.left.height, crossStrips.right.height) +
                     crossStrips.top.height + crossStrips.bottom.height + gap * 2;
                 const crossScore = Math.min(viewportWidth / crossWidth, viewportHeight / crossHeight);
-                const pinwheelMarkets = densePortraitFour ? [2, 3] : [6, 4];
+                const pinwheelMarkets = wide ? marketColumnCandidates({ wide, shallow, playerCount: panels.length,
+                    reading: !!readingSeat, maximumCardCount: Math.max(...panels.map(countFor)), visibleMarketCards }) : [2, 3];
                 const pinwheelSides = densePortraitFour ? [3, 4, 6, 8] : [1, 2, 3, 4, 6, 8];
-                const pinwheelEnds = densePortraitFour ? [1, 2, 3, 4] : [4, 6, 8, 12, 18];
+                const pinwheelEnds = denseFour ? [4, 6, 8, 12, 18] : wide ? [1, 2, 3, 4, 6, 8] : [1, 2, 3, 4];
                 for (const marketColumns of pinwheelMarkets) {
                     const rows = rowsFor(marketColumns);
                     const marketBox = marketSize(marketColumns, rows);
@@ -400,11 +415,22 @@ const CardTableLayout = (() => {
                         const geometry = computePinwheelGeometry({ top: dimensions.top, right: dimensions.right, bottom: dimensions.bottom,
                             left: dimensions.left, market: marketBox, gap, padding });
                         const score = Math.min(viewportWidth / geometry.width, viewportHeight / geometry.height);
-                        if (!pinwheel || score > pinwheel.score + 0.0001) pinwheel = { score,
-                            plan: { packing: 'pinwheel', market: marketColumns, rows, side: sideColumns, end: endColumns } };
+                        const plan = { packing: 'pinwheel', market: marketColumns, rows, side: sideColumns, end: endColumns };
+                        if (previousPinwheel && previousPinwheel.market === marketColumns && previousPinwheel.rows === rows &&
+                            previousPinwheel.side === sideColumns && previousPinwheel.end === endColumns) {
+                            previousPinwheelCandidate = { score, plan };
+                        }
+                        if (!pinwheel || score > pinwheel.score + 0.0001) pinwheel = { score, plan };
                     }
                 }
-                if (pinwheel && pinwheel.score >= crossScore * 1.08) chosen = pinwheel.plan;
+                // Only switch arrangements when the visible cards gain at
+                // least 5%; dense tables retain the established 8% threshold.
+                if (pinwheel && preferPinwheelScore(crossScore, pinwheel.score, Boolean(previousPinwheel),
+                    denseFour || densePortraitFour)) {
+                    chosen = previousPinwheelCandidate &&
+                        retainLayoutScore(previousPinwheelCandidate.score, Math.max(crossScore, pinwheel.score))
+                        ? previousPinwheelCandidate.plan : pinwheel.plan;
+                }
             }
             // Four-seat landscapes can put the end seats' completed landmarks
             // beside their facilities instead of spending scarce table height.
@@ -622,8 +648,9 @@ const CardTableLayout = (() => {
         observe(market);
         return Object.freeze({ refresh, syncLayout, setReadingSeat, destroy });
     }
-    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap, retainLayoutScore, marketColumnCandidates });
+    return Object.freeze({ create, computePinwheelGeometry, marketScaleWithinHole, endColumnCandidates, railColumnCandidates, ownerColumnGap, retainLayoutScore, marketColumnCandidates, preferPinwheelScore });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableLayout;
 if (typeof window !== 'undefined') window.CardTableLayout = CardTableLayout;
+
