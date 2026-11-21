@@ -14048,7 +14048,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     white-space: nowrap;
     background: var(--table-card-accent);
     color: #fff;
-    font-size: 24px;
+    font-size: 22px;
     line-height: 28px;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
@@ -14126,7 +14126,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     min-height: 0;
     margin: 0;
     padding: 0 2px;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 20px;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
