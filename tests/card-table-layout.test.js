@@ -98,3 +98,14 @@ runTest('所有施設の列間だけを密集対面横卓で詰め正面閲覧�
     }
     assert.deepStrictEqual(options, { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 });
 });
+
+
+runTest('四席の配置は再計測した倍率差が3%以内なら維持し大きな改善は許す', () => {
+    const { retainLayoutScore } = require('../js/cardTableLayout');
+    assert.strictEqual(retainLayoutScore(0.49, 0.50), true);
+    assert.strictEqual(retainLayoutScore(0.485, 0.50), true);
+    assert.strictEqual(retainLayoutScore(0.48, 0.50), false);
+    assert.strictEqual(retainLayoutScore(0, 0.50), false);
+    assert.strictEqual(retainLayoutScore(NaN, 0.50), false);
+    assert.strictEqual(retainLayoutScore(0.5, Infinity), false);
+});
