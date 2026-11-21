@@ -1506,8 +1506,8 @@ test('卓の出目と枚数は長い出目でも重ならず施設アートを�
             // Unrotated seat 0 allows direct text separation checks in screen coordinates.
             const checks = {
                 width: card.offsetWidth === 160, height: card.offsetHeight === 134,
-                diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '24px'),
-                countFont: getComputedStyle(badge).fontSize === '18px', countHeight: badge.offsetHeight === 22,
+                diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px'),
+                countFont: getComputedStyle(badge).fontSize === '16px', countHeight: badge.offsetHeight === 22,
                 stack: (badge.dataset.multiple === 'true') === (Number(value.textContent.slice(1)) > 1),
                 stackVisible: (getComputedStyle(badge).boxShadow !== 'none') === (badge.dataset.multiple === 'true'),
                 separated: diceText.right <= badge.getBoundingClientRect().left,
