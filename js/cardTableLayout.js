@@ -67,6 +67,8 @@ const CardTableLayout = (() => {
         /** @type {CardTablePlan | null} */
         let lastSelection = null;
         let lastOverviewContext = '';
+        /** @type {CardTablePlan | null} */
+        let lastOverviewSelection = null;
         /** @type {{playerIndex: number, minScale: number, columns?: number} | null} */
         let readingSeat = null;
         const view = world.ownerDocument.defaultView;
@@ -245,8 +247,8 @@ const CardTableLayout = (() => {
                 const overviewContext = JSON.stringify([viewportWidth, viewportHeight, state.selfIndex,
                     panels.length, displayedMarketCards, marketRows]);
                 const previous = panels.length === 4 && !readingSeat &&
-                    overviewContext === lastOverviewContext && lastSelection &&
-                    !lastSelection.landmarkRail && lastSelection.packing !== 'pinwheel' ? lastSelection : null;
+                    overviewContext === lastOverviewContext && lastOverviewSelection &&
+                    !lastOverviewSelection.landmarkRail && lastOverviewSelection.packing !== 'pinwheel' ? lastOverviewSelection : null;
                 let previousCandidate = null;
                 const marketPlans = new Map();
                 for (const marketColumns of marketCandidates) {
@@ -302,7 +304,7 @@ const CardTableLayout = (() => {
                     retainLayoutScore(previousCandidate.score, bestScore)) {
                     chosen = previousCandidate.plan;
                 }
-                lastOverviewContext = readingSeat ? '' : overviewContext;
+                if (!readingSeat) lastOverviewContext = overviewContext;
             }
             // Two opposite seats can spend their unused horizontal space on
             // completed landmarks. Compare measured boxes, never shrink art.
@@ -437,7 +439,10 @@ const CardTableLayout = (() => {
                     chosen = { ...chosen, side: railSideColumns, end: railColumns, packing: 'cross' };
                 }
             }
-            if (marketAtHome) lastSelection = { ...chosen, landmarkRail };
+            if (marketAtHome) {
+                lastSelection = { ...chosen, landmarkRail };
+                if (!readingSeat) lastOverviewSelection = lastSelection;
+            }
             if (market.dataset.marketColumns !== String(chosen.market)) market.dataset.marketColumns = String(chosen.market);
             setStyle(market, '--table-market-columns', String(chosen.market));
             setStyle(market, '--table-market-rows', String(chosen.rows));
@@ -562,6 +567,7 @@ const CardTableLayout = (() => {
             if ('session' in nextState && nextState.session !== state.session) {
                 lastSelection = null;
                 lastOverviewContext = '';
+                lastOverviewSelection = null;
                 readingSeat = null;
                 marketMeasurements = null;
                 retainedMarketHeight = 0;
