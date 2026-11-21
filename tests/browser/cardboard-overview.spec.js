@@ -176,7 +176,19 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 return progress.left >= bounds.left && progress.right <= bounds.right;
             })), '固定HUDの目標進捗を切らない').toBe(true);
             await expect(page.locator('#cardboardMarket .compact-market-price').first()).toContainText('建設');
-            await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
+            const overviewImage = testInfo.outputPath('card-table-overview.png');
+            await page.screenshot({ path: overviewImage });
+            if (viewport.width === 390 || viewport.width === 844) {
+                await testInfo.attach('card-table-overview', { path: overviewImage, contentType: 'image/png' });
+            }
+            if (viewport.width === 844) {
+                const shape = await page.locator('#cardboardCenter').evaluate(center => ({
+                    columns: Number(center.style.getPropertyValue('--table-market-columns')),
+                    rows: Number(center.style.getPropertyValue('--table-market-rows')),
+                }));
+                expect(shape.columns * shape.rows, '市場の初期表示枠を12枚以上保つ').toBeGreaterThanOrEqual(12);
+                await testInfo.attach('market-layout-metrics', { body: JSON.stringify(shape), contentType: 'application/json' });
+            }
             const before = await snapshot(page);
             const camera = page.locator('#cardboardTableViewport');
             const fittedScale = Number(await camera.getAttribute('data-table-scale'));
@@ -249,7 +261,11 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await page.locator('[data-cardboard-camera="overview"]').click();
             await expectWholeTable(page,4);
             await expectOwnedCards(page);
-            await page.screenshot({path:testInfo.outputPath('card-table-grown.png')});
+            const grownImage = testInfo.outputPath('card-table-grown.png');
+            await page.screenshot({ path: grownImage });
+            if (viewport.width === 390 || viewport.width === 844) {
+                await testInfo.attach('card-table-grown', { path: grownImage, contentType: 'image/png' });
+            }
             const grown = await snapshot(page);
             for (const theme of ['classic','sunset','plaza','cardboard']) {
                 await page.evaluate(theme=>{const select=document.getElementById('gameDesignThemeSelect'); select.value=theme; select.dispatchEvent(new Event('change',{bubbles:true}));},theme);
@@ -314,7 +330,11 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     });
                 })).toBe(true);
             }
-            await page.screenshot({ path: testInfo.outputPath('card-table-late.png') });
+            const lateImage = testInfo.outputPath('card-table-late.png');
+            await page.screenshot({ path: lateImage });
+            if (viewport.width === 390 || viewport.width === 844) {
+                await testInfo.attach('card-table-late', { path: lateImage, contentType: 'image/png' });
+            }
             const lateGeometry = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(owners =>
                 owners.map(owner => ({ width: owner.offsetWidth, height: owner.offsetHeight })));
             await page.locator('[data-cardboard-camera="self"]').click();
