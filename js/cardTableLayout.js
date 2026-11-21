@@ -48,7 +48,11 @@ const CardTableLayout = (() => {
     }
 
     function ownerColumnGap({ playerCount, wide, reading, maximumCardCount }) {
-        return playerCount === 2 && wide && !reading && maximumCardCount >= 13 ? 4 : 8;
+        if (reading || maximumCardCount < 13) return 8;
+        // Dense overview: reclaim spacing inside each owner instead of
+        // shrinking the card face. Leave full-size reading and other tables alone.
+        if (playerCount === 4) return wide ? 4 : 6;
+        return playerCount === 2 && wide ? 4 : 8;
     }
 
     function railColumnCandidates(chosenColumns, counts) {
