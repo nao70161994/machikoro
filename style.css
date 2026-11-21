@@ -14048,9 +14048,10 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     white-space: nowrap;
     background: var(--table-card-accent);
     color: #fff;
-    font-size: 22px;
+    font-size: 24px;
     line-height: 28px;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
     text-align: left;
 }
 
@@ -14125,12 +14126,19 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     min-height: 0;
     margin: 0;
     padding: 0 2px;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 20px;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
     background: #fff4d9;
     color: #163b3c;
     border-radius: 4px;
+}
+
+/* Multiple copies remain one hit target; a small double edge suggests a stack
+   without enlarging the card footprint or covering the neighbouring card. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-count[data-multiple="true"] {
+    box-shadow: 0 2px 0 #d5a34e, 0 3px 0 #634c2b;
 }
 
 /* Keep full text for other presentations and accessibility; the table shows ×n. */
