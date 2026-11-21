@@ -283,6 +283,12 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await expectWholeTable(page, 4);
             await expectOwnedCards(page);
             await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(20);
+            await expect.poll(() => camera.evaluate(table => {
+                const expectedGap = table.clientWidth > table.clientHeight ? '4px' : '6px';
+                return [...table.querySelectorAll('.cardboard-player .cardboard-cards')].every(shelf =>
+                    getComputedStyle(shelf).columnGap === expectedGap &&
+                    [...shelf.querySelectorAll('.cardboard-card')].every(card => card.offsetWidth === 160));
+            }), { message: '終盤の四席俯瞰はカード面を縮めず列間隔を詰める' }).toBe(true);
             const late = await snapshot(page);
             if (viewport.width >= 844) {
                 await expect(page.locator('#cardboardOwnerLabels .cardboard-owner-label')).toHaveCount(4);
@@ -313,6 +319,10 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 owners.map(owner => ({ width: owner.offsetWidth, height: owner.offsetHeight })));
             await page.locator('[data-cardboard-camera="self"]').click();
             await expect(camera).toHaveAttribute('data-table-mode', 'free');
+            await expect.poll(() => camera.evaluate(table => {
+                const shelf = table.querySelector('.cardboard-player[data-player-index="0"] .cardboard-cards');
+                return getComputedStyle(shelf).columnGap;
+            })).toBe('8px');
             await expect.poll(() => camera.evaluate(viewport => {
                 const clip = viewport.getBoundingClientRect();
                 const owner = viewport.querySelector('.cardboard-player[data-player-index="0"]');
