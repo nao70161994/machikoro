@@ -187,7 +187,25 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     rows: Number(center.style.getPropertyValue('--table-market-rows')),
                 }));
                 expect(shape.columns * shape.rows, '市場の初期表示枠を12枚以上保つ').toBeGreaterThanOrEqual(12);
-                await testInfo.attach('market-layout-metrics', { body: JSON.stringify(shape), contentType: 'application/json' });
+                const space = await page.evaluate(() => {
+                    const board = document.getElementById('cardboardBoard');
+                    const table = document.getElementById('cardboardTableViewport');
+                    const hint = document.getElementById('cardboardViewHint');
+                    const controls = [...board.querySelectorAll('#cardboardCameraButtons > button, #cardboardEventDetails > summary, #cardboardMoreMenu > summary, #cardboardActionSlot .buttons > button')]
+                        .filter(control => control.getBoundingClientRect().width > 0 && control.getBoundingClientRect().height > 0);
+                    return {
+                        tableHeight: table.clientHeight, viewportHeight: innerHeight,
+                        rowGap: getComputedStyle(board).rowGap, border: getComputedStyle(table).borderTopWidth,
+                        hintHeight: hint.getBoundingClientRect().height,
+                        minimumControlHeight: Math.min(...controls.map(control => control.getBoundingClientRect().height)),
+                    };
+                });
+                expect(space.rowGap).toBe('2px');
+                expect(space.border).toBe('4px');
+                expect(space.hintHeight).toBe(14);
+                expect(space.minimumControlHeight, '操作ボタンの44px高さを維持する').toBeGreaterThanOrEqual(44);
+                expect(space.tableHeight, '横持ちの盤面に十分な高さを確保する').toBeGreaterThanOrEqual(250);
+                await testInfo.attach('market-layout-metrics', { body: JSON.stringify({ ...shape, ...space }), contentType: 'application/json' });
             }
             const before = await snapshot(page);
             const camera = page.locator('#cardboardTableViewport');
