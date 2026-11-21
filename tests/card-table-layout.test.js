@@ -126,3 +126,17 @@ runTest('横長四席の序中盤だけ市場の表示数を保つ1段候補を�
     }
     assert.deepStrictEqual(marketColumnCandidates({ ...options, wide: false }), [2, 3, 1]);
 });
+
+
+runTest('序中盤は5%改善で風車を採用し、小差では既存の風車を維持する', () => {
+    const { preferPinwheelScore } = require('../js/cardTableLayout');
+    assert.strictEqual(preferPinwheelScore(0.4, 0.42, false, false), true);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.419, false, false), false);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.42, false, true), false);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.4321, false, true), true);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.39, true, false), true);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.38, true, false), false);
+    assert.strictEqual(preferPinwheelScore(0, 0.4, false, false), false);
+    assert.strictEqual(preferPinwheelScore(0.4, NaN, false, false), false);
+});
+
