@@ -89,11 +89,15 @@ runTest('四席ランドマークrailは施設のみの選択に固定せず有�
     assert.ok(candidates.every(columns => columns > 0 && columns <= 5));
 });
 
-runTest('所有施設の列間だけを密集対面横卓で詰め正面閲覧と他人数では保つ', () => {
+runTest('密集対面横卓と四席卓の列間を詰め正面閲覧と序中盤では保つ', () => {
     const { ownerColumnGap } = require('../js/cardTableLayout');
     const options = { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 };
     assert.strictEqual(ownerColumnGap(options), 4);
-    for (const change of [{ playerCount: 4 }, { wide: false }, { reading: true }, { maximumCardCount: 12 }]) {
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4 }), 4);
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4, wide: false }), 6);
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4, reading: true }), 8);
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4, maximumCardCount: 12 }), 8);
+    for (const change of [{ playerCount: 3 }, { playerCount: 5 }, { wide: false }, { reading: true }, { maximumCardCount: 12 }]) {
         assert.strictEqual(ownerColumnGap({ ...options, ...change }), 8);
     }
     assert.deepStrictEqual(options, { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 });
