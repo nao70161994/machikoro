@@ -89,12 +89,54 @@ runTest('四席ランドマークrailは施設のみの選択に固定せず有�
     assert.ok(candidates.every(columns => columns > 0 && columns <= 5));
 });
 
-runTest('所有施設の列間だけを密集対面横卓で詰め正面閲覧と他人数では保つ', () => {
+runTest('密集対面横卓と四席卓の列間を詰め正面閲覧と序中盤では保つ', () => {
     const { ownerColumnGap } = require('../js/cardTableLayout');
     const options = { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 };
     assert.strictEqual(ownerColumnGap(options), 4);
-    for (const change of [{ playerCount: 4 }, { wide: false }, { reading: true }, { maximumCardCount: 12 }]) {
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4 }), 4);
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4, wide: false }), 6);
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4, reading: true }), 8);
+    assert.strictEqual(ownerColumnGap({ ...options, playerCount: 4, maximumCardCount: 12 }), 8);
+    for (const change of [{ playerCount: 3 }, { playerCount: 5 }, { wide: false }, { reading: true }, { maximumCardCount: 12 }]) {
         assert.strictEqual(ownerColumnGap({ ...options, ...change }), 8);
     }
     assert.deepStrictEqual(options, { playerCount: 2, wide: true, reading: false, maximumCardCount: 18 });
 });
+
+
+runTest('四席の配置は再計測した倍率差が3%以内なら維持し大きな改善は許す', () => {
+    const { retainLayoutScore } = require('../js/cardTableLayout');
+    assert.strictEqual(retainLayoutScore(0.49, 0.50), true);
+    assert.strictEqual(retainLayoutScore(0.485, 0.50), true);
+    assert.strictEqual(retainLayoutScore(0.48, 0.50), false);
+    assert.strictEqual(retainLayoutScore(0, 0.50), false);
+    assert.strictEqual(retainLayoutScore(NaN, 0.50), false);
+    assert.strictEqual(retainLayoutScore(0.5, Infinity), false);
+});
+
+
+runTest('横長四席の序中盤だけ市場の表示数を保つ1段候補を比較する', () => {
+    const { marketColumnCandidates } = require('../js/cardTableLayout');
+    const options = { wide: true, shallow: true, playerCount: 4, reading: false, maximumCardCount: 6, visibleMarketCards: 12 };
+    assert.deepStrictEqual(marketColumnCandidates(options), [6, 4, 12]);
+    assert.deepStrictEqual(marketColumnCandidates({ ...options, visibleMarketCards: 9 }), [6, 4, 9]);
+    for (const change of [{ shallow: false }, { playerCount: 2 }, { playerCount: 3 }, { reading: true },
+        { maximumCardCount: 7 }, { visibleMarketCards: 6 }]) {
+        assert.deepStrictEqual(marketColumnCandidates({ ...options, ...change }), [6, 4]);
+    }
+    assert.deepStrictEqual(marketColumnCandidates({ ...options, wide: false }), [2, 3, 1]);
+});
+
+
+runTest('序中盤は5%改善で風車を採用し、小差では既存の風車を維持する', () => {
+    const { preferPinwheelScore } = require('../js/cardTableLayout');
+    assert.strictEqual(preferPinwheelScore(0.4, 0.42, false, false), true);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.419, false, false), false);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.42, false, true), false);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.4321, false, true), true);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.39, true, false), true);
+    assert.strictEqual(preferPinwheelScore(0.4, 0.38, true, false), false);
+    assert.strictEqual(preferPinwheelScore(0, 0.4, false, false), false);
+    assert.strictEqual(preferPinwheelScore(0.4, NaN, false, false), false);
+});
+

@@ -1,4 +1,39 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+
+// The release shard runs multiple Playwright invocations; later invocations
+// clear test-results. Persist the reviewed captures in the existing CI artifact.
+async function persistCardTableReview(page, viewport, stage, imagePath) {
+    if (!process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) return;
+    const directory = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+    await fs.mkdir(directory, { recursive: true });
+    const name = `card-table-${viewport.width}-${stage}`;
+    const geometry = await page.evaluate(() => {
+        const table = document.getElementById('cardboardTableViewport');
+        const world = document.getElementById('cardboardSeats');
+        const market = document.getElementById('cardboardCenter');
+        const owners = [...world.querySelectorAll(':scope > .cardboard-player')].map(owner => ({
+            index: Number(owner.dataset.playerIndex),
+            cards: [...owner.querySelectorAll('.cardboard-card')].map(card => {
+                const rect = card.getBoundingClientRect();
+                return Math.max(rect.width, rect.height);
+            }),
+        }));
+        return {
+            packing: world.dataset.tablePacking,
+            scale: Number(table.dataset.tableScale),
+            tableWidth: table.clientWidth,
+            tableHeight: table.clientHeight,
+            marketColumns: Number(market.style.getPropertyValue('--table-market-columns')),
+            marketRows: Number(market.style.getPropertyValue('--table-market-rows')),
+            owners,
+        };
+    });
+    await fs.copyFile(imagePath, path.join(directory, `${name}.png`));
+    await fs.writeFile(path.join(directory, `${name}.json`), JSON.stringify(geometry, null, 2));
+}
+
 
 // Keep layout fixtures independent of asynchronous SW update prompts.
 // Explicit banner cases below and the PWA suite retain update coverage.
@@ -176,7 +211,40 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                 return progress.left >= bounds.left && progress.right <= bounds.right;
             })), '固定HUDの目標進捗を切らない').toBe(true);
             await expect(page.locator('#cardboardMarket .compact-market-price').first()).toContainText('建設');
-            await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
+            const overviewImage = testInfo.outputPath('card-table-overview.png');
+            await page.screenshot({ path: overviewImage });
+            if (viewport.width === 390 || viewport.width === 844) {
+                await testInfo.attach('card-table-overview', { path: overviewImage, contentType: 'image/png' });
+                await persistCardTableReview(page, viewport, 'overview', overviewImage);
+            }
+            if (viewport.width === 844) {
+                const shape = await page.locator('#cardboardCenter').evaluate(center => ({
+                    columns: Number(center.style.getPropertyValue('--table-market-columns')),
+                    rows: Number(center.style.getPropertyValue('--table-market-rows')),
+                    packing: document.getElementById('cardboardSeats').dataset.tablePacking,
+                    scale: Number(document.getElementById('cardboardTableViewport').dataset.tableScale),
+                }));
+                expect(shape.columns * shape.rows, '市場の初期表示枠を12枚以上保つ').toBeGreaterThanOrEqual(12);
+                const space = await page.evaluate(() => {
+                    const board = document.getElementById('cardboardBoard');
+                    const table = document.getElementById('cardboardTableViewport');
+                    const hint = document.getElementById('cardboardViewHint');
+                    const controls = [...board.querySelectorAll('#cardboardCameraButtons > button, #cardboardEventDetails > summary, #cardboardMoreMenu > summary, #cardboardActionSlot .buttons > button')]
+                        .filter(control => control.getBoundingClientRect().width > 0 && control.getBoundingClientRect().height > 0);
+                    return {
+                        tableHeight: table.clientHeight, viewportHeight: innerHeight,
+                        rowGap: getComputedStyle(board).rowGap, border: getComputedStyle(table).borderTopWidth,
+                        hintHeight: hint.getBoundingClientRect().height,
+                        minimumControlHeight: Math.min(...controls.map(control => control.getBoundingClientRect().height)),
+                    };
+                });
+                expect(space.rowGap).toBe('2px');
+                expect(space.border).toBe('4px');
+                expect(space.hintHeight).toBe(14);
+                expect(space.minimumControlHeight, '操作ボタンの44px高さを維持する').toBeGreaterThanOrEqual(44);
+                expect(space.tableHeight, '横持ちの盤面に十分な高さを確保する').toBeGreaterThanOrEqual(250);
+                await testInfo.attach('market-layout-metrics', { body: JSON.stringify({ ...shape, ...space }), contentType: 'application/json' });
+            }
             const before = await snapshot(page);
             const camera = page.locator('#cardboardTableViewport');
             const fittedScale = Number(await camera.getAttribute('data-table-scale'));
@@ -249,7 +317,12 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await page.locator('[data-cardboard-camera="overview"]').click();
             await expectWholeTable(page,4);
             await expectOwnedCards(page);
-            await page.screenshot({path:testInfo.outputPath('card-table-grown.png')});
+            const grownImage = testInfo.outputPath('card-table-grown.png');
+            await page.screenshot({ path: grownImage });
+            if (viewport.width === 390 || viewport.width === 844) {
+                await testInfo.attach('card-table-grown', { path: grownImage, contentType: 'image/png' });
+                await persistCardTableReview(page, viewport, 'grown', grownImage);
+            }
             const grown = await snapshot(page);
             for (const theme of ['classic','sunset','plaza','cardboard']) {
                 await page.evaluate(theme=>{const select=document.getElementById('gameDesignThemeSelect'); select.value=theme; select.dispatchEvent(new Event('change',{bubbles:true}));},theme);
@@ -283,6 +356,12 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             await expectWholeTable(page, 4);
             await expectOwnedCards(page);
             await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(20);
+            await expect.poll(() => camera.evaluate(table => {
+                const expectedGap = table.clientWidth > table.clientHeight ? '4px' : '6px';
+                return [...table.querySelectorAll('.cardboard-player .cardboard-cards')].every(shelf =>
+                    getComputedStyle(shelf).columnGap === expectedGap &&
+                    [...shelf.querySelectorAll('.cardboard-card')].every(card => card.offsetWidth === 160));
+            }), { message: '終盤の四席俯瞰はカード面を縮めず列間隔を詰める' }).toBe(true);
             const late = await snapshot(page);
             if (viewport.width >= 844) {
                 await expect(page.locator('#cardboardOwnerLabels .cardboard-owner-label')).toHaveCount(4);
@@ -308,11 +387,20 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     });
                 })).toBe(true);
             }
-            await page.screenshot({ path: testInfo.outputPath('card-table-late.png') });
+            const lateImage = testInfo.outputPath('card-table-late.png');
+            await page.screenshot({ path: lateImage });
+            if (viewport.width === 390 || viewport.width === 844) {
+                await testInfo.attach('card-table-late', { path: lateImage, contentType: 'image/png' });
+                await persistCardTableReview(page, viewport, 'late', lateImage);
+            }
             const lateGeometry = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(owners =>
                 owners.map(owner => ({ width: owner.offsetWidth, height: owner.offsetHeight })));
             await page.locator('[data-cardboard-camera="self"]').click();
             await expect(camera).toHaveAttribute('data-table-mode', 'free');
+            await expect.poll(() => camera.evaluate(table => {
+                const shelf = table.querySelector('.cardboard-player[data-player-index="0"] .cardboard-cards');
+                return getComputedStyle(shelf).columnGap;
+            })).toBe('8px');
             await expect.poll(() => camera.evaluate(viewport => {
                 const clip = viewport.getBoundingClientRect();
                 const owner = viewport.querySelector('.cardboard-player[data-player-index="0"]');
@@ -342,7 +430,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
     });
 }
 
-test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も全景へ戻る', async ({ page }, testInfo) => {
+test('844の四方向卓は中盤ランドマークを収め風車または横配置を閲覧後も復元する', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
@@ -358,8 +446,12 @@ test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も�
         render();
     });
     const rails = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
-    await expect(rails).toHaveCount(2);
     await expectWholeTable(page, 4);
+    const world = page.locator('#cardboardSeats');
+    const packing = await world.getAttribute('data-table-packing');
+    expect(['cross', 'pinwheel']).toContain(packing);
+    const expectedRailCount = packing === 'pinwheel' ? 0 : 2;
+    await expect(rails).toHaveCount(expectedRailCount);
     await expectOwnedCards(page);
     await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(8);
     await expect.poll(() => page.locator('#cardboardTableViewport').evaluate(viewport => {
@@ -376,22 +468,24 @@ test('844の四方向卓は中盤ランドマークを横へ収め閲覧後も�
             });
         });
     })).toBe(true);
-    expect(await rails.evaluateAll(owners => owners.map(owner => Number(owner.dataset.tableAngle)).sort((a, b) => a - b))).toEqual([0, 180]);
+    expect(await rails.evaluateAll(owners => owners.map(owner => Number(owner.dataset.tableAngle)).sort((a, b) => a - b))).toEqual(expectedRailCount ? [0, 180] : []);
     await expect.poll(() => page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
         Math.min(...cards.map(card => Math.max(card.getBoundingClientRect().width, card.getBoundingClientRect().height))))).toBeGreaterThanOrEqual(40);
     const before = await snapshot(page);
     const table = page.locator('#cardboardTableViewport');
     const scale = await table.getAttribute('data-table-scale');
     const layout = await page.locator('#cardboardSeats').getAttribute('data-table-layout-key');
-    await page.screenshot({ path: testInfo.outputPath('four-seat-middle-landmarks-beside.png') });
+    const middleImage = testInfo.outputPath('four-seat-middle-landmarks-beside.png');
+    await page.screenshot({ path: middleImage });
+    await persistCardTableReview(page, { width: 844 }, 'middle-landmarks', middleImage);
     await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
     await expect(rails).toHaveCount(0);
     await page.locator('[data-cardboard-camera="back"]').click();
-    await expect(rails).toHaveCount(2);
+    await expect(rails).toHaveCount(expectedRailCount);
     await page.locator('[data-cardboard-camera="market"]').click();
     await page.locator('#cardboardMarket .compact-market-expand').click();
     await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
-    await expect(rails).toHaveCount(2);
+    await expect(rails).toHaveCount(expectedRailCount);
     await page.locator('#cardboardMarketClose').click();
     await page.locator('[data-cardboard-camera="back"]').click();
     await expectWholeTable(page, 4);
@@ -938,7 +1032,7 @@ test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると�
     });
     await expectWholeTable(page, 4);
     const world = page.locator('#cardboardSeats');
-    await expect(world).toHaveAttribute('data-table-packing', 'cross');
+    await expect(world).toHaveAttribute('data-table-packing', /^(cross|pinwheel)$/);
     await cameraCommand(page, 'self');
     const viewport = page.locator('#cardboardTableViewport');
     const anchor = await page.locator('#cardboardSeats > [data-player-index="0"]').evaluate(owner => {
@@ -1498,6 +1592,8 @@ test('卓の出目と枚数は長い出目でも重ならず施設アートを�
                 width: card.offsetWidth === 160, height: card.offsetHeight === 134,
                 diceFont: getComputedStyle(dice).fontSize === (dice.dataset.diceCount === '3' ? '18px' : '22px'),
                 countFont: getComputedStyle(badge).fontSize === '16px', countHeight: badge.offsetHeight === 22,
+                stack: (badge.dataset.multiple === 'true') === (Number(value.textContent.slice(1)) > 1),
+                stackVisible: (getComputedStyle(badge).boxShadow !== 'none') === (badge.dataset.multiple === 'true'),
                 separated: diceText.right <= badge.getBoundingClientRect().left,
                 oneLine: diceLines === 1, diceBand: contains(dice.getBoundingClientRect(), diceText),
                 card: contains(card.getBoundingClientRect(), diceText), count: contains(badge.getBoundingClientRect(), countText),
@@ -1757,3 +1853,4 @@ test('390終盤の自然対局配置は所有範囲を示す', async ({ page }, 
     await page.screenshot({ path: testInfo.outputPath('owner-natural-390.png') });
     expect(await snapshot(page)).toEqual(before);
 });
+

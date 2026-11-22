@@ -14051,6 +14051,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     font-size: 22px;
     line-height: 28px;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
     text-align: left;
 }
 
@@ -14128,9 +14129,16 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     font-size: 16px;
     line-height: 20px;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
     background: #fff4d9;
     color: #163b3c;
     border-radius: 4px;
+}
+
+/* Multiple copies remain one hit target; a small double edge suggests a stack
+   without enlarging the card footprint or covering the neighbouring card. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-count[data-multiple="true"] {
+    box-shadow: 0 2px 0 #d5a34e, 0 3px 0 #634c2b;
 }
 
 /* Keep full text for other presentations and accessibility; the table shows ×n. */
@@ -15869,4 +15877,22 @@ html[data-design="cardboard"] .cardboard-transfers.cardboard-transfers-viewport 
     contain: layout paint;
     isolation: isolate;
     transform: translateZ(0);
+}
+
+
+/* Short phone landscape: reclaim decorative spacing, never the 44px controls. */
+@media (min-width: 601px) and (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table {
+        row-gap: 2px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardViewHint {
+        height: 14px;
+        line-height: 14px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardTableViewport {
+        border-width: 4px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardActionSlot .game-action-panel {
+        padding-block: 2px;
+    }
 }

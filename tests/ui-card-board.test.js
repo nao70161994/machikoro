@@ -15,6 +15,7 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     const before = JSON.stringify(player);
     const html = UiCardBoard.buildPlayerHtml(player, options);
     assert.strictEqual((html.match(/data-card-name="森林"/g) || []).length, 1);
+    assert.ok(html.includes('class="cardboard-count" data-multiple="true"'));
     assert.ok(html.includes('class="cardboard-count-label">所有 </span><span class="cardboard-count-value">×2</span>'));
     assert.ok(html.includes('休業 1枚 / 稼働 1枚'));
     assert.ok(html.includes('cardboard-card-blue'));
@@ -31,6 +32,13 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('class="cardboard-landmark-scroll-hint" aria-hidden="true" hidden>横にスクロール →</span>'));
     assert.ok(html.includes('&lt;街の主&gt;'));
     assert.strictEqual(JSON.stringify(player), before);
+});
+runTest('単独施設には重ね表示を付けず同種施設の枚数は正確に区別する', () => {
+    const html = UiCardBoard.buildPlayerHtml({ ...player, cards: [forest, dormant, createCardByName('麦畑')] }, options);
+    assert.strictEqual((html.match(/data-multiple="true"/g) || []).length, 1);
+    assert.strictEqual((html.match(/data-multiple="false"/g) || []).length, 1);
+    assert.ok(html.includes('class="cardboard-count-value">×1</span>'));
+    assert.ok(html.includes('class="cardboard-count-value">×2</span>'));
 });
 runTest('建設通知は施設枚数・目標進捗・詳細操作を安全に示し未所有を表示しない', () => {
     const name = '<施設"名>';
