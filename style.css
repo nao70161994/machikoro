@@ -13746,6 +13746,7 @@ html[data-design="cardboard"] #cardboardCameraButtons {
 }
 
 html[data-design="cardboard"] #cardboardCameraButtons > button,
+html[data-design="cardboard"] #cardboardPurchaseMarket,
 html[data-design="cardboard"] #cardboardEventDetails > summary {
     display: flex;
     align-items: center;
@@ -15877,6 +15878,63 @@ html[data-design="cardboard"] .cardboard-transfers.cardboard-transfers-viewport 
     contain: layout paint;
     isolation: isolate;
     transform: translateZ(0);
+}
+
+/* Full-size purchasing is separate from the movable table camera. */
+html[data-design="cardboard"] #cardboardPurchaseMarket {
+    background: #f8e7ba;
+    border-color: #b79a58;
+    color: #344d3c;
+    font-weight: 800;
+}
+@media (max-width: 600px) {
+    html[data-design="cardboard"] #cardboardCameraButtons {
+        scrollbar-width: thin;
+        scrollbar-color: #688b80 transparent;
+    }
+}
+html[data-design="cardboard"] #cardboardMarketSections {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+html[data-design="cardboard"] #cardboardMarketSections > button {
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid #789080;
+    border-radius: 7px;
+    color: #244b40;
+    background: #fffdf5;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+}
+html[data-design="cardboard"] #cardboardMarketSections > button[aria-pressed="true"] {
+    background: #245d50;
+    border-color: #245d50;
+    color: #fff;
+    font-weight: 800;
+}
+html[data-design="cardboard"] #cardboardMarketDialog .compact-market-goal-disclosure > summary,
+html[data-design="cardboard"] #cardboardMarketDialog .compact-market:has(.compact-market-goal-disclosure[open]) > :is(.compact-market-facilities, .compact-market-filter-disclosure, .compact-market-browse-guidance) {
+    display: none;
+}
+html[data-design="cardboard"] .compact-market-goal-disclosure > summary {
+    width: auto;
+    min-width: 44px;
+    white-space: nowrap;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast :is(#cardboardPurchaseMarket, #cardboardMarketSections > button) {
+    background: #000;
+    color: #fff;
+    border-color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarketSections > button[aria-pressed="true"] {
+    background: #ffe66d;
+    color: #000;
 }
 
 

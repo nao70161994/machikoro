@@ -151,7 +151,7 @@ test('市場の絞込・目標・ガイド・ログは補助パネルを重ね�
     const guide = page.locator('#tutorialBox .plaza-guide-disclosure');
     await filter.locator('summary').click();
     await expect(filter).toHaveAttribute('open', '');
-    await goals.locator('summary').click();
+    await page.locator('#cardboardMarketLandmarksTab').click();
     await expect(goals).toHaveAttribute('open', '');
     await expect(filter).not.toHaveAttribute('open', '');
     await page.locator('#cardboardMarketClose').click();

@@ -693,7 +693,7 @@ const CardBoardField = (() => {
             const tools = document.createElement('nav');
             tools.id = 'cardboardCameraTools';
             tools.setAttribute('aria-label', 'カード卓の移動と拡大縮小');
-            tools.innerHTML = '<div id="cardboardCameraButtons"><button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button></div>';
+            tools.innerHTML = '<button type="button" id="cardboardPurchaseMarket" aria-controls="cardboardMarketDialog" aria-haspopup="dialog" aria-expanded="false" aria-label="購入市場を開く（施設・ランドマーク）">購入</button><div id="cardboardCameraButtons"><button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market" aria-label="盤面の市場へ移動">市場へ</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button></div>';
             board.appendChild(tools);
         }
         if (!node('cardboardViewHint')) {
@@ -1304,6 +1304,30 @@ const CardBoardField = (() => {
     function setMarketExpanded(expanded) {
         node('cardboardMarket')?.querySelectorAll('.compact-market-expand').forEach(button =>
             button.setAttribute('aria-expanded', String(expanded)));
+        node('cardboardPurchaseMarket')?.setAttribute('aria-expanded', String(expanded));
+        syncMarketSections();
+    }
+
+    function syncMarketSections() {
+        const market = node('cardboardMarket');
+        const goals = /** @type {HTMLDetailsElement | null} */ (market?.querySelector('.compact-market-goal-disclosure'));
+        const selected = goals?.open === true;
+        node('cardboardMarketFacilitiesTab')?.setAttribute('aria-pressed', String(!selected));
+        const landmarkTab = node('cardboardMarketLandmarksTab');
+        if (landmarkTab) {
+            const available = market?.querySelectorAll('[data-action="buildLandmark"]:not(:disabled)').length || 0;
+            landmarkTab.textContent = available ? `ランドマーク（建設可${available}）` : 'ランドマーク';
+            landmarkTab.setAttribute('aria-pressed', String(selected));
+        }
+    }
+
+    function selectMarketSection(landmarks) {
+        const goals = /** @type {HTMLDetailsElement | null} */ (node('cardboardMarket')?.querySelector('.compact-market-goal-disclosure'));
+        if (!goals || !isMarketExpanded()) return;
+        closeDisclosures(landmarks ? goals : null);
+        goals.open = landmarks;
+        syncMarketSections();
+        facts?.closeLog?.();
     }
 
     function finishMarketClose() {
@@ -1607,6 +1631,7 @@ const CardBoardField = (() => {
             if (!openMarket()) return;
             closeDisclosures(details);
             details.open = true;
+            syncMarketSections();
             const target = /** @type {HTMLElement | null} */ (details.querySelector('button[aria-pressed="true"]') || details.querySelector('button:not(:disabled)') || summary);
             target?.focus({ preventScroll: true });
         });
@@ -1624,6 +1649,7 @@ const CardBoardField = (() => {
         });
         const onDisclosureToggle = event => {
             const details = /** @type {HTMLDetailsElement} */ (event.target);
+            if (details.matches?.('.compact-market-goal-disclosure')) syncMarketSections();
             if (!details.matches?.(disclosureSelector) || !details.open) return;
             closeDisclosures(details);
             facts?.closeLog?.();
@@ -1656,6 +1682,9 @@ const CardBoardField = (() => {
             if (event.target === event.currentTarget) closeTown();
         });
         node('cardboardMarketClose')?.addEventListener('click', () => closeMarket());
+        node('cardboardPurchaseMarket')?.addEventListener('click', () => openMarket());
+        node('cardboardMarketFacilitiesTab')?.addEventListener('click', () => selectMarketSection(false));
+        node('cardboardMarketLandmarksTab')?.addEventListener('click', () => selectMarketSection(true));
         node('cardboardMarketDialog')?.addEventListener('cancel', event => {
             event.preventDefault();
             closeMarket();

@@ -108,7 +108,7 @@ runTest('小型市場は状態を変更せず既存filter・Undo・補充状態�
     assert.ok(html.includes('data-short-stock="残3 · 補充"'));
     assert.ok(!html.includes('class="card-btn'));
     assert.ok(/<details class="compact-market-filter-disclosure"><summary[^>]*>絞込：全3種<\/summary>/.test(html));
-    assert.ok(html.includes('<details class="compact-market-goal-disclosure"><summary>目標</summary>'));
+    assert.ok(html.includes('<details class="compact-market-goal-disclosure"><summary>ランドマーク</summary>'));
 });
 
 runTest('市場の絞込disclosureは現在の正本filterを短いラベルで示す', () => {

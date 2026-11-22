@@ -71,6 +71,51 @@ async function snapshot(page) {
     return page.evaluate(() => GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
 }
 
+for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+    test(`購入市場へ一回で入り施設とランドマークを切り替えて建設できる ${viewport.width}`, async ({ page }, testInfo) => {
+        await prepare(page, viewport, 4);
+        await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); });
+        const launch = page.locator('#cardboardPurchaseMarket');
+        const dialog = page.locator('#cardboardMarketDialog');
+        const facilities = page.locator('#cardboardMarketFacilitiesTab');
+        const landmarks = page.locator('#cardboardMarketLandmarksTab');
+        const before = await snapshot(page);
+        const camera = page.locator('#cardboardTableViewport');
+        const scale = await camera.getAttribute('data-table-scale');
+        await expect(launch).toBeVisible();
+        expect(await launch.evaluate(button => button.getBoundingClientRect().width)).toBeGreaterThanOrEqual(44);
+        await launch.click();
+        await expect(dialog).toBeVisible();
+        await expect(facilities).toHaveAttribute('aria-pressed', 'true');
+        await expect(landmarks).toContainText('建設可');
+        await landmarks.click();
+        await expect(landmarks).toHaveAttribute('aria-pressed', 'true');
+        await expect(dialog.locator('.compact-market-facilities')).toBeHidden();
+        await expect(dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]')).toBeEnabled();
+        const landmarkImage = testInfo.outputPath('purchase-landmarks.png');
+        await page.screenshot({ path: landmarkImage });
+        await persistCardTableReview(page, viewport, 'purchase-landmarks', landmarkImage);
+        await facilities.click();
+        await expect(dialog.locator('.compact-market-facilities')).toBeVisible();
+        const facilityImage = testInfo.outputPath('purchase-facilities.png');
+        await page.screenshot({ path: facilityImage });
+        await persistCardTableReview(page, viewport, 'purchase-facilities', facilityImage);
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(launch).toBeFocused();
+        await expect(camera).toHaveAttribute('data-table-scale', scale);
+        expect(await snapshot(page)).toEqual(before);
+        await launch.click();
+        await landmarks.click();
+        await dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]').click();
+        await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.players[0].landmarks['駅'])).toBe(true);
+        await expect(dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]')).toBeDisabled();
+        await expect(dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]')).toContainText('建設済');
+        await page.keyboard.press('Escape');
+        await expectWholeTable(page, 4);
+    });
+}
+
 async function expectWholeTable(page, count) {
     await expect(page.locator('#cardboardTableCanvas > #cardboardSeats .cardboard-player')).toHaveCount(count);
     await expect(page.locator('#cardboardSeats #cardboardCenter #cardboardMarket')).toHaveCount(1);

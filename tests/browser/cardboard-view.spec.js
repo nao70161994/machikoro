@@ -579,7 +579,7 @@ for (let roundTripBatch = 1; roundTripBatch <= marketRoundTripCases; roundTripBa
         await launcher.click();
         const dialog = page.locator('#cardboardMarketDialog');
         await expect(dialog).toBeVisible();
-        await dialog.locator('.compact-market-goal-disclosure > summary').click();
+        await dialog.locator('#cardboardMarketLandmarksTab').click();
         const landmark = dialog.locator('[data-action="buildLandmark"]:enabled').first();
         await expect(landmark).toBeVisible();
         const currentName = await landmark.getAttribute('data-landmark-name');
@@ -662,7 +662,7 @@ test.describe('PCの同一対局での往復', () => {
             await camera(page, 'market');
             await page.locator('#cardboardMarket .compact-market-expand').click();
             const dialog = page.locator('#cardboardMarketDialog');
-            await dialog.locator('.compact-market-goal-disclosure > summary').click();
+            await dialog.locator('#cardboardMarketLandmarksTab').click();
             const opened = await dialog.evaluate(element => {
                 const landmark = element.querySelector('[data-action="buildLandmark"]:enabled');
                 landmark?.focus();
@@ -727,8 +727,11 @@ test('横持ちの建設操作は拡大市場を開き購入後は見える操�
     await shortcut.click();
     const dialog = page.locator('#cardboardMarketDialog');
     await expect(dialog).toBeVisible();
-    await dialog.locator('.compact-market-goal-disclosure > summary').click();
+    await dialog.locator('#cardboardMarketLandmarksTab').click();
     await expect(dialog.locator('.compact-market-goal-disclosure')).toHaveAttribute('open', '');
+    await expect(dialog.locator('.compact-market-facilities')).toBeHidden();
+    await dialog.locator('#cardboardMarketFacilitiesTab').click();
+    await expect(dialog.locator('.compact-market-facilities')).toBeVisible();
     await dialog.locator('[data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(page.locator('.cardboard-player-selected [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×5');
     await expect(shortcut).toBeHidden();
@@ -1404,7 +1407,7 @@ for (const width of [320, 390, 1440]) test(`完成したランドマークの絵
     });
     await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-expand').click();
-    await page.locator('#cardboardMarketDialog .compact-market-goal-disclosure > summary').click();
+    await page.locator('#cardboardMarketLandmarksTab').click();
     await page.locator('#cardboardMarketDialog [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
     await page.keyboard.press('Escape');
     // Market goals close other auxiliary panels. Reopen the confirmed
@@ -2355,7 +2358,7 @@ test(`市場の種類数と絞込件数は一覧と一致し操作と文字領�
     await goals.locator(':scope > summary').click();
     await expect(dialog).toBeVisible();
     await expect(goals).toHaveAttribute('open', '');
-    await goals.locator(':scope > summary').click();
+    await page.locator('#cardboardMarketFacilitiesTab').click();
     await expect(goals).not.toHaveAttribute('open', '');
     await closeMarketDialog();
     expect(await state(page)).toEqual(canonical);
