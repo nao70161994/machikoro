@@ -15918,6 +15918,27 @@ html[data-design="cardboard"] #cardboardMarketSections > button[aria-pressed="tr
     color: #fff;
     font-weight: 800;
 }
+/* Use the dialog's available space instead of leaving an empty lower band.
+   Keep the existing 44px detail targets and readable price/name text. */
+@media (min-height: 700px) {
+    html[data-design="cardboard"] #cardboardMarketDialog .compact-market-facilities {
+        max-height: min(70dvh, 680px);
+    }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+    html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-art {
+        height: 80px;
+    }
+    html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-price {
+        flex-wrap: wrap;
+        row-gap: 2px;
+    }
+}
+@media (min-width: 375px) and (max-width: 600px) and (orientation: portrait) {
+    html[data-design="cardboard"] #cardboardMarketDialog .compact-market-facilities {
+        grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr));
+    }
+}
 html[data-design="cardboard"] #cardboardMarketDialog .compact-market-goal-disclosure > summary,
 html[data-design="cardboard"] #cardboardMarketDialog .compact-market:has(.compact-market-goal-disclosure[open]) > :is(.compact-market-facilities, .compact-market-filter-disclosure, .compact-market-browse-guidance) {
     display: none;

@@ -104,6 +104,17 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await persistCardTableReview(page, viewport, 'purchase-landmarks', landmarkImage);
         await facilities.click();
         await expect(dialog.locator('.compact-market-facilities')).toBeVisible();
+        const shelf = dialog.locator('.compact-market-facilities');
+        if (viewport.width === 390) {
+            expect(await shelf.evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBeGreaterThanOrEqual(2);
+        }
+        if (viewport.height >= 700) {
+            expect(await shelf.evaluate(element => element.clientHeight)).toBeGreaterThan(viewport.height * 0.56);
+        }
+        await expect.poll(() => shelf.locator('.compact-market-detail').first().evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            return bounds.width >= 44 && bounds.height >= 44;
+        })).toBe(true);
         const facilityImage = testInfo.outputPath('purchase-facilities.png');
         await page.screenshot({ path: facilityImage });
         await persistCardTableReview(page, viewport, 'purchase-facilities', facilityImage);
