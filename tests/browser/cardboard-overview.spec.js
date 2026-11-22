@@ -92,6 +92,13 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(landmarks).toHaveAttribute('aria-pressed', 'true');
         await expect(dialog.locator('.compact-market-facilities')).toBeHidden();
         await expect(dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]')).toBeEnabled();
+        const detail = dialog.locator('[data-action="showLandmarkDetail"][data-landmark-name="駅"]');
+        await detail.click();
+        await expect(page.locator('#cardDetailModal')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeVisible();
+        await expect(landmarks).toHaveAttribute('aria-pressed', 'true');
+        await expect(detail).toBeFocused();
         const landmarkImage = testInfo.outputPath('purchase-landmarks.png');
         await page.screenshot({ path: landmarkImage });
         await persistCardTableReview(page, viewport, 'purchase-landmarks', landmarkImage);
