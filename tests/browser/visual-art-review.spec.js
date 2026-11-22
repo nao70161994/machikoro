@@ -2691,7 +2691,7 @@ test.describe('市場の連続操作', () => {
             if (design === 'cardboard') {
                 await page.locator('[data-cardboard-camera="market"]').click();
                 await page.locator('#cardboardMarket .compact-market-expand').click();
-                await page.locator('#cardboardMarket .compact-market-goal-disclosure > summary').click();
+                await page.locator('#cardboardMarketLandmarksTab').click();
             }
             const root = design === 'cardboard' ? '#cardboardMarket' : '#buildMenu';
             const detail = page.locator(`${root} [data-action="showLandmarkDetail"][data-landmark-name="駅"]`);

@@ -227,7 +227,7 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
             if (action === 'buildLandmark') {
                 const goals = page.locator('#cardboardMarketDialog .compact-market-goal-disclosure');
                 if (!(await goals.evaluate(element => element.open))) {
-                    await click(goals.locator(':scope > summary'), 'ランドマーク一覧を開く');
+                    await click(page.locator('#cardboardMarketLandmarksTab'), 'ランドマーク一覧を開く');
                 }
             }
             const key = action === 'buildCard' ? 'data-card-name' : 'data-landmark-name';

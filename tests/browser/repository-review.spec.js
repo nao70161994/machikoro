@@ -104,7 +104,7 @@ test('市場詳細中のDOM更新は同じランドマークへ戻り手番交�
         acceptHotseatHandoff();
         CardBoardField.openMarket();
     });
-    await page.locator('#cardboardMarketDialog .compact-market-goal-disclosure > summary').click();
+    await page.locator('#cardboardMarketLandmarksTab').click();
     const landmark = page.locator('#cardboardMarketDialog [data-action="showLandmarkDetail"]').nth(1);
     const name = await landmark.getAttribute('data-landmark-name');
     await landmark.click();
