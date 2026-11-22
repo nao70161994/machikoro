@@ -15972,6 +15972,13 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     }
     html[data-design="cardboard"] #cardboardViewHint {
         align-self: center;
+        margin-inline: 2px;
+        gap: 0;
+    }
+    /* The instruction matters on a 320px screen; this label only repeats the
+       table below and otherwise forces the instruction into an ellipsis. */
+    html[data-design="cardboard"] #cardboardViewHint > strong {
+        display: none;
     }
 }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(#cardboardPurchaseMarket, #cardboardMarketSections > button) {
