@@ -1394,8 +1394,10 @@ const CardBoardField = (() => {
             button.dataset.action === target.dataset.action && button.dataset.cardName === target.dataset.cardName &&
             button.dataset.landmarkName === target.dataset.landmarkName &&
             !button.disabled && button.getClientRects().length > 0) : null;
-        const replacement = target?.isConnected && market.contains(target) ? target : matching
-            || /** @type {HTMLElement | null} */ (market.querySelector('.compact-market-detail:not(:disabled), .compact-market-buy:not(:disabled)')) || node('cardboardMarketClose');
+        const visibleTarget = target?.isConnected && market.contains(target) && target.getClientRects().length > 0;
+        const visibleFallback = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (market.querySelectorAll('.compact-market-detail:not(:disabled), .compact-market-buy:not(:disabled)')))
+            .find(button => button.getClientRects().length > 0);
+        const replacement = visibleTarget ? target : matching || visibleFallback || node('cardboardMarketClose');
         replacement?.focus({ preventScroll: true });
         return true;
     }
