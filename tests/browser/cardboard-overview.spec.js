@@ -119,6 +119,13 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]')).toBeDisabled();
         await expect(dialog.locator('[data-action="buildLandmark"][data-landmark-name="駅"]')).toContainText('建設済');
         await page.keyboard.press('Escape');
+        // Like facility purchases, successful construction deliberately focuses
+        // the newly owned card. Returning restores the pre-market overview.
+        await expect(dialog).toBeHidden();
+        await expect(camera).toHaveAttribute('data-table-mode', 'free');
+        await expect(page.locator('[data-cardboard-camera="back"]')).toBeEnabled();
+        await cameraCommand(page, 'back');
+        await expect(camera).toHaveAttribute('data-table-mode', 'overview');
         await expectWholeTable(page, 4);
     });
 }

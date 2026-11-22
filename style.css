@@ -15927,6 +15927,32 @@ html[data-design="cardboard"] .compact-market-goal-disclosure > summary {
     min-width: 44px;
     white-space: nowrap;
 }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-goal-disclosure > summary {
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    padding: 2px;
+    font-size: 10px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Keep the primary camera actions and purchase reachable even with the guide.
+   The hint shares the existing controls row instead of covering the table. */
+@media (max-width: 360px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table {
+        grid-template-areas: "roster roster" "camera camera" "hint controls" "table table" "actions actions";
+    }
+    html[data-design="cardboard"] #cardboardCameraButtons > button {
+        min-width: 44px;
+        padding-inline: 3px;
+    }
+    html[data-design="cardboard"] #cardboardViewHint {
+        align-self: center;
+    }
+}
 html[data-design="cardboard"] body.accessibility-high-contrast :is(#cardboardPurchaseMarket, #cardboardMarketSections > button) {
     background: #000;
     color: #fff;
